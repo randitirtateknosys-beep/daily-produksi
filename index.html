@@ -328,29 +328,69 @@
         }
     }
 
-    function saveData() {
-        const spp = document.getElementById('spp').value.toUpperCase();
-        const nama = document.getElementById('namaOp').value;
-        const produk = document.getElementById('namaProduk').value;
-        if (!spp || !nama || !produk) return alert("Mohon lengkapi data!");
-        const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        const firstEntry = logs.find(l => l.spp === spp);
-        const tglUpdate = document.getElementById('tglUpdate').value;
-        const deadline = document.getElementById('deadlineView').value;
-        let statusLog = "ON PROSES";
-        if (tglUpdate === deadline) statusLog = "SELESAI";
-        else if (new Date(tglUpdate) > new Date(deadline)) statusLog = "TELAT SELESAI";
-        
-        logs.push({
-            id: Date.now(), spp, nama, produk, noProd: document.getElementById('noProduksi').value.toUpperCase(),
-            target: document.getElementById('target').value, tglUpdate, tglMulai: firstEntry ? firstEntry.tglMulai : tglUpdate,
-            deadline, tahap: document.getElementById('tahap').options[document.getElementById('tahap').selectedIndex].text,
-            status: statusLog, kendala: document.getElementById('kendala').value || "-"
-        });
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-        renderTable(); alert("Data Berhasil Disimpan!");
-    }
+   function saveData() {
+    const spp = document.getElementById('spp').value.toUpperCase();
+    const nama = document.getElementById('namaOp').value;
+    const produk = document.getElementById('namaProduk').value;
+    
+    if (!spp || !nama || !produk) return alert("Mohon lengkapi data!");
+    
+    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const firstEntry = logs.find(l => l.spp === spp);
+    const tglUpdate = document.getElementById('tglUpdate').value;
+    const deadline = document.getElementById('deadlineView').value;
+    
+    let statusLog = "ON PROSES";
+    if (tglUpdate === deadline) statusLog = "SELESAI";
+    else if (new Date(tglUpdate) > new Date(deadline)) statusLog = "TELAT SELESAI";
+    
+    // Objek Data yang akan disimpan
+    const dataBaru = {
+        id: Date.now(), 
+        spp, 
+        nama, 
+        produk, 
+        noProd: document.getElementById('noProduksi').value.toUpperCase(),
+        target: document.getElementById('target').value, 
+        tglUpdate, 
+        tglMulai: firstEntry ? firstEntry.tglMulai : tglUpdate,
+        deadline, 
+        tahap: document.getElementById('tahap').options[document.getElementById('tahap').selectedIndex].text,
+        status: statusLog, 
+        kendala: document.getElementById('kendala').value || "-"
+    };
 
+    // 1. Simpan ke LocalStorage (Tetap ada untuk backup lokal)
+    logs.push(dataBaru);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+
+    // 2. KIRIM KE GOOGLE SHEETS (DATABASE ONLINE)
+    const urlScript = "TEMPEL_URL_WEB_APP_GOOGLE_ANDA_DISINI"; // <--- GANTI INI
+
+    const btn = document.getElementById('btnSave');
+    btn.innerText = "SEDANG MENGIRIM...";
+    btn.disabled = true;
+
+    fetch(urlScript, {
+        method: 'POST',
+        mode: 'no-cors', // Menghindari masalah CORS di browser
+        body: JSON.stringify(dataBaru)
+    })
+    .then(() => {
+        renderTable(); 
+        alert("Laporan Berhasil Disimpan & Terkirim ke Cloud!");
+        btn.innerText = "SUBMIT LAPORAN PRODUKSI";
+        btn.disabled = false;
+        // Opsional: bersihkan form setelah simpan
+        document.getElementById('spp').value = "";
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Data tersimpan lokal, tapi gagal kirim ke Cloud.");
+        btn.innerText = "SUBMIT LAPORAN PRODUKSI";
+        btn.disabled = false;
+    });
+}
     function renderTable() {
         const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
         const body = document.getElementById('tabelBody');
