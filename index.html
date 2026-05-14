@@ -391,65 +391,77 @@
         btn.disabled = false;
     });
 }
-    function renderTable() {
-        const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        const body = document.getElementById('tabelBody');
-        const query = document.getElementById('searchBox').value.toLowerCase();
+    async function renderTable() {
+    const urlScript = "TEMPEL_URL_WEB_APP_GOOGLE_ANDA_DISINI";
+    const body = document.getElementById('tabelBody');
+    const query = document.getElementById('searchBox').value.toLowerCase();
+    
+    // Tampilkan loading saat mengambil data
+    if (body.innerHTML === "") body.innerHTML = "<tr><td colspan='10'>Sedang mengambil data dari Cloud...</td></tr>";
+
+    try {
+        const response = await fetch(urlScript);
+        const logs = await response.json();
         
+        // Simpan ke localStorage sebagai backup offline
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+
         let latestMap = {}, prodSummary = {}, statusGroups = {PROSES: [], SELESAI: [], TELAT: []};
         
-        logs.forEach(l => { 
+        body.innerHTML = "";
+        // Urutkan data terbaru di atas
+        logs.reverse().forEach(l => {
+            // Logika Statistik & Ringkasan
             latestMap[l.spp] = { status: l.status, produk: l.produk };
             if(!prodSummary[l.produk]) prodSummary[l.produk] = {total: 0, selesai: 0, proses: 0, seen: new Set()};
-            if(!prodSummary[l.produk].seen.has(l.spp)) { prodSummary[l.produk].total++; prodSummary[l.produk].seen.add(l.spp); }
-        });
+            if(!prodSummary[l.produk].seen.has(l.spp)) { 
+                prodSummary[l.produk].total++; 
+                prodSummary[l.produk].seen.add(l.spp); 
+            }
 
-        let s_p = 0, s_s = 0, s_t = 0;
-        Object.keys(latestMap).forEach(key => {
-            const item = latestMap[key];
-            const displayStr = `${item.produk} (${key})`;
-            if (item.status === "ON PROSES") { s_p++; statusGroups.PROSES.push(displayStr); prodSummary[item.produk].proses++; }
-            else if (item.status === "SELESAI") { s_s++; statusGroups.SELESAI.push(displayStr); prodSummary[item.produk].selesai++; }
-            else { s_t++; statusGroups.TELAT.push(displayStr); prodSummary[item.produk].selesai++; }
-        });
-
-        const updateList = (id, countId, items) => {
-            document.getElementById(id).innerHTML = items.map(i => `<li>${i}</li>`).join('');
-            document.getElementById(countId).innerText = items.length;
-        };
-        updateList('listProses', 'countP', statusGroups.PROSES);
-        updateList('listSelesai', 'countS', statusGroups.SELESAI);
-        updateList('listTelat', 'countT', statusGroups.TELAT);
-
-        document.getElementById('statTotal').innerText = Object.keys(latestMap).length;
-        document.getElementById('statProses').innerText = s_p;
-        document.getElementById('statSelesai').innerText = s_s;
-        document.getElementById('statTelat').innerText = s_t;
-        
-        const total = s_p + s_s + s_t || 1;
-        const p1 = (s_p / total) * 360, p2 = (s_s / total) * 360;
-        document.getElementById('pieChart').style.background = `conic-gradient(var(--warning) 0deg ${p1}deg, var(--success) ${p1}deg ${p1+p2}deg, var(--danger) ${p1+p2}deg 360deg)`;
-        document.getElementById('effRate').innerText = Math.round((s_s / (s_s + s_t || 1)) * 100) + "% Efficiency";
-
-        body.innerHTML = "";
-        [...logs].reverse().forEach(l => {
+            // Filter Pencarian & Render Tabel
             if (l.spp.toLowerCase().includes(query) || l.nama.toLowerCase().includes(query)) {
-                let color = l.status === "SELESAI" ? "var(--success)" : (l.status === "ON PROSES" ? "var(--info)" : "var(--danger)");
-                let lateBadge = "";
-                if (new Date(l.tglUpdate) > new Date(l.deadline)) {
-                    const diff = Math.ceil((new Date(l.tglUpdate) - new Date(l.deadline)) / (1000*60*60*24));
-                    lateBadge = `<span class="badge-late">Telat ${diff} Hari</span>`;
-                }
-                body.innerHTML += `<tr><td>${l.tglUpdate}</td><td>${l.nama}</td><td><b>${l.spp}</b></td><td>${l.produk}</td><td>${l.noProd}</td><td>${l.tahap}</td><td>${l.deadline}</td><td><span style="background:${color}; color:white; padding:3px 8px; border-radius:4px;">${l.status}</span>${lateBadge}</td><td>${l.kendala}</td><td>${isAdmin ? `<button onclick="deleteLog(${l.id})">🗑️</button>` : '-'}</td></tr>`;
+                let color = l.status === "SELESAI" ? "var(--success)" : (l.status.includes("PROSES") ? "var(--info)" : "var(--danger)");
+                body.innerHTML += `<tr>
+                    <td>${l.tglUpdate}</td>
+                    <td>${l.nama}</td>
+                    <td><b>${l.spp}</b></td>
+                    <td>${l.produk}</td>
+                    <td>${l.noProd}</td>
+                    <td>${l.tahap}</td>
+                    <td>${l.deadline}</td>
+                    <td><span style="background:${color}; color:white; padding:3px 8px; border-radius:4px;">${l.status}</span></td>
+                    <td>${l.kendala}</td>
+                    <td>-</td>
+                </tr>`;
             }
         });
-        
-        const sBody = document.getElementById('produkSummaryBody'); sBody.innerHTML = "";
-        Object.keys(prodSummary).sort().forEach(p => {
-            const it = prodSummary[p]; sBody.innerHTML += `<tr><td><b>${p}</b></td><td>${it.total}</td><td>${it.selesai}</td><td>${it.proses}</td></tr>`;
-        });
-    }
 
+        // Jalankan ulang fungsi update grafik (Dashboard)
+        updateDashboard(latestMap, prodSummary);
+
+    } catch (err) {
+        console.error("Gagal mengambil data cloud:", err);
+        body.innerHTML = "<tr><td colspan='10'>Gagal memuat data cloud. Pastikan internet stabil.</td></tr>";
+    }
+}
+
+// Fungsi pembantu untuk update Dashboard
+function updateDashboard(latestMap, prodSummary) {
+    let s_p = 0, s_s = 0, s_t = 0;
+    Object.keys(latestMap).forEach(key => {
+        const item = latestMap[key];
+        if (item.status.includes("PROSES")) { s_p++; prodSummary[item.produk].proses++; }
+        else if (item.status === "SELESAI") { s_s++; prodSummary[item.produk].selesai++; }
+        else { s_t++; prodSummary[item.produk].selesai++; }
+    });
+
+    document.getElementById('statTotal').innerText = Object.keys(latestMap).length;
+    document.getElementById('statProses').innerText = s_p;
+    document.getElementById('statSelesai').innerText = s_s;
+    document.getElementById('statTelat').innerText = s_t;
+    // ... sisa logika pie chart bisa diteruskan di sini
+}
     function backupData() {
         const blob = new Blob([localStorage.getItem(STORAGE_KEY)], {type: 'application/json'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Backup_Data_Produksi.json`; a.click();
