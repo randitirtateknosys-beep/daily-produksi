@@ -2,67 +2,219 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <base target="_top">
-    <title>Daily Report Produksi PT. Tirta Teknosys</title>
+    <title>Daily Report Produksi PT. Tirta Teknosys (Cloud Sync)</title>
     <style>
         :root { --primary: #2c3e50; --success: #27ae60; --danger: #c0392b; --info: #2980b9; --warning: #f39c12; --accent: #0099da; }
         body.dark-mode { background: #1a1a1a; color: #eee; }
         body.dark-mode .container { background: #2d2d2d; color: #eee; border: 1px solid #444; }
-        body.dark-mode input, body.dark-mode select, body.dark-mode textarea { background: #3d3d3d; color: white; border-color: #555; }
-        body.dark-mode tr:hover { background: #3a3a3a; }
-        body.dark-mode .chart-section { background: #333; border-color: #444; }
-        body.dark-mode .status-col { background: #3d3d3d; color: white; }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; color: #333; transition: 0.3s; }
         .container { max-width: 1450px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .brand-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 4px solid var(--accent); padding-bottom: 15px; margin-bottom: 25px; }
-        .logo-area { display: flex; align-items: center; gap: 20px; }
-        .company-logo { height: 75px; width: auto; object-fit: contain; }
-        .title-area h1 { margin: 0; font-size: 26px; color: var(--primary); font-weight: 800; text-transform: uppercase; }
-        .title-area p { margin: 0; font-size: 13px; color: #666; font-weight: 600; letter-spacing: 1px; }
-        .btn-tool { padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; color: white; margin-left: 5px; font-size: 11px; }
-        .btn-admin { background: var(--primary); }
-        .btn-backup { background: #7f8c8d; }
-        .btn-export { background: var(--success); }
-        .dashboard-wrapper { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; margin-bottom: 25px; align-items: start; }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .stat-card { padding: 15px; border-radius: 10px; color: white; text-align: center; position: relative; }
-        .efficiency-tag { position: absolute; top: 5px; right: 10px; font-size: 10px; background: rgba(255,255,255,0.2); padding: 2px 5px; border-radius: 4px; }
-        .chart-section { display: grid; grid-template-columns: 200px 1fr; gap: 20px; background: #f9f9f9; padding: 15px; border-radius: 10px; border: 1px solid #ddd; }
-        .chart-container { display: flex; flex-direction: column; align-items: center; }
-        .pie-chart { width: 140px; height: 140px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); transition: 0.5s; }
-        .status-list-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .status-col { background: white; padding: 10px; border-radius: 8px; border-top: 4px solid #ccc; max-height: 180px; overflow-y: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .status-col h4 { margin: 0 0 8px 0; font-size: 11px; text-transform: uppercase; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .item-list { font-size: 10px; list-style: none; padding: 0; margin: 0; }
-        .item-list li { padding: 4px 0; border-bottom: 1px solid #f0f0f0; line-height: 1.2; }
         .form-section { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
         .field { display: flex; flex-direction: column; }
         label { font-size: 10px; font-weight: bold; margin-bottom: 8px; color: #666; text-transform: uppercase; }
         input, select, textarea { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; outline: none; text-transform: uppercase; }
+        table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 20px; }
+        th { background: var(--primary); color: white; padding: 10px; }
+        td { border: 1px solid #eee; padding: 8px; text-align: center; }
+        .btn-save { width: 100%; padding: 15px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; }
+        .btn-save:hover { background: #007bb1; transform: translateY(-2px); }
         #statusDisplay { padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px; display: none; }
         .status-success { background: #e8f5e9; color: var(--success); border: 2px solid var(--success); display: block !important; }
         .status-process { background: #e3f2fd; color: var(--info); border: 2px solid var(--info); display: block !important; }
         .status-late { background: #fdf2f2; color: var(--danger); border: 2px solid var(--danger); display: block !important; }
         .progress-container { background: rgba(0,0,0,0.1); height: 15px; border-radius: 10px; margin: 10px auto; overflow: hidden; width: 80%; }
         .progress-bar { height: 100%; background: var(--info); transition: 0.5s; width: 0%; }
-        table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 20px; }
-        th { background: var(--primary); color: white; padding: 10px; }
-        td { border: 1px solid #eee; padding: 8px; text-align: center; }
-        tr.late-row { background: #fff5f5; }
-        .btn-save { width: 100%; padding: 15px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; }
-        .btn-save:hover { background: #007bb1; transform: translateY(-2px); }
-        .summary-title { background: var(--primary); color: white; padding: 8px 15px; border-radius: 5px; margin-top: 30px; display: inline-block; font-size: 12px; }
-        .sticky-notes { position: fixed; bottom: 20px; right: 20px; width: 220px; background: #fff176; border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); z-index: 1001; }
-        .sticky-notes.minimized { height: 35px; }
-        .notes-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; cursor: pointer; }
-        .badge-late { display: block; font-size: 9px; margin-top: 3px; color: #fff; background: #c0392b; border-radius: 3px; padding: 1px; }
     </style>
 </head>
 <body>
 
-<button onclick="toggleDarkMode()" style="position:fixed; top:10px; left:10px; z-index:1000; padding:5px; border-radius:50%; border:none; cursor:pointer; background:white; box-shadow:0 2px 5px rgba(0,0,0,0.2)">🌓</button>
-
 <div class="container">
     <div class="brand-header">
-        <div class="logo-area">
-            <img src="
+        <div class="title-area">
+            <h1>Daily Report Produksi (Cloud)</h1>
+            <p>PT. TIRTA TEKNOSYS | Sync HP & PC Aktif</p>
+        </div>
+        <div>
+            <button onclick="handleLogin()" id="btnLogin" style="background:var(--primary); color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">ADMIN LOGIN</button>
+        </div>
+    </div>
+
+    <div id="statusDisplay">
+        <div id="statusText" style="font-weight: 900; font-size: 24px;"></div>
+        <div class="progress-container"><div id="progBar" class="progress-bar"></div></div>
+        <div id="percentText" style="font-size: 14px; font-weight: bold;"></div>
+    </div>
+
+    <div class="form-section">
+        <div class="field"><label>No SPP</label><input type="text" id="spp" oninput="runLogic(); this.value = this.value.toUpperCase();"></div>
+        <div class="field">
+            <label>Operator</label>
+            <select id="namaOp">
+                <option value="">-- Pilih --</option>
+                <option value="Suhendra">Suhendra</option>
+                <option value="Hario Rizki">Hario Rizki</option>
+                <option value="Dhema">Dhema</option>
+            </select>
+        </div>
+        <div class="field">
+            <label>Produk</label>
+            <select id="namaProduk">
+                <option value="">-- Pilih --</option>
+                <option value="Aquatech TRO 250 GPD">Aquatech TRO 250 GPD</option>
+                <option value="UF Beaver 8.0">UF Beaver 8.0</option>
+            </select>
+        </div>
+        <div class="field"><label>Target (Hari)</label><input type="number" id="target" value="3" oninput="runLogic()"></div>
+    </div>
+
+    <div class="form-section">
+        <div class="field"><label>Tanggal Update</label><input type="date" id="tglUpdate" onchange="runLogic()"></div>
+        <div class="field">
+            <label>Tahap</label>
+            <select id="tahap">
+                <option value="1">1. Persiapan Material</option>
+                <option value="7">7. Packing & Selesai</option>
+            </select>
+        </div>
+        <div class="field"><label>Deadline</label><input type="text" id="deadlineView" readonly></div>
+    </div>
+
+    <button class="btn-save" id="btnSave">SUBMIT KE CLOUD</button>
+
+    <div style="margin-top:30px">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tanggal</th><th>Operator</th><th>No SPP</th><th>Produk</th><th>Tahap</th><th>Deadline</th><th>Status</th><th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="tabelBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // 1. GANTI INI DENGAN CONFIG FIREBASE KAMU
+  // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyB3qH05gmLRXnK7IuXewnT2xwfNQSXuEkk",
+  authDomain: "project-8cb59.firebaseapp.com",
+  projectId: "project-8cb59",
+  storageBucket: "project-8cb59.firebasestorage.app",
+  messagingSenderId: "667240174031",
+  appId: "1:667240174031:web:0ebb00b740653b9bb642ba"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const dbRef = ref(db, 'laporan_produksi');
+
+    let isAdmin = false;
+    document.getElementById('tglUpdate').valueAsDate = new Date();
+
+    // LOGIN ADMIN (Lokal sederhana)
+    window.handleLogin = function() {
+        if (prompt("Password Admin:") === "aqua123") {
+            isAdmin = true;
+            alert("Mode Admin Aktif: Bisa Hapus Data");
+        }
+    };
+
+    // LOGIKA DEADLINE & STATUS (Mirip kode aslimu)
+    window.runLogic = function() {
+        const spp = document.getElementById('spp').value;
+        const target = parseInt(document.getElementById('target').value) || 1;
+        const tglUpdateStr = document.getElementById('tglUpdate').value;
+        
+        let tglMulai = new Date(tglUpdateStr);
+        let deadline = new Date(tglMulai);
+        deadline.setDate(deadline.getDate() + target);
+        
+        let deadlineStr = deadline.toISOString().split('T')[0];
+        document.getElementById('deadlineView').value = deadlineStr;
+
+        const display = document.getElementById('statusDisplay');
+        if (!spp) { display.style.display = 'none'; return; }
+        display.style.display = 'block';
+
+        if (tglUpdateStr > deadlineStr) {
+            display.className = "status-late";
+            document.getElementById('statusText').innerText = "⚠️ TERLAMBAT!";
+        } else {
+            display.className = "status-process";
+            document.getElementById('statusText').innerText = "⏳ DALAM PROSES";
+        }
+    };
+
+    // SIMPAN DATA KE FIREBASE (TAMBAHKAN DATA)
+    document.getElementById('btnSave').onclick = function() {
+        const spp = document.getElementById('spp').value;
+        const nama = document.getElementById('namaOp').value;
+        const produk = document.getElementById('namaProduk').value;
+
+        if (!spp || !nama) return alert("Isi No SPP & Operator!");
+
+        const newEntryRef = push(dbRef); // Membuat ID unik otomatis di Firebase
+        set(newEntryRef, {
+            spp: spp,
+            nama: nama,
+            produk: produk,
+            tglUpdate: document.getElementById('tglUpdate').value,
+            deadline: document.getElementById('deadlineView').value,
+            tahap: document.getElementById('tahap').options[document.getElementById('tahap').selectedIndex].text,
+            status: document.getElementById('statusText').innerText
+        }).then(() => {
+            alert("Berhasil Tersimpan ke Cloud!");
+            document.getElementById('spp').value = "";
+        });
+    };
+
+    // HAPUS DATA DARI FIREBASE
+    window.deleteData = function(firebaseId) {
+        if (!isAdmin) return alert("Hanya Admin yang bisa menghapus!");
+        if (confirm("Hapus data ini?")) {
+            const itemRef = ref(db, `laporan_produksi/${firebaseId}`);
+            remove(itemRef);
+        }
+    };
+
+    // BACA DATA SECARA REAL-TIME (UPDATE OTOMATIS HP & PC)
+    onValue(dbRef, (snapshot) => {
+        const data = snapshot.val();
+        const tbody = document.getElementById('tabelBody');
+        tbody.innerHTML = "";
+
+        if (data) {
+            // Firebase mengembalikan object, kita ubah jadi array untuk ditampilkan
+            Object.keys(data).reverse().forEach(key => {
+                const item = data[key];
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${item.tglUpdate}</td>
+                        <td>${item.nama}</td>
+                        <td><b>${item.spp}</b></td>
+                        <td>${item.produk}</td>
+                        <td>${item.tahap}</td>
+                        <td>${item.deadline}</td>
+                        <td>${item.status}</td>
+                        <td>
+                            <button onclick="deleteData('${key}')" style="cursor:pointer">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+    });
+</script>
+</body>
+</html>
