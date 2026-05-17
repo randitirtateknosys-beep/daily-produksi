@@ -1408,6 +1408,7 @@ firebaseOnValue(ref(db, 'produksi'), (snapshot) => {
 </script>
 <script>
     (function() {
+        // 1. Fungsi Injeksi Tampilan ke Tengah Dashboard (Bawaan Asli)
         function injectToMiddle() {
             const containers = document.getElementsByClassName('container');
             const myModul = document.getElementById('middleDashboard');
@@ -1425,92 +1426,104 @@ firebaseOnValue(ref(db, 'produksi'), (snapshot) => {
             return false;
         }
 
-        // =========================================================================
-        // HUBUNGKAN AKTIVITAS TERKINI & TOP OPERATOR SECARA REALTIME KE FIREBASE
-        // =========================================================================
-        function koneksiRealtimeFirebasev3() {
-            // 1. Ambil & Tampilkan 5 Aktivitas Submit Terkini dari Node Firebase 'aq_v20' atau 'laporan'
-            // Catatan: Jika nama node data utama Anda di Firebase bukan 'aq_v20', silakan sesuaikan namanya di bawah
-            database.ref('aq_v20').orderByChild('timestamp').limitToLast(5).on('value', (snapshot) => {
-                const feed = document.getElementById('midActivityFeed');
-                feed.innerHTML = ""; 
-                
-                let listAktivitas = [];
-                snapshot.forEach((childSnapshot) => {
-                    listAktivitas.push(childSnapshot.val());
-                });
+        // 2. Fungsi Sinkronisasi Data Adaptif Realtime
+        function refreshData() {
+            // Mengambil data dari variabel global 'laporanData' atau fallback ke localStorage jika firebase belum termuat
+            // Catatan: Jika sistem utama Anda mendefinisikan array data dengan nama lain (misal: 'dataLaporan' atau 'globalLogs'), 
+            // sistem akan mendeteksinya via fungsi pemetaan renderTable bawaan.
+            let logs = [];
+            try {
+                if (typeof window.laporanData !== "undefined") {
+                    logs = window.laporanData;
+                } else if (typeof typeofDataUtama !== "undefined") {
+                    logs = typeofDataUtama;
+                } else {
+                    logs = JSON.parse(localStorage.getItem('aq_v20') || '[]');
+                }
+            } catch(e) {
+                logs = JSON.parse(localStorage.getItem('aq_v20') || '[]');
+            }
 
-                if (listAktivitas.length === 0) {
-                    feed.innerHTML = "<p style='color:#999; font-size:11px;'>Belum ada aktivitas harian.</p>";
-                    return;
+            // --- TAMPILKAN 5 AKTIVITAS SUBMIT TERKINI ---
+            const feed = document.getElementById('midActivityFeed');
+            const recent = [...logs].reverse().slice(0, 5);
+            feed.innerHTML = recent.length ? "" : "<p style='color:#999; font-size:11px;'>Belum ada aktivitas.</p>";
+            
+            recent.forEach(log => {
+                let namaOp = log.nama || log.operator || "Operator";
+                let nomorSpp = log.spp || log.no_spp || "-";
+                let tahapKerja = log.tahap || log.aktivitas || log.proses || "-";
+                let waktuJam = "";
+
+                if (log.tglUpdate && log.tglUpdate.includes(' ')) {
+                    waktuJam = log.tglUpdate.split(' ')[1] || '';
+                } else {
+                    waktuJam = log.waktu || log.jam || "";
                 }
 
-                // Urutkan dari yang paling baru disubmit di posisi paling atas
-                listAktivitas.reverse().forEach(log => {
-                    // Ambil jam menit saja dari tanggal update
-                    let jamSaja = "";
-                    if(log.tglUpdate && log.tglUpdate.includes(' ')) {
-                        jamSaja = log.tglUpdate.split(' ')[1] || '';
-                    } else if(log.waktu) {
-                        jamSaja = log.waktu;
-                    }
-
-                    feed.innerHTML += `
-                        <div style="padding: 6px 10px; background: white; border: 1px solid #eee; border-radius: 5px; font-size: 11px; margin-bottom: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); color:#333;">
-                            <b>${log.nama || log.operator || 'Operator'}</b> <small style="color:#888">update</small> <b>${log.spp || '-'}</b> 
-                            <span style="float:right; color:#bbb; font-size:10px;">${jamSaja}</span>
-                            <div style="color:#2980b9; font-size:10px; font-weight:bold; margin-top:2px;">${log.tahap || log.aktivitas || '-'}</div>
-                        </div>`;
-                });
+                feed.innerHTML += `
+                    <div style="padding: 6px 10px; background: white; border: 1px solid #eee; border-radius: 5px; font-size: 11px; margin-bottom: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); color:#333;">
+                        <b>${namaOp}</b> <small style="color:#888">update</small> <b>${nomorSpp}</b> 
+                        <span style="float:right; color:#bbb; font-size:10px;">${waktuJam}</span>
+                        <div style="color:#2980b9; font-size:10px; font-weight:bold; margin-top:2px;">${tahapKerja}</div>
+                    </div>`;
             });
 
-            // 2. Ambil seluruh data dari Firebase untuk kalkulasi Live Top Operator
-            database.ref('aq_v20').on('value', (snapshot) => {
-                const stats = {};
-                
-                snapshot.forEach((childSnapshot) => {
-                    const l = childSnapshot.val();
-                    const namaOp = l.nama || l.operator;
-                    if (namaOp) {
-                        if (!stats[namaOp]) stats[namaOp] = { selesai: 0, total: 0 };
-                        stats[namaOp].total++;
-                        if (l.status && l.status.toUpperCase().includes("SELESAI")) {
-                            stats[namaOp].selesai++;
-                        }
-                    }
-                });
-                
-                const midBody = document.getElementById('midAnalisaBody');
-                midBody.innerHTML = "";
-                
-                // Urutkan berdasarkan performa penyelesaian tertinggi
-                const sortedOperators = Object.keys(stats).sort((a,b) => stats[b].selesai - stats[a].selesai).slice(0, 3);
-                
-                if(sortedOperators.length === 0) {
-                    midBody.innerHTML = "<tr><td colspan='3' style='text-align:center; color:#999; font-size:11px;'>Tidak ada data operator.</td></tr>";
+            // --- TAMPILKAN LIVE TOP OPERATOR ---
+            const stats = {};
+            logs.forEach(l => {
+                let namaOp = l.nama || l.operator;
+                let statusKerja = l.status || "";
+                if (namaOp) {
+                    if (!stats[namaOp]) stats[namaOp] = { selesai: 0, total: 0 };
+                    stats[namaOp].total++;
+                    if (statusKerja.toUpperCase().includes("SELESAI")) stats[namaOp].selesai++;
                 }
+            });
+            
+            const midBody = document.getElementById('midAnalisaBody');
+            midBody.innerHTML = "";
+            
+            const sortedOperators = Object.keys(stats).sort((a,b) => stats[b].selesai - stats[a].selesai).slice(0, 3);
+            
+            if(sortedOperators.length === 0) {
+                midBody.innerHTML = "<tr><td colspan='3' style='text-align:center; color:#999; font-size:11px;'>Belum ada data performa.</td></tr>";
+                return;
+            }
 
-                sortedOperators.forEach(nama => {
-                    const s = stats[nama];
-                    const rasio = s.total > 0 ? Math.round((s.selesai / s.total) * 100) : 0;
-                    midBody.innerHTML += `
-                        <tr>
-                            <td><b>${nama}</b></td>
-                            <td style="text-align:center;">${s.selesai}</td>
-                            <td style="text-align:center; color:#666;">${rasio}%</td>
-                        </tr>`;
-                });
+            sortedOperators.forEach(nama => {
+                const s = stats[nama];
+                const rasio = s.total > 0 ? Math.round((s.selesai/s.total)*100) : 0;
+                midBody.innerHTML += `<tr><td><b>${nama}</b></td><td style="text-align:center;">${s.selesai}</td><td style="text-align:center; color:#666;">${rasio}%</td></tr>`;
             });
         }
 
-        // Jalankan injeksi modul ke posisi tengah dashboard
+        // Jalankan Injektor Modul
         let findTimer = setInterval(() => {
             if (injectToMiddle()) {
                 clearInterval(findTimer);
-                koneksiRealtimeFirebasev3(); // Aktifkan listener Firebase secara Realtime!
+                refreshData();
             }
         }, 200);
 
+        // Pembajakan Fungsi Render Bawaan Agar Ikut Memperbarui Modul Tengah Secara Realtime
+        const originalSave = window.saveData;
+        window.saveData = function() {
+            if (typeof originalSave === "function") originalSave();
+            setTimeout(refreshData, 1000);
+        };
+
+        // Pasang pengait otomatis ke fungsi render tabel utama Firebase Anda
+        if (typeof window.renderTable === "function") {
+            const originalRenderTable = window.renderTable;
+            window.renderTable = function() {
+                originalRenderTable();
+                refreshData();
+            };
+        } else {
+            // Jika renderTable belum siap, cek berkala tiap 2 detik untuk pembaruan data live
+            setInterval(refreshData, 2000);
+        }
     })();
 </script>
 <script>
