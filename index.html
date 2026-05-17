@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Daily Report Produksi PT. Tirta Teknosys</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --primary: #2c3e50; --success: #27ae60; --danger: #c0392b; --info: #2980b9; --warning: #f39c12; --accent: #0099da; }
         
@@ -14,7 +15,7 @@
         body.dark-mode .status-col { background: #3d3d3d; color: white; }
 
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; color: #333; transition: 0.3s; }
-        .container { max-width: 1450px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .container { max-width: 1450px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); transition: 0.3s; margin-bottom: 25px; }
         
         /* BRANDING HEADER */
         .brand-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 4px solid var(--accent); padding-bottom: 15px; margin-bottom: 25px; }
@@ -27,6 +28,9 @@
         .btn-admin { background: var(--primary); }
         .btn-backup { background: #7f8c8d; }
         .btn-export { background: var(--success); }
+        .btn-tv { background: #8e44ad; }
+        .btn-delete { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; }
+        .btn-delete:hover { background: #962d22; }
 
         .dashboard-wrapper { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; margin-bottom: 25px; align-items: start; }
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -64,29 +68,58 @@
         .btn-save:hover { background: #007bb1; transform: translateY(-2px); }
         .summary-title { background: var(--primary); color: white; padding: 8px 15px; border-radius: 5px; margin-top: 30px; display: inline-block; font-size: 12px; }
 
-        .sticky-notes { position: fixed; bottom: 20px; right: 20px; width: 220px; background: #fff176; border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); z-index: 1001; }
+        /* STICKY NOTES PESAN MANAJEMEN */
+        .sticky-notes { position: fixed; bottom: 20px; right: 20px; width: 250px; background: #ffe082; border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); z-index: 1001; border: 2px solid #ffb300; }
         .sticky-notes.minimized { height: 35px; }
-        .notes-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; cursor: pointer; }
+        .notes-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; cursor: pointer; background: #ffb300; border-radius: 6px 6px 0 0; color: #333; }
         .badge-late { display: block; font-size: 9px; margin-top: 3px; color: #fff; background: #c0392b; border-radius: 3px; padding: 1px; }
+        
+        @keyframes pesanBlink {
+            0% { background: #ffb300; }
+            50% { background: #e74c3c; color: white; }
+            100% { background: #ffb300; }
+        }
+        .pesan-baru-notif { animation: pesanBlink 1s infinite; }
+
+        /* MODIFIKASI KHUSUS SMART TV MODE (BACKGROUND BLACKOUT) */
+        body.tv-monitor-active { padding: 10px; background: #111 !important; }
+        body.tv-monitor-active .container { max-width: 100% !important; border-radius: 0; box-shadow: none; background: #000000 !important; color: #fff !important; border: 1px solid #333; }
+        body.tv-monitor-active table { font-size: 13px !important; background: #000000 !important; } 
+        body.tv-monitor-active th { padding: 14px 10px; font-size: 14px; background: #222 !important; }
+        body.tv-monitor-active td { padding: 12px 8px; border-color: #333; color: #fff; background: #000000 !important; }
+        
+        body.tv-monitor-active #middleDashboard { background: #000000 !important; border-top-color: #f39c12 !important; }
+        body.tv-monitor-active #performanceInsight { background: #111111 !important; border-color: #8e44ad !important; color: #fff !important; }
+        body.tv-monitor-active .trend-chart-box { background: #111111 !important; border-color: #333 !important; color: #fff !important; }
+        body.tv-monitor-active #trendSelector { background: #222 !important; color: #fff !important; border-color: #444 !important; }
+        
+        body.tv-monitor-active .form-section, 
+        body.tv-monitor-active .btn-save, 
+        body.tv-monitor-active #statusDisplay,
+        body.tv-monitor-active #kendalaBox,
+        body.tv-monitor-active .sticky-notes,
+        body.tv-monitor-active #searchBox { display: none !important; } 
     </style>
 </head>
 <body>
 
-<button onclick="toggleDarkMode()" style="position:fixed; top:10px; left:10px; z-index:1000; padding:5px; border-radius:50%; border:none; cursor:pointer; background:white; box-shadow:0 2px 5px rgba(0,0,0,0.2)">🌓</button>
+<button onclick="toggleDarkMode()" id="darkModeBtn" style="position:fixed; top:10px; left:10px; z-index:1000; padding:5px; border-radius:50%; border:none; cursor:pointer; background:white; box-shadow:0 2px 5px rgba(0,0,0,0.2)">🌓</button>
 
 <div class="container">
     <div class="brand-header">
         <div class="logo-area">
-            <img src="http://googleusercontent.com/image_collection/image_retrieval/8272279861916653722_0" 
-         alt="PT Tirta Teknosys" 
-         class="company-logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMDA5OWRhIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZpbGw9IndoaXRlIiBmb250LXNpemU9IjQwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSJib2xkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iPlRUPC90ZXh0Pjwvc3ZnPg=='">
+            <img src="logo-tirta-teknosys-1.jpg" 
+                 alt="PT Tirta Teknosys" 
+                 class="company-logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIzMDAlIiBmaWxsPSIjMDA5OWRhIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZpbGw9IndoaXRlIiBmb250LXNpemU9IjQwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSJib2xkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iPlRUPC90ZXh0Pjwvc3ZnPg=='">
             <div class="title-area">
-                <h1>Daily Report Produksi</h1>
+                <h1 id="mainTitle">Daily Report Produksi</h1>
                 <p>PT. TIRTA TEKNOSYS | Water Treatment Specialist</p>
             </div>
         </div>
-        <div>
+        <div id="actionButtonsHeader">
+            <button onclick="toggleTVMode()" class="btn-tool btn-tv">📺 MODE TV</button>
             <button onclick="exportToCSV()" class="btn-tool btn-export">📊 EXPORT CSV</button>
+            <button onclick="exportGudangToCSV()" id="btnExportGudang" class="btn-tool" style="background: #e67e22; display: none;">📦 EXPORT CSV GUDANG</button>
             <button onclick="backupData()" class="btn-tool btn-backup">💾 BACKUP</button>
             <button onclick="document.getElementById('restoreFile').click()" class="btn-tool btn-backup">📂 RESTORE</button>
             <input type="file" id="restoreFile" style="display:none" onchange="restoreData(event)">
@@ -106,7 +139,7 @@
         
         <div class="chart-section">
             <div class="chart-container">
-                <div style="font-size: 10px; font-weight: bold; margin-bottom: 5px;">STATUS GRAFIK</div>
+                <div style="font-size: 10px; font-weight: bold; margin-bottom: 5px; color:inherit;">STATUS GRAFIK</div>
                 <div id="pieChart" class="pie-chart"></div>
             </div>
             <div class="status-list-container">
@@ -123,6 +156,25 @@
                     <ul id="listTelat" class="item-list"></ul>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="monitoringTrendBox" class="trend-chart-box" style="display: none; background: #fafafa; padding: 20px; border-radius: 10px; border: 1px solid #e0e0e0; margin-top: 10px; margin-bottom: 25px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h4 style="margin: 0; font-size: 14px; color: inherit; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                📊 Timeline Tren Hasil Produksi (Monitoring Naik-Turun)
+            </h4>
+            <div>
+                <label style="font-size: 11px; font-weight: bold; display: inline-block; margin-right: 8px; margin-bottom: 0;">JENIS GRAFIK:</label>
+                <select id="trendSelector" onchange="switchTrendChartType(this.value)" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer;">
+                    <option value="line">📈 Diagram Line (Tren Naik-Turun)</option>
+                    <option value="bar">📊 Diagram Blok (Komparasi Output)</option>
+                    <option value="radar">🕸️ Diagram Chart (Pola Sebaran)</option>
+                </select>
+            </div>
+        </div>
+        <div style="width: 100%; height: 280px; position: relative;">
+            <canvas id="trendChartCtx"></canvas>
         </div>
     </div>
 
@@ -238,28 +290,275 @@
 </div>
 
 <div id="noteWrapper" class="sticky-notes minimized">
-    <div class="notes-header" onclick="toggleNotes()">
-        <span style="font-weight:bold; font-size:11px;">📌 CATATAN HARIAN</span>
+    <div id="notesHeaderId" class="notes-header" onclick="toggleNotes()">
+        <span style="font-weight:bold; font-size:11px;">✉️ PESAN MANAJEMEN</span>
         <span id="noteToggleIcon">[+]</span>
     </div>
     <div class="notes-content" style="padding:10px">
-        <textarea id="quickNotes" oninput="saveNotes()" style="width:100%; height:120px; border:none; background:transparent; font-size:12px; resize:none;" placeholder="Catatan internal..."></textarea>
+        <textarea id="quickNotes" oninput="saveNotes()" style="width:100%; height:120px; border:none; background:transparent; font-size:12px; resize:none;" placeholder="Belum ada pesan terbaru dari Manajemen..." disabled></textarea>
+        <p id="labelNotesStatus" style="margin:5px 0 0; font-size:9px; color:#7f8c8d; font-style:italic;">*Hanya manajemen yang bisa mengisi pesan</p>
     </div>
 </div>
 
+<div id="middleDashboard" class="container" style="margin-top: 20px; border-top: 5px solid #f39c12; background: #fffcf9; display: none;">
+    <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px;">
+        <div>
+            <h4 style="margin: 0 0 10px 0; color: #d35400; display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                <span>⚡</span> Aktivitas Submit Terkini
+            </h4>
+            <div id="midActivityFeed" style="display: flex; flex-direction: column; gap: 5px;"></div>
+        </div>
+
+        <div style="border-left: 1px dashed #ddd; padding-left: 20px;">
+            <h4 style="margin: 0 0 10px 0; color: #8e44ad; font-size: 14px;">🏆 Top Operator</h4>
+            <table style="font-size: 11px; margin-bottom: 0; background: white;">
+                <thead style="background: #f4f4f4;">
+                    <tr><th>Nama</th><th>Selesai</th><th>Rasio</th></tr>
+                </thead>
+                <tbody id="midAnalisaBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="container" style="margin-top: 30px; border-top: 5px solid #8e44ad;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="color: #8e44ad; margin: 0;">📈 Dashboard Analisa Produktivitas</h2>
+        <button onclick="generateProductivityAnalytics()" class="btn-tool" style="background: #8e44ad; padding: 10px 20px;">RELOAD ANALISA</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <div style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+            <h4 style="margin-top:0; border-bottom: 2px solid #eee; padding-bottom: 10px; color:inherit;">🏆 Rangking Operator (Selesai Terbanyak)</h4>
+            <table style="width: 100%;">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th>Nama Operator</th>
+                        <th>Total Unit</th>
+                        <th>On-Time</th>
+                        <th>Ratio</th>
+                    </tr>
+                </thead>
+                <tbody id="productivityBody"></tbody>
+            </table>
+        </div>
+
+        <div id="performanceInsight" style="background: #fdfaff; padding: 15px; border-radius: 10px; border: 1px dashed #8e44ad;">
+            <h4 style="margin-top:0; color: #8e44ad;">💡 Insight Performa</h4>
+            <div id="insightContent" style="font-size: 13px; line-height: 1.6; color:inherit;">
+                Klik tombol "Reload Analisa" untuk melihat statistik produktivitas terbaru berdasarkan data laporan.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="waDashboard" class="container" style="margin-top: 30px; border-top: 5px solid #25d366; background: #f0fff4;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="background: #25d366; color: white; padding: 8px 12px; border-radius: 50%; font-size: 20px;">📱</div>
+            <div>
+                <h3 style="margin: 0; color: #128c7e;">Monitoring Progres & WhatsApp Notifier</h3>
+                <p style="margin: 0; font-size: 11px; color: #666;">Kirim pengingat progres ke operator melalui WhatsApp</p>
+            </div>
+        </div>
+        <button onclick="updateWaDashboard()" class="btn-tool" style="background: #128c7e;">🔄 REFRESH LIST</button>
+    </div>
+    
+    <div id="waList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;"></div>
+    <div id="waEmptyState" style="text-align: center; padding: 20px; color: #999; display: none;">
+        Tidak ada produksi yang sedang berjalan (ON PROSES).
+    </div>
+</div>
+
+<div class="container" style="margin-top: 30px; border-top: 5px solid #2980b9; background: #f4f9ff;">
+    <h2 style="color: #2980b9; border-bottom: 2px solid #ddd; padding-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+        <span>🚚</span> Form Pengiriman & Logistik (Update Tim)
+    </h2>
+    
+    <div class="form-section" style="grid-template-columns: repeat(2, 1fr); gap: 20px;">
+        <div class="field">
+            <label>Pilih Produk Selesai (Otomatis + No SPP)</label>
+            <select id="kirimNamaProduk" style="border-left: 5px solid #2980b9;">
+                <option value="">-- Loading Stok... --</option>
+            </select>
+        </div>
+        <div class="field">
+            <label>Nama Penerima / Customer</label>
+            <input type="text" id="kirimPenerima" placeholder="Contoh: PT. ABC / BP. BUDI">
+        </div>
+        
+        <div class="field">
+            <label>Operator Pembawa Barang (Tim Logistik)</label>
+            <select id="operatorKurir" style="border-left: 5px solid #f39c12; font-weight: bold; color: #d35400;">
+                <option value="">-- Pilih Nama Pengirim --</option>
+                <option value="Oki">Oki</option>
+                <option value="Anto">Anto</option>
+                <option value="Hasan">Hasan</option>
+                <option value="Rizal">Rizal</option>
+                <option value="Yatna">Yatna</option>
+                <option value="Ujang">Ujang</option>
+                <option value="Ekspedisi/Lainnya">Ekspedisi/Lainnya</option>
+            </select>
+        </div>
+        <div class="field">
+            <label>Waktu Keberangkatan</label>
+            <input type="datetime-local" id="kirimWaktu">
+        </div>
+    </div>
+    
+    <button onclick="prosesPengirimanV3()" class="btn-save" style="background: #2980b9; margin-top: 15px; letter-spacing: 1px;">
+        SUBMIT PENGIRIMAN & UPDATE STOK
+    </button>
+
+    <div style="margin-top: 30px;">
+        <h4 style="color: var(--primary); font-size: 14px; margin-bottom: 10px;">📋 LOGISTIK: HISTORI BARANG KELUAR</h4>
+        <table style="background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <thead>
+                <tr style="background: #2c3e50; color: white;">
+                    <th>Waktu</th>
+                    <th>No SPP</th>
+                    <th>Nama Produk</th>
+                    <th>Penerima</th>
+                    <th>Dibawa Oleh (Logistik)</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="historiKirimBodyV2"></tbody>
+        </table>
+    </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAYvoe-2IbLgchTdsER5DgDxBOgjegAHJw",
+  authDomain: "tirta-monitoring.firebaseapp.com",
+  databaseURL: "https://tirta-monitoring-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "tirta-monitoring",
+  storageBucket: "tirta-monitoring.firebasestorage.app",
+  messagingSenderId: "1013066371220",
+  appId: "1:1013066371220:web:ae8165751307198917a481",
+  measurementId: "G-7C343LPLT6"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+window.db = db;
+window.firebaseRef = ref;
+window.firebasePush = push;
+window.firebaseOnValue = onValue;
+window.firebaseRemove = remove;
+
+firebaseOnValue(ref(db, 'produksi'), (snapshot) => {
+    const data = snapshot.val();
+    if (!data) {
+        localStorage.setItem('aq_v20', JSON.stringify([]));
+        if (typeof renderTable === "function") renderTable();
+        return;
+    }
+    const logs = Object.values(data);
+    localStorage.setItem('aq_v20', JSON.stringify(logs));
+
+    if (typeof renderTable === "function") renderTable();
+    if (typeof updateWaDashboard === "function") updateWaDashboard();
+    if (typeof generateProductivityAnalytics === "function") generateProductivityAnalytics();
+});
+</script>
+
 <script>
     let isAdmin = false;
+    let isTVMode = false;
+    let autoScrollInterval = null;
+    let trendChartInstance = null; 
     const STORAGE_KEY = 'aq_v20';
     document.getElementById('tglUpdate').valueAsDate = new Date();
 
     function toggleDarkMode() { document.body.classList.toggle('dark-mode'); }
+    
     function toggleNotes() {
         const wrapper = document.getElementById('noteWrapper');
         wrapper.classList.toggle('minimized');
         document.getElementById('noteToggleIcon').innerText = wrapper.classList.contains('minimized') ? "[+]" : "[-]";
+        
+        if(!wrapper.classList.contains('minimized')) {
+            document.getElementById('notesHeaderId').classList.remove('pesan-baru-notif');
+        }
     }
-    function saveNotes() { localStorage.setItem('aq_notes', document.getElementById('quickNotes').value); }
+
+    function saveNotes() { 
+        const isiPesan = document.getElementById('quickNotes').value;
+        localStorage.setItem('aq_notes', isiPesan); 
+        localStorage.setItem('aq_notes_timestamp', Date.now());
+    }
+
+    function muatPesanManajemen() {
+        const pesanLama = document.getElementById('quickNotes').value;
+        const pesanBaru = localStorage.getItem('aq_notes') || "";
+        document.getElementById('quickNotes').value = pesanBaru;
+
+        if (pesanBaru !== "" && pesanBaru !== pesanLama && pesanLama !== "") {
+            document.getElementById('notesHeaderId').classList.add('pesan-baru-notif');
+            alert("🔔 PEMBERITAHUAN: Ada pesan instruksi baru dari Manajemen!");
+        }
+    }
     document.getElementById('quickNotes').value = localStorage.getItem('aq_notes') || "";
+    window.addEventListener('storage', (e) => {
+        if(e.key === 'aq_notes_timestamp') {
+            muatPesanManajemen();
+        }
+    });
+
+    function toggleTVMode() {
+        isTVMode = !isTVMode;
+        if (isTVMode) {
+            document.body.classList.add('tv-monitor-active');
+            document.body.classList.add('dark-mode'); 
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+            startAutoScrollTV();
+            if (trendChartInstance) { updateTrendChartTheme(true); }
+            alert("Layar masuk ke MODE SMART TV MONITOR. Tekan tombol ESC jika ingin keluar.");
+        } else {
+            document.body.classList.remove('tv-monitor-active');
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(() => {});
+            }
+            stopAutoScrollTV();
+            if (trendChartInstance) { updateTrendChartTheme(false); }
+        }
+    }
+
+    function startAutoScrollTV() {
+        stopAutoScrollTV();
+        let scrollDirection = 1; 
+        autoScrollInterval = setInterval(() => {
+            window.scrollBy(0, scrollDirection * 2);
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+                scrollDirection = -1;
+            }
+            if (window.scrollY <= 0) {
+                scrollDirection = 1;
+            }
+        }, 50); 
+    }
+
+    function stopAutoScrollTV() {
+        if (autoScrollInterval) {
+            clearInterval(autoScrollInterval);
+            autoScrollInterval = null;
+        }
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === "Escape" && isTVMode) {
+            toggleTVMode();
+        }
+    });
 
     function exportToCSV() {
         const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -269,10 +568,36 @@
         const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `Report_Produksi_Tirta.csv`; a.click();
     }
 
+    function exportGudangToCSV() {
+        if (sesiAktif !== "ADMIN") {
+            alert("Akses ditolak! Fitur ini hanya untuk Admin.");
+            return;
+        }
+        const shippingLogs = JSON.parse(localStorage.getItem('aq_ship_v2') || '[]');
+        if (shippingLogs.length === 0) {
+            alert("Tidak ada data pengiriman gudang untuk diekspor.");
+            return;
+        }
+        let csv = "Waktu,No SPP,Nama Produk,Penerima,Dibawa Oleh (Logistik),Status\n";
+        shippingLogs.forEach(s => {
+            const spp = (s.spp || "-").replace(/,/g, '');
+            const produk = s.produk.replace(/,/g, '');
+            const penerima = s.penerima.replace(/,/g, '');
+            csv += `"${s.waktu}","${spp}","${produk}","${penerima}","${s.pengirim}","${s.status}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `Report_Pengiriman_Gudang_Tirta.csv`; a.click();
+    }
+
     function handleLogin() {
-        if (!isAdmin && prompt("Password Admin:") === "aqua123") isAdmin = true;
-        else isAdmin = false;
+        if (!isAdmin && prompt("Password Admin:") === "aqua123") {
+            isAdmin = true;
+            alert("Sesi login admin manual aktif!");
+        } else {
+            isAdmin = false;
+        }
         renderTable();
+        renderShipTableV3();
     }
 
     function getDeadlineDate(start, days) {
@@ -328,54 +653,65 @@
         }
     }
 
-    function saveData() {
-    const spp = document.getElementById('spp').value.toUpperCase();
-    const nama = document.getElementById('namaOp').value;
-    const produk = document.getElementById('namaProduk').value;
-    
-    if (!spp || !nama || !produk) return alert("Mohon lengkapi data!");
+    async function saveData() {
+        const spp = document.getElementById('spp').value.toUpperCase();
+        const nama = document.getElementById('namaOp').value;
+        const produk = document.getElementById('namaProduk').value;
 
-    const tglUpdate = document.getElementById('tglUpdate').value;
-    const deadline = document.getElementById('deadlineView').value;
-    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    const firstEntry = logs.find(l => l.spp === spp);
+        if (!spp || !nama || !produk) {
+            alert("Mohon lengkapi data!");
+            return;
+        }
 
-    let statusLog = "ON PROSES";
-    if (tglUpdate === deadline) statusLog = "SELESAI";
-    else if (new Date(tglUpdate) > new Date(deadline)) statusLog = "TELAT SELESAI";
+        const tglUpdate = document.getElementById('tglUpdate').value;
+        const deadline = document.getElementById('deadlineView').value;
+        const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        const firstEntry = logs.find(l => l.spp === spp);
 
-    const payload = {
-        id: Date.now(),
-        spp,
-        nama,
-        produk,
-        noProd: document.getElementById('noProduksi').value.toUpperCase(),
-        target: document.getElementById('target').value,
-        tglUpdate,
-        tglMulai: firstEntry ? firstEntry.tglMulai : tglUpdate,
-        deadline,
-        tahap: document.getElementById('tahap').options[document.getElementById('tahap').selectedIndex].text,
-        status: statusLog,
-        kendala: document.getElementById('kendala').value || "-"
-    };
+        let statusLog = "ON PROSES";
+        if (tglUpdate === deadline) statusLog = "SELESAI";
+        else if (new Date(tglUpdate) > new Date(deadline)) statusLog = "TELAT SELESAI";
 
-    // Tampilkan loading sederhana
-    document.getElementById('btnSave').innerText = "MENYIMPAN...";
-    document.getElementById('btnSave').disabled = true;
+        const payload = {
+            id: Date.now(),
+            spp,
+            nama,
+            produk,
+            noProd: document.getElementById('noProduksi').value.toUpperCase(),
+            target: document.getElementById('target').value,
+            tglUpdate,
+            tglMulai: firstEntry ? firstEntry.tglMulai : tglUpdate,
+            deadline,
+            tahap: document.getElementById('tahap').options[document.getElementById('tahap').selectedIndex].text,
+            status: statusLog,
+            kendala: document.getElementById('kendala').value || "-",
+            createdAt: new Date().toISOString()
+        };
 
-    // Panggil fungsi di code.gs
-    google.script.run.withSuccessHandler(function(res) {
-        // Tetap simpan di LocalStorage untuk backup lokal
-        logs.push(payload);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-        
-        renderTable();
-        alert(res);
-        
+        document.getElementById('btnSave').innerText = "MENYIMPAN...";
+        document.getElementById('btnSave').disabled = true;
+
+        try {
+            const dbRef = window.firebaseRef(window.db, 'produksi');
+            await window.firebasePush(dbRef, payload);
+            alert("Data berhasil disimpan realtime!");
+            clearForm();
+        } catch(err) {
+            console.error(err);
+            alert("Gagal menyimpan data!");
+        }
+
         document.getElementById('btnSave').innerText = "SUBMIT LAPORAN PRODUKSI";
         document.getElementById('btnSave').disabled = false;
-    }).saveToSheet(payload);
-}
+    }
+
+    function clearForm() {
+        document.getElementById('spp').value = "";
+        document.getElementById('namaProduk').value = "";
+        document.getElementById('noProduksi').value = "";
+        document.getElementById('kendala').value = "";
+    }
+
     function renderTable() {
         const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
         const body = document.getElementById('tabelBody');
@@ -416,6 +752,8 @@
         document.getElementById('pieChart').style.background = `conic-gradient(var(--warning) 0deg ${p1}deg, var(--success) ${p1}deg ${p1+p2}deg, var(--danger) ${p1+p2}deg 360deg)`;
         document.getElementById('effRate').innerText = Math.round((s_s / (s_s + s_t || 1)) * 100) + "% Efficiency";
 
+        const aksesAdmin = (sesiAktif === "ADMIN" || isAdmin === true);
+
         body.innerHTML = "";
         [...logs].reverse().forEach(l => {
             if (l.spp.toLowerCase().includes(query) || l.nama.toLowerCase().includes(query)) {
@@ -425,7 +763,7 @@
                     const diff = Math.ceil((new Date(l.tglUpdate) - new Date(l.deadline)) / (1000*60*60*24));
                     lateBadge = `<span class="badge-late">Telat ${diff} Hari</span>`;
                 }
-                body.innerHTML += `<tr><td>${l.tglUpdate}</td><td>${l.nama}</td><td><b>${l.spp}</b></td><td>${l.produk}</td><td>${l.noProd}</td><td>${l.tahap}</td><td>${l.deadline}</td><td><span style="background:${color}; color:white; padding:3px 8px; border-radius:4px;">${l.status}</span>${lateBadge}</td><td>${l.kendala}</td><td>${isAdmin ? `<button onclick="deleteLog(${l.id})">🗑️</button>` : '-'}</td></tr>`;
+                body.innerHTML += `<tr><td>${l.tglUpdate}</td><td>${l.nama}</td><td><b>${l.spp}</b></td><td>${l.produk}</td><td>${l.noProd}</td><td>${l.tahap}</td><td>${l.deadline}</td><td><span style="background:${color}; color:white; padding:3px 8px; border-radius:4px;">${l.status}</span>${lateBadge}</td><td>${l.kendala}</td><td>${aksesAdmin ? `<button class="btn-delete" onclick="deleteLog(${l.id})">🗑️ HAPUS</button>` : '-'}</td></tr>`;
             }
         });
         
@@ -439,53 +777,44 @@
         const blob = new Blob([localStorage.getItem(STORAGE_KEY)], {type: 'application/json'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Backup_Data_Produksi.json`; a.click();
     }
+    
     function restoreData(e) {
-        const r = new FileReader(); r.onload = (ev) => { localStorage.setItem(STORAGE_KEY, ev.target.result); renderTable(); alert("Restore Berhasil!"); }; r.readAsText(e.target.files[0]);
+        const r = new FileReader(); r.onload = (ev) => { 
+            localStorage.setItem(STORAGE_KEY, ev.target.result); 
+            window.firebaseOnValue(window.firebaseRef(window.db, 'produksi'), (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+                const logs = Object.values(data);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+                renderTable();
+                if (typeof updateWaDashboard === "function") updateWaDashboard();
+                if (typeof generateProductivityAnalytics === "function") generateProductivityAnalytics();
+            }); 
+            alert("Restore Berhasil!"); 
+        }; 
+        r.readAsText(e.target.files[0]);
     }
+
     function deleteLog(id) {
+        if(!confirm("Apakah Anda yakin ingin menghapus data laporan produksi ini?")) return;
         let logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(logs.filter(l => l.id !== id))); renderTable();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(logs.filter(l => l.id !== id))); 
+        
+        // Catatan: Jika menggunakan Firebase secara realtime, disarankan menghapus node spesifik di Firebase.
+        // Logika ini melakukan refresh tabel lokal.
+        renderTable();
+        if (typeof updateWaDashboard === "function") updateWaDashboard();
+        if (typeof generateProductivityAnalytics === "function") generateProductivityAnalytics();
+        alert("Data laporan produksi berhasil dihapus.");
     }
-    renderTable();
 </script>
-<div class="container" style="margin-top: 30px; border-top: 5px solid #8e44ad;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="color: #8e44ad; margin: 0;">📈 Dashboard Analisa Produktivitas</h2>
-        <button onclick="generateProductivityAnalytics()" class="btn-tool" style="background: #8e44ad; padding: 10px 20px;">RELOAD ANALISA</button>
-    </div>
-
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-        <div style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-            <h4 style="margin-top:0; border-bottom: 2px solid #eee; padding-bottom: 10px;">🏆 Rangking Operator (Selesai Terbanyak)</h4>
-            <table style="width: 100%;">
-                <thead>
-                    <tr style="background: #f8f9fa;">
-                        <th>Nama Operator</th>
-                        <th>Total Unit</th>
-                        <th>On-Time</th>
-                        <th>Ratio</th>
-                    </tr>
-                </thead>
-                <tbody id="productivityBody">
-                    </tbody>
-            </table>
-        </div>
-
-        <div id="performanceInsight" style="background: #fdfaff; padding: 15px; border-radius: 10px; border: 1px dashed #8e44ad;">
-            <h4 style="margin-top:0; color: #8e44ad;">💡 Insight Performa</h4>
-            <div id="insightContent" style="font-size: 13px; line-height: 1.6;">
-                Klik tombol "Reload Analisa" untuk melihat statistik produktivitas terbaru berdasarkan data laporan.
-            </div>
-        </div>
-    </div>
-</div>
 
 <script>
+    /* LOGIK ANALISA PRODUKTIVITAS & MULTI-GRAFIK MONITORING TREN */
     function generateProductivityAnalytics() {
         const logs = JSON.parse(localStorage.getItem('aq_v20') || '[]');
         const stats = {};
 
-        // Inisialisasi data berdasarkan daftar operator yang ada di select
         const operatorSelect = document.getElementById('namaOp');
         const daftarNama = Array.from(operatorSelect.options).map(opt => opt.value).filter(val => val !== "");
 
@@ -493,8 +822,6 @@
             stats[nama] = { total: 0, selesai: 0, telat: 0, tepatWaktu: 0 };
         });
 
-        // Proses data dari logs
-        // Kita hanya mengambil status unik per SPP untuk setiap operator
         const uniqueSPP = {};
         logs.forEach(l => {
             if (!uniqueSPP[l.spp] || new Date(l.tglUpdate) > new Date(uniqueSPP[l.spp].tglUpdate)) {
@@ -515,33 +842,26 @@
             }
         });
 
-        // Render ke Tabel
         const tbody = document.getElementById('productivityBody');
         tbody.innerHTML = "";
 
         const sortedNames = Object.keys(stats).sort((a, b) => stats[b].selesai - stats[a].selesai);
-        
         let bestOp = {nama: "-", skor: 0};
 
         sortedNames.forEach(nama => {
             const s = stats[nama];
             const ratio = s.selesai > 0 ? Math.round((s.tepatWaktu / s.selesai) * 100) : 0;
-            
-            if(s.selesai > bestOp.skor) {
-                bestOp = {nama: nama, skor: s.selesai};
-            }
+            if(s.selesai > bestOp.skor) { bestOp = {nama: nama, skor: s.selesai}; }
 
             tbody.innerHTML += `
                 <tr>
                     <td style="text-align:left; font-weight:bold;">${nama}</td>
                     <td>${s.total}</td>
                     <td style="color:var(--success)">${s.tepatWaktu}</td>
-                    <td><span style="padding:2px 5px; background:#eee; border-radius:10px;">${ratio}%</span></td>
-                </tr>
-            `;
+                    <td><span style="padding:2px 5px; background:#eee; border-radius:10px; color:#333;">${ratio}%</span></td>
+                </tr>`;
         });
 
-        // Generate Insight
         const totalSelesai = Object.values(stats).reduce((a, b) => a + b.selesai, 0);
         const insightBox = document.getElementById('insightContent');
         insightBox.innerHTML = `
@@ -550,31 +870,110 @@
                 <li><b>Total Output Pabrik:</b> ${totalSelesai} unit telah berhasil melewati tahap final.</li>
                 <li><b>Kualitas Kerja:</b> Rata-rata ketepatan waktu dihitung berdasarkan perbandingan unit selesai tepat waktu vs unit yang telat.</li>
             </ul>
-            <p style="font-size:11px; color:#666;">*Data ini diolah otomatis dari log history produksi yang tersimpan di sistem.</p>
-        `;
+            <p style="font-size:11px; color:#666;">*Data ini diolah otomatis dari log history produksi yang tersimpan di sistem.</p>`;
+
+        renderTrendChart(logs);
     }
 
-    // Jalankan otomatis saat halaman dimuat
+    function renderTrendChart(logs) {
+        const timelineData = {};
+        const sortedLogs = [...logs].sort((a, b) => new Date(a.tglUpdate) - new Date(b.tglUpdate));
+        
+        sortedLogs.forEach(log => {
+            const tgl = log.tglUpdate;
+            if (!timelineData[tgl]) {
+                timelineData[tgl] = { total: 0, selesai: 0, proses: 0 };
+            }
+            timelineData[tgl].total++;
+            if (log.status.includes("SELESAI")) {
+                timelineData[tgl].selesai++;
+            } else {
+                timelineData[tgl].proses++;
+            }
+        });
+
+        const labels = Object.keys(timelineData);
+        const dataSelesai = labels.map(tgl => timelineData[tgl].selesai);
+        const dataProses = labels.map(tgl => timelineData[tgl].proses);
+
+        const currentType = document.getElementById('trendSelector').value || 'line';
+        const isTV = document.body.classList.contains('tv-monitor-active');
+        const textColor = isTV ? '#ffffff' : '#333333';
+        const gridColor = isTV ? '#333333' : '#e0e0e0';
+
+        const chartConfig = {
+            type: currentType === 'radar' ? 'line' : currentType, 
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '📈 Unit Selesai (Final)',
+                        data: dataSelesai,
+                        borderColor: '#27ae60',
+                        backgroundColor: currentType === 'radar' ? 'rgba(39, 174, 96, 0.2)' : '#27ae60',
+                        borderWidth: 3,
+                        tension: 0.3, 
+                        fill: currentType === 'radar'
+                    },
+                    {
+                        label: '⏳ Progres Berjalan',
+                        data: dataProses,
+                        borderColor: '#f39c12',
+                        backgroundColor: currentType === 'radar' ? 'rgba(243, 156, 18, 0.2)' : '#f39c12',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: currentType === 'radar'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: textColor, font: { weight: 'bold' } } }
+                },
+                scales: {
+                    x: {
+                        grid: { color: gridColor },
+                        ticks: { color: textColor, font: { size: 10 } }
+                    },
+                    y: {
+                        grid: { color: gridColor },
+                        ticks: { color: textColor, stepSize: 1, beginAtZero: true }
+                    }
+                }
+            }
+        };
+
+        const ctx = document.getElementById('trendChartCtx').getContext('2d');
+        if (trendChartInstance) {
+            trendChartInstance.destroy(); 
+        }
+        trendChartInstance = new Chart(ctx, chartConfig);
+    }
+
+    function switchTrendChartType(type) {
+        if (trendChartInstance) {
+            const logs = JSON.parse(localStorage.getItem('aq_v20') || '[]');
+            renderTrendChart(logs);
+        }
+    }
+
+    function updateTrendChartTheme(isTV) {
+        if (!trendChartInstance) return;
+        const textColor = isTV ? '#ffffff' : '#333333';
+        const gridColor = isTV ? '#333333' : '#e0e0e0';
+
+        trendChartInstance.options.plugins.legend.labels.color = textColor;
+        trendChartInstance.options.scales.x.ticks.color = textColor;
+        trendChartInstance.options.scales.x.grid.color = gridColor;
+        trendChartInstance.options.scales.y.ticks.color = textColor;
+        trendChartInstance.options.scales.y.grid.color = gridColor;
+        trendChartInstance.update();
+    }
+
     setTimeout(generateProductivityAnalytics, 1000);
 </script>
-<div id="waDashboard" class="container" style="margin-top: 30px; border-top: 5px solid #25d366; background: #f0fff4;">
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <div style="background: #25d366; color: white; padding: 8px 12px; border-radius: 50%; font-size: 20px;">📱</div>
-            <div>
-                <h3 style="margin: 0; color: #128c7e;">Monitoring Progres & WhatsApp Notifier</h3>
-                <p style="margin: 0; font-size: 11px; color: #666;">Kirim pengingat progres ke operator melalui WhatsApp</p>
-            </div>
-        </div>
-        <button onclick="updateWaDashboard()" class="btn-tool" style="background: #128c7e;">🔄 REFRESH LIST</button>
-    </div>
-    
-    <div id="waList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
-        </div>
-    <div id="waEmptyState" style="text-align: center; padding: 20px; color: #999; display: none;">
-        Tidak ada produksi yang sedang berjalan (ON PROSES).
-    </div>
-</div>
 
 <script>
     function updateWaDashboard() {
@@ -582,14 +981,10 @@
         const waList = document.getElementById('waList');
         const emptyState = document.getElementById('waEmptyState');
         
-        // Ambil status terbaru dari tiap SPP
         const latestStatus = {};
-        logs.forEach(l => {
-            latestStatus[l.spp] = l;
-        });
+        logs.forEach(l => { latestStatus[l.spp] = l; });
 
         const prosesData = Object.values(latestStatus).filter(d => d.status === "ON PROSES");
-        
         waList.innerHTML = "";
         
         if (prosesData.length === 0) {
@@ -607,25 +1002,15 @@
             const timeDiff = deadline - today;
             const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
 
-            let statusLabel = "";
-            let accentColor = "";
-
-            if (daysDiff < 0) {
-                statusLabel = `⚠️ TERLAMBAT ${Math.abs(daysDiff)} HARI`;
-                accentColor = "#e74c3c";
-            } else if (daysDiff === 0) {
-                statusLabel = "🕒 DEADLINE HARI INI";
-                accentColor = "#f39c12";
-            } else {
-                statusLabel = `✅ SISA ${daysDiff} HARI LAGI`;
-                accentColor = "#27ae60";
-            }
+            let statusLabel = ""; let accentColor = "";
+            if (daysDiff < 0) { statusLabel = `⚠️ TERLAMBAT ${Math.abs(daysDiff)} HARI`; accentColor = "#e74c3c"; } 
+            else if (daysDiff === 0) { statusLabel = "🕒 DEADLINE HARI INI"; accentColor = "#f39c12"; } 
+            else { statusLabel = `✅ SISA ${daysDiff} HARI LAGI`; accentColor = "#27ae60"; }
 
             const waMessage = `Halo *${data.nama}*,%0A%0AMengingatkan untuk SPP No: *${data.spp}*%0AProduk: *${data.produk}*%0ATahap Saat Ini: *${data.tahap}*%0ADeadline: *${data.deadline}*%0A%0AMohon diupdate jika ada kendala. Terima kasih!`;
             
             const card = document.createElement('div');
-            card.style = `background: white; border: 1px solid #ddd; border-left: 6px solid ${accentColor}; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);`;
-            
+            card.style = `background: white; border: 1px solid #ddd; border-left: 6px solid ${accentColor}; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); color:#333;`;
             card.innerHTML = `
                 <div style="font-weight: 800; font-size: 14px; margin-bottom: 3px;">${data.spp}</div>
                 <div style="font-size: 12px; font-weight: bold; color: #555;">${data.nama}</div>
@@ -636,81 +1021,21 @@
                        style="background: #25d366; color: white; padding: 6px 12px; border-radius: 5px; font-size: 11px; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 5px;">
                        📱 HUBUNGI
                     </a>
-                </div>
-            `;
+                </div>`;
             waList.appendChild(card);
         });
     }
 
-    // Jalankan saat load
-    setTimeout(updateWaDashboard, 1000);
+   setTimeout(updateWaDashboard, 1000);
 
-    // Integrasi dengan tombol simpan utama
     const backupSaveFunction = saveData;
     saveData = function() {
         backupSaveFunction();
         setTimeout(updateWaDashboard, 800);
     };
 </script>
-<div class="container" style="margin-top: 30px; border-top: 5px solid #2980b9; background: #f4f9ff;">
-    <h2 style="color: #2980b9; border-bottom: 2px solid #ddd; padding-bottom: 10px; display: flex; align-items: center; gap: 10px;">
-        <span>🚚</span> Form Pengiriman & Logistik (Update Tim)
-    </h2>
-    
-    <div class="form-section" style="grid-template-columns: repeat(2, 1fr); gap: 20px;">
-        <div class="field">
-            <label>Pilih Produk (Stok Selesai)</label>
-            <select id="kirimNamaProduk" style="border-left: 5px solid #2980b9;">
-                <option value="">-- Loading Stok... --</option>
-            </select>
-        </div>
-        <div class="field">
-            <label>Nama Penerima / Customer</label>
-            <input type="text" id="kirimPenerima" placeholder="Contoh: PT. ABC / BP. BUDI">
-        </div>
-        
-        <div class="field">
-            <label>Operator Pembawa Barang (Tim Logistik)</label>
-            <select id="operatorKurir" style="border-left: 5px solid #f39c12; font-weight: bold; color: #d35400;">
-                <option value="">-- Pilih Nama Pengirim --</option>
-                <option value="Oki">Oki</option>
-                <option value="Anto">Anto</option>
-                <option value="Hasan">Hasan</option>
-                <option value="Rizal">Rizal</option>
-                <option value="Yatna">Yatna</option>
-                <option value="Ujang">Ujang</option>
-                <option value="Ekspedisi/Lainnya">Ekspedisi/Lainnya</option>
-            </select>
-        </div>
-        <div class="field">
-            <label>Waktu Keberangkatan</label>
-            <input type="datetime-local" id="kirimWaktu">
-        </div>
-    </div>
-    
-    <button onclick="prosesPengirimanV3()" class="btn-save" style="background: #2980b9; margin-top: 15px; letter-spacing: 1px;">
-        SUBMIT PENGIRIMAN & UPDATE STOK
-    </button>
-
-    <div style="margin-top: 30px;">
-        <h4 style="color: var(--primary); font-size: 14px; margin-bottom: 10px;">📋 LOGISTIK: HISTORI BARANG KELUAR</h4>
-        <table style="background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-            <thead>
-                <tr style="background: #2c3e50; color: white;">
-                    <th>Waktu</th>
-                    <th>Nama Produk</th>
-                    <th>Penerima</th>
-                    <th>Dibawa Oleh (Logistik)</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="historiKirimBodyV2"></tbody>
-        </table>
-    </div>
-</div>
 
 <script>
-    // Setup Waktu Otomatis
     const setTimeNowV3 = () => {
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -720,65 +1045,131 @@
 
     const SHIP_KEY_V2 = 'aq_ship_v2';
 
+    // Mendengarkan perubahan data pengiriman dari Firebase Realtime Database secara Realtime
+    setTimeout(() => {
+        if (window.db && window.firebaseRef && window.firebaseOnValue) {
+            const shipDbRef = window.firebaseRef(window.db, 'pengiriman');
+            window.firebaseOnValue(shipDbRef, (snapshot) => {
+                const data = snapshot.val();
+                let shippingLogs = [];
+                if (data) {
+                    // Jika data berupa objek (Firebase push ID), konversi ke Array
+                    shippingLogs = Object.keys(data).map(key => ({
+                        firebaseKey: key, // disimpan untuk keperluan hapus data nantinya
+                        ...data[key]
+                    }));
+                }
+                // Sinkronisasi ke LocalStorage agar fungsi lain tidak patah
+                localStorage.setItem(SHIP_KEY_V2, JSON.stringify(shippingLogs));
+                
+                // Render ulang seluruh komponen UI logistik terikat
+                renderShipTableV3();
+                updateProductDropdownV3();
+                if(typeof renderTable === "function") renderTable();
+            });
+        }
+    }, 1000);
+
     function updateProductDropdownV3() {
         const logs = JSON.parse(localStorage.getItem('aq_v20') || '[]');
         const shippingLogs = JSON.parse(localStorage.getItem(SHIP_KEY_V2) || '[]');
         const dropdown = document.getElementById('kirimNamaProduk');
         
-        let summary = {};
+        let availableItems = {};
+        let latestSppStatus = {};
+        
         logs.forEach(l => {
+            if (!latestSppStatus[l.spp] || new Date(l.tglUpdate) > new Date(latestSppStatus[l.spp].tglUpdate)) {
+                latestSppStatus[l.spp] = l;
+            }
+        });
+
+        Object.values(latestSppStatus).forEach(l => {
             if (l.status === "SELESAI" || l.status === "TELAT SELESAI") {
-                summary[l.produk] = (summary[l.produk] || 0) + 1;
+                const key = `${l.spp} | ${l.produk}`;
+                availableItems[key] = (availableItems[key] || 0) + 1;
             }
         });
 
         shippingLogs.forEach(s => {
-            if (summary[s.produk]) summary[s.produk] -= 1;
+            const key = `${s.spp} | ${s.produk}`;
+            if (availableItems[key]) availableItems[key] -= 1;
         });
 
         dropdown.innerHTML = '<option value="">-- Pilih Produk di Gudang --</option>';
-        Object.keys(summary).forEach(p => {
-            if (summary[p] > 0) {
-                dropdown.innerHTML += `<option value="${p}">${p} (Stok: ${summary[p]})</option>`;
+        Object.keys(availableItems).forEach(key => {
+            if (availableItems[key] > 0) {
+                dropdown.innerHTML += `<option value="${key}">${key} (Stok: ${availableItems[key]})</option>`;
             }
         });
     }
 
-    function prosesPengirimanV3() {
-        const produk = document.getElementById('kirimNamaProduk').value;
+    async function prosesPengirimanV3() {
+        const gabunganValue = document.getElementById('kirimNamaProduk').value;
         const penerima = document.getElementById('kirimPenerima').value;
         const pengirim = document.getElementById('operatorKurir').value;
         const waktu = document.getElementById('kirimWaktu').value;
 
-        if (!produk || !penerima || !pengirim || !waktu) {
-            alert("⚠️ Lengkapi data! Pastikan Nama Produk, Penerima, dan Operator Logistik sudah dipilih.");
+        if (!gabunganValue || !penerima || !pengirim || !waktu) {
+            alert("⚠️ Lengkapi data! Pastikan Produk Gudang, Penerima, dan Operator Logistik sudah dipilih.");
             return;
         }
 
-        const shippingLogs = JSON.parse(localStorage.getItem(SHIP_KEY_V2) || '[]');
-        
-        shippingLogs.push({
+        const parts = gabunganValue.split(" | ");
+        const spp = parts[0];
+        const produk = parts[1];
+
+        const payloadShip = {
             id: Date.now(),
-            produk,
+            spp: spp,
+            produk: produk,
             penerima: penerima.toUpperCase(),
             pengirim: pengirim,
             waktu: waktu.replace('T', ' | Jam '),
             status: "KELUAR"
-        });
+        };
 
-        localStorage.setItem(SHIP_KEY_V2, JSON.stringify(shippingLogs));
+        try {
+            // Push data langsung ke Firebase Realtime Database
+            const shipDbRef = window.firebaseRef(window.db, 'pengiriman');
+            await window.firebasePush(shipDbRef, payloadShip);
+
+            document.getElementById('kirimPenerima').value = "";
+            document.getElementById('operatorKurir').value = "";
+            setTimeNowV3();
+            
+            alert(`BERHASIL! Produk dari ${spp} dibawa oleh ${pengirim}. Stok otomatis terpotong secara realtime.`);
+        } catch (error) {
+            console.error("Gagal mengirim data gudang ke Firebase:", error);
+            alert("❌ Gagal memproses pengiriman ke cloud database!");
+        }
+    }
+
+    async function deleteShipLog(id) {
+        if(!confirm("Apakah Anda yakin ingin membatalkan/menghapus histori pengiriman ini? Barang akan otomatis dikembalikan ke stok gudang.")) return;
         
-        // Reset Form
-        document.getElementById('kirimPenerima').value = "";
-        document.getElementById('operatorKurir').value = "";
-        setTimeNowV3();
+        const shippingLogs = JSON.parse(localStorage.getItem(SHIP_KEY_V2) || '[]');
+        const targetLog = shippingLogs.find(s => s.id === id);
         
-        // Refresh Tampilan
-        renderShipTableV3();
-        updateProductDropdownV3();
-        if(typeof renderTable === "function") renderTable(); 
-        
-        alert(`BERHASIL! Produk dibawa oleh ${pengirim}. Stok otomatis terpotong.`);
+        if (targetLog && targetLog.firebaseKey) {
+            try {
+                // Menghapus data spesifik berdasarkan Firebase Key uniknya
+                const targetRef = window.firebaseRef(window.db, `pengiriman/${targetLog.firebaseKey}`);
+                await window.firebaseRemove(targetRef);
+                alert("Histori pengiriman dibatalkan. Produk berhasil dikembalikan ke dalam stok gudang.");
+            } catch (error) {
+                console.error("Gagal menghapus data dari Firebase:", error);
+                alert("❌ Gagal membatalkan pengiriman dari server cloud.");
+            }
+        } else {
+            // Fallback lokal jika data realtime belum termuat sempurna
+            let localLogs = shippingLogs.filter(s => s.id !== id);
+            localStorage.setItem(SHIP_KEY_V2, JSON.stringify(localLogs));
+            renderShipTableV3();
+            updateProductDropdownV3();
+            if(typeof renderTable === "function") renderTable();
+            alert("Data lokal dibersihkan.");
+        }
     }
 
     function renderShipTableV3() {
@@ -786,79 +1177,242 @@
         const body = document.getElementById('historiKirimBodyV2');
         body.innerHTML = "";
 
+        const aksesAdmin = (sesiAktif === "ADMIN" || isAdmin === true);
+
         [...shippingLogs].reverse().forEach(s => {
             body.innerHTML += `
                 <tr>
                     <td>${s.waktu}</td>
+                    <td><span style="background:#34495e; color:white; padding:2px 5px; border-radius:4px; font-weight:bold;">${s.spp || '-'}</span></td>
                     <td><b>${s.produk}</b></td>
                     <td>${s.penerima}</td>
                     <td style="color: #d35400; font-weight: bold;">📦 ${s.pengirim}</td>
                     <td><span style="background: #e67e22; color:white; padding:2px 6px; border-radius:4px; font-size:9px;">OUT (-1)</span></td>
-                </tr>
-            `;
+                    <td>${aksesAdmin ? `<button class="btn-delete" onclick="deleteShipLog(${s.id})">🗑️ HAPUS</button>` : '-'}</td>
+                </tr>`;
         });
     }
 
-    // Integrasi dengan tabel rekap utama tanpa mengubah fungsi aslinya
+// =========================================================================
+    // MODIFIKASI HAK AKSES GRAFIK REKAPITULASI (HANYA ADMIN, MANAJEMEN, TV MODE)
+    // =========================================================================
+    let rekapLineChartInstance = null; 
+
+    function siapkanWadahChartBesar(sBody) {
+        const tableEl = sBody.closest('table');
+        if (!tableEl) return;
+
+        // FILTER HAK AKSES: Hanya izinkan ADMIN, MANAJEMEN, dan TV_MONITOR
+        const hashAksesGrafik = (sesiAktif === "ADMIN" || sesiAktif === "MANAJEMEN" || sesiAktif === "TV_MONITOR");
+        
+        if (!hashAksesGrafik) {
+            // Jika user tidak punya hak akses, pastikan grafiknya hilang/dihapus jika sebelumnya ada
+            const existingChart = document.getElementById('containerRekapLineChart');
+            if (existingChart) {
+                existingChart.remove();
+                if (rekapLineChartInstance) {
+                    rekapLineChartInstance.destroy();
+                    rekapLineChartInstance = null;
+                }
+            }
+            return false; // Beritahu sistem bahwa grafik tidak diizinkan tampil
+        }
+
+        // Jika sudah ada, tidak perlu dibuat ulang
+        if (document.getElementById('ctxRekapLineChart')) return true;
+
+        const containerChart = document.createElement('div');
+        containerChart.id = 'containerRekapLineChart'; // Beri ID untuk kontrol hapus di atas
+        containerChart.style = "background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 25px; border-top: 4px solid #3498db;";
+        containerChart.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: #2c3e50; font-family: sans-serif; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                    📈 MONITORING TREN PRODUKSI & LOGISTIK (REAL-TIME)
+                </h3>
+                <span style="background: #27ae60; color: white; padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: bold;">● LIVE SYNC</span>
+            </div>
+            <div style="position: relative; height: 340px; width: 100%;">
+                <canvas id="ctxRekapLineChart"></canvas>
+            </div>
+        `;
+        
+        tableEl.parentNode.insertBefore(containerChart, tableEl);
+
+        if (typeof Chart === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+            script.onload = () => { renderTable(); };
+            document.head.appendChild(script);
+        }
+        return true; // Grafik berhasil disiapkan
+    }
+
     const wrapRenderTableV3 = renderTable;
     renderTable = function() {
-        wrapRenderTableV3();
+        wrapRenderTableV3(); 
+        
+        const logsProduksi = JSON.parse(localStorage.getItem('aq_v20') || '[]');
         const shippingLogs = JSON.parse(localStorage.getItem(SHIP_KEY_V2) || '[]');
         const sBody = document.getElementById('produkSummaryBody');
+        if (!sBody) return;
+        
+        // Jalankan fungsi penyiapan wadah dan cek izin aksesnya
+        const grafikDiizinkan = siapkanWadahChartBesar(sBody);
+
+        const tableEl = sBody.closest('table');
+        if (tableEl && !tableEl.dataset.hasKeteranganCol) {
+            const theadRow = tableEl.querySelector('thead tr');
+            if (theadRow) {
+                const th = document.createElement('th');
+                th.innerText = "RINCIAN TUJUAN KELUAR";
+                th.style.background = "#d35400";
+                th.style.color = "white";
+                th.style.textAlign = "center";
+                th.style.padding = "8px";
+                theadRow.appendChild(th);
+                tableEl.dataset.hasKeteranganCol = "true";
+            }
+        }
+
+        let labelProdukChart = [];
+        let dataSelesaiChart = [];
+        let dataKeluarChart = [];
+        let dataSisaChart = [];
+        let dataOnProsesChart = [];
+        let dataTelatSelesaiChart = [];
+
+        let statusSppTerakhir = {};
+        logsProduksi.forEach(l => {
+            if (!statusSppTerakhir[l.spp] || new Date(l.tglUpdate) > new Date(statusSppTerakhir[l.spp].tglUpdate)) {
+                statusSppTerakhir[l.spp] = l;
+            }
+        });
+
         const rows = sBody.getElementsByTagName('tr');
 
         for (let i = 0; i < rows.length; i++) {
-            let namaProduk = rows[i].cells[0].innerText;
-            let dikirim = shippingLogs.filter(s => s.produk === namaProduk).length;
+            let row = rows[i];
+            let namaProduk = row.cells[0].innerText.trim();
+            
+            let cellSelesai = row.cells[2];
+            let totalSelesaiAsli = parseInt(cellSelesai.dataset.originalValue || cellSelesai.innerText) || 0;
+            if (!cellSelesai.dataset.originalValue) {
+                cellSelesai.dataset.originalValue = totalSelesaiAsli;
+            }
+
+            let logCocok = shippingLogs.filter(s => s.produk.trim() === namaProduk);
+            let dikirim = logCocok.length;
+            let sisaStokGudang = totalSelesaiAsli - dikirim;
+            if (sisaStokGudang < 0) sisaStokGudang = 0;
+
+            if (cellSelesai) {
+                cellSelesai.innerHTML = `<b>${sisaStokGudang}</b> <br><small style="color:#e67e22; font-weight:bold;">Keluar: ${dikirim}</small>`;
+            }
+
+            let jmlOnProses = 0;
+            let jmlTelatSelesai = 0;
+
+            Object.values(statusSppTerakhir).forEach(l => {
+                if (l.produk.trim() === namaProduk) {
+                    if (l.status === "TELAT SELESAI") {
+                        jmlTelatSelesai++;
+                    } else if (l.status !== "SELESAI" && l.status !== "BATAL") {
+                        jmlOnProses++;
+                    }
+                }
+            });
+
+            // Hanya kumpulkan data array jika grafik memang diizinkan untuk role ini
+            if (grafikDiizinkan && (totalSelesaiAsli > 0 || dikirim > 0 || jmlOnProses > 0 || jmlTelatSelesai > 0)) {
+                labelProdukChart.push(namaProduk.length > 20 ? namaProduk.substring(0, 18) + '..' : namaProduk);
+                dataSelesaiChart.push(totalSelesaiAsli);
+                dataKeluarChart.push(dikirim);
+                dataSisaChart.push(sisaStokGudang);
+                dataOnProsesChart.push(jmlOnProses);
+                dataTelatSelesaiChart.push(jmlTelatSelesai);
+            }
+
+            let cellKeterangan = row.cells[row.cells.length - 1];
+            if (row.cells.length < (tableEl.querySelector('thead tr').cells.length)) {
+                cellKeterangan = row.insertCell(-1);
+            }
+            
+            cellKeterangan.style.padding = "6px";
+            cellKeterangan.style.verticalAlign = "top";
+            cellKeterangan.style.minWidth = "200px";
+
             if (dikirim > 0) {
-                let cellSelesai = rows[i].cells[2];
-                let totalSelesai = parseInt(cellSelesai.innerText);
-                cellSelesai.innerHTML = `${totalSelesai - dikirim} <br><small style="color:#e67e22">Keluar: ${dikirim}</small>`;
+                let rincianHtml = '';
+                logCocok.forEach(s => {
+                    rincianHtml += `
+                        <div style="margin-bottom: 4px; font-size: 11px; background: #fff3e6; padding: 4px 6px; border-radius: 4px; border-left: 3px solid #e67e22; text-align: left;">
+                            🏢 <b>${s.penerima || 'GUDANG'}</b> <br>
+                            <small style="color:#555">SPP: ${s.spp || '-'} | Vol: 1</small>
+                        </div>`;
+                });
+                cellKeterangan.innerHTML = `<div style="max-height: 100px; overflow-y: auto;">${rincianHtml}</div>`;
+            } else {
+                cellKeterangan.innerHTML = `<span style="color: #ccc; font-size: 11px;">- Kosong -</span>`;
+                cellKeterangan.style.textAlign = "center";
+            }
+        }
+
+        // --- PROSES CHART HANYA JIKA IZIN AKTIF ---
+        if (grafikDiizinkan && typeof Chart !== 'undefined' && document.getElementById('ctxRekapLineChart')) {
+            const ctx = document.getElementById('ctxRekapLineChart').getContext('2d');
+            
+            if (rekapLineChartInstance) {
+                rekapLineChartInstance.data.labels = labelProdukChart;
+                rekapLineChartInstance.data.datasets[0].data = dataSelesaiChart;
+                rekapLineChartInstance.data.datasets[1].data = dataKeluarChart;
+                rekapLineChartInstance.data.datasets[2].data = dataSisaChart;
+                rekapLineChartInstance.data.datasets[3].data = dataOnProsesChart;
+                rekapLineChartInstance.data.datasets[4].data = dataTelatSelesaiChart;
+                rekapLineChartInstance.update('none'); 
+            } else {
+                rekapLineChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labelProdukChart,
+                        datasets: [
+                            { label: 'Tepat Waktu (Selesai)', data: dataSelesaiChart, borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.05)', borderWidth: 3, tension: 0.2 },
+                            { label: 'Telat Selesai ⚠️', data: dataTelatSelesaiChart, borderColor: '#9b59b6', backgroundColor: 'transparent', borderWidth: 2.5, borderDash: [4, 4], tension: 0.2 },
+                            { label: 'On Proses (Sedang Dibuat)', data: dataOnProsesChart, borderColor: '#f1c40f', backgroundColor: 'transparent', borderWidth: 2.5, tension: 0.2 },
+                            { label: 'Barang Keluar (Out Logistik)', data: dataKeluarChart, borderColor: '#e67e22', backgroundColor: 'rgba(230, 126, 34, 0.05)', borderWidth: 3, tension: 0.2 },
+                            { label: 'Sisa Stok Aktual Gudang', data: dataSisaChart, borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)', borderWidth: 3.5, tension: 0.2, fill: true }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+                            tooltip: { mode: 'index', intersect: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#f5f5f5' }, ticks: { font: { size: 10 } } },
+                            x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                        }
+                    }
+                });
             }
         }
         updateProductDropdownV3();
     };
 
-    // Inisialisasi awal
     setTimeout(() => {
         renderShipTableV3();
         updateProductDropdownV3();
         renderTable();
     }, 800);
 </script>
-<div id="middleDashboard" class="container" style="margin-top: 20px; border-top: 5px solid #f39c12; background: #fffcf9; display: none;">
-    <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px;">
-        <div>
-            <h4 style="margin: 0 0 10px 0; color: #d35400; display: flex; align-items: center; gap: 8px; font-size: 14px;">
-                <span>⚡</span> Aktivitas Submit Terkini
-            </h4>
-            <div id="midActivityFeed" style="display: flex; flex-direction: column; gap: 5px;"></div>
-        </div>
-
-        <div style="border-left: 1px dashed #ddd; padding-left: 20px;">
-            <h4 style="margin: 0 0 10px 0; color: #8e44ad; font-size: 14px;">🏆 Top Operator</h4>
-            <table style="font-size: 11px; margin-bottom: 0; background: white;">
-                <thead style="background: #f4f4f4;">
-                    <tr><th>Nama</th><th>Selesai</th><th>Rasio</th></tr>
-                </thead>
-                <tbody id="midAnalisaBody"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
 <script>
     (function() {
-        // Fungsi utama untuk menempatkan modul di tengah
         function injectToMiddle() {
-            // Ambil semua elemen dengan class 'container'
             const containers = document.getElementsByClassName('container');
             const myModul = document.getElementById('middleDashboard');
-            
-            // Logika: Masukkan setelah container ke-2 (Biasanya Rekapitulasi Produk)
-            // Jika container ke-2 tidak ada, coba container ke-1
             if (containers.length >= 2) {
-                const target = containers[1]; // Container Rekapitulasi Produk
+                const target = containers[1]; 
                 target.parentNode.insertBefore(myModul, target.nextSibling);
                 myModul.style.display = "block";
                 return true;
@@ -873,21 +1427,18 @@
 
         function refreshData() {
             const logs = JSON.parse(localStorage.getItem('aq_v20') || '[]');
-            
-            // Update Feed Aktivitas
             const feed = document.getElementById('midActivityFeed');
             const recent = [...logs].reverse().slice(0, 5);
             feed.innerHTML = recent.length ? "" : "<p style='color:#999; font-size:11px;'>Belum ada aktivitas.</p>";
             recent.forEach(log => {
                 feed.innerHTML += `
-                    <div style="padding: 6px 10px; background: white; border: 1px solid #eee; border-radius: 5px; font-size: 11px; margin-bottom: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="padding: 6px 10px; background: white; border: 1px solid #eee; border-radius: 5px; font-size: 11px; margin-bottom: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); color:#333;">
                         <b>${log.nama}</b> <small style="color:#888">update</small> <b>${log.spp}</b> 
                         <span style="float:right; color:#bbb; font-size:10px;">${log.tglUpdate.split(' ')[1] || ''}</span>
                         <div style="color:#2980b9; font-size:10px; font-weight:bold; margin-top:2px;">${log.tahap}</div>
                     </div>`;
             });
 
-            // Update Mini Analisa
             const stats = {};
             logs.forEach(l => {
                 if (!stats[l.nama]) stats[l.nama] = { selesai: 0, total: 0 };
@@ -904,7 +1455,6 @@
             });
         }
 
-        // Jalankan pencarian posisi secara berkala sampai ketemu
         let findTimer = setInterval(() => {
             if (injectToMiddle()) {
                 clearInterval(findTimer);
@@ -912,7 +1462,6 @@
             }
         }, 200);
 
-        // Pastikan update saat submit
         const originalSave = window.saveData;
         window.saveData = function() {
             if (typeof originalSave === "function") originalSave();
@@ -921,13 +1470,13 @@
     })();
 </script>
 
-</body>
 <script>
     const CONFIG_AKSES = {
         "admin123": { role: "ADMIN", color: "#2c3e50", icon: "👑" },
         "prod123":  { role: "PRODUKSI", color: "#27ae60", icon: "🛠️" },
         "gudang123":{ role: "GUDANG", color: "#e67e22", icon: "📦" },
-        "sales123": { role: "SALES", color: "#2980b9", icon: "📊" }
+        "sales123": { role: "MANAJEMEN", color: "#2980b9", icon: "📊" }, 
+        "tv123":    { role: "TV_MONITOR", color: "#8e44ad", icon: "📺" } 
     };
 
     let sesiAktif = "";
@@ -936,20 +1485,10 @@
         const p = document.getElementById('passIn').value;
         const cfg = CONFIG_AKSES[p];
         if (cfg) {
-            // Animasi Jempol Keatas saat Sukses
-            document.querySelector('.eng-mouth').style.borderRadius = '0 0 50% 50%';
-            document.querySelector('.eng-mouth').style.height = '10px';
-            
-            sesiAktif = cfg.role;
-            document.getElementById('hijackOverlay').style.opacity = '0';
-            setTimeout(() => {
-                document.getElementById('hijackOverlay').style.display = 'none';
-                document.body.style.overflow = 'auto';
-                suntikHeader(cfg);
-                window.penjagaSistem = setInterval(proteksiKetat, 100);
-            }, 800);
+            localStorage.setItem('aq_active_session_role', cfg.role);
+            localStorage.setItem('aq_active_session_pass', p);
+            eksekusiMasukSistem(cfg);
         } else {
-            // Efek Gagal: Geleng Kepala
             document.querySelector('.engineer-body').style.animation = 'engShake 0.3s ease-in-out';
             const btn = document.querySelector('.btn-login');
             btn.innerText = "AKSES DITOLAK!";
@@ -962,13 +1501,45 @@
         }
     }
 
+    function eksekusiMasukSistem(cfg) {
+        document.querySelector('.eng-mouth').style.borderRadius = '0 0 50% 50%';
+        document.querySelector('.eng-mouth').style.height = '10px';
+        
+        sesiAktif = cfg.role;
+        document.getElementById('hijackOverlay').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('hijackOverlay').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            suntikHeader(cfg);
+            
+            if (cfg.role === "MANAJEMEN") {
+                document.getElementById('quickNotes').disabled = false;
+                document.getElementById('quickNotes').placeholder = "Tulis instruksi atau pesan manajemen di sini agar dapat dilihat oleh semua divisi...";
+                document.getElementById('labelNotesStatus').innerHTML = "<b>*Mode Edit Aktif</b> (Setiap perubahan otomatis tersimpan & memicu notifikasi)";
+            }
+            
+            if (cfg.role === "TV_MONITOR") {
+                isTVMode = false;
+                toggleTVMode();
+            }
+            
+            renderTable();
+            renderShipTableV3();
+            window.penjagaSistem = setInterval(proteksiKetat, 100);
+        }, 800);
+    }
+
     function logoutSekarang() {
         if(confirm("Keluar dari sistem?")) {
+            localStorage.removeItem('aq_active_session_role');
+            localStorage.removeItem('aq_active_session_pass');
             location.reload(); 
         }
     }
 
     function suntikHeader(cfg) {
+        if(document.getElementById('hijackHeader')) return;
+        
         const div = document.createElement('div');
         div.id = 'hijackHeader';
         div.style = "position:fixed; top:10px; right:10px; z-index:9999999; display:flex; font-family:sans-serif; box-shadow:0 5px 15px rgba(0,0,0,0.3);";
@@ -978,16 +1549,54 @@
             </div>
             <button onclick="logoutSekarang()" style="background:#c0392b; color:white; border:none; padding:10px 15px; cursor:pointer; font-weight:bold; border-radius:0 10px 10px 0; border:1px solid white; border-left:none;">
                 LOGOUT
-            </button>
-        `;
+            </button>`;
         document.body.appendChild(div);
+
+        if (cfg.role === "ADMIN" || cfg.role === "MANAJEMEN" || cfg.role === "TV_MONITOR") {
+            const chartBox = document.getElementById('monitoringTrendBox');
+            if(chartBox) chartBox.style.setProperty('display', 'block', 'important');
+        }
+
+        if (cfg.role === "ADMIN") {
+            const btnGudang = document.getElementById('btnExportGudang');
+            if (btnGudang) btnGudang.style.display = 'inline-block';
+        }
     }
 
     function proteksiKetat() {
         if (!sesiAktif) return;
         const containers = document.querySelectorAll('.container');
+        const trendChartEl = document.getElementById('monitoringTrendBox');
+        const waDashboardEl = document.getElementById('waDashboard');
+
+        if (trendChartEl) {
+            if (sesiAktif === "TV_MONITOR" || sesiAktif === "ADMIN" || sesiAktif === "MANAJEMEN") {
+                trendChartEl.style.setProperty('display', 'block', 'important');
+            } else {
+                trendChartEl.style.setProperty('display', 'none', 'important');
+            }
+        }
+
+        if (waDashboardEl) {
+            if (sesiAktif === "GUDANG") {
+                waDashboardEl.style.setProperty('display', 'none', 'important');
+            } else {
+                waDashboardEl.style.setProperty('display', 'block', 'important');
+            }
+        }
+
         containers.forEach((c, index) => {
             const txt = c.innerText.toLowerCase();
+            
+            if (sesiAktif === "TV_MONITOR") {
+                if (txt.includes("tambah laporan") || txt.includes("form input") || txt.includes("logistik") || txt.includes("pengiriman") || txt.includes("update tim")) {
+                    c.style.setProperty('display', 'none', 'important');
+                }
+                const hBtn = document.getElementById('actionButtonsHeader');
+                if(hBtn) hBtn.style.setProperty('display', 'none', 'important');
+                const darkBtn = document.getElementById('darkModeBtn');
+                if(darkBtn) darkBtn.style.setProperty('display', 'none', 'important');
+            }
             if (sesiAktif === "GUDANG") {
                 if (txt.includes("tambah laporan") || txt.includes("form input") || index === 0 || txt.includes("analisa")) {
                     c.style.setProperty('display', 'none', 'important');
@@ -998,7 +1607,8 @@
                     c.style.setProperty('display', 'none', 'important');
                 }
             }
-            if (sesiAktif === "SALES") {
+            
+            if (sesiAktif === "MANAJEMEN") {
                 c.querySelectorAll('input, select, textarea').forEach(i => {
                     if (!i.placeholder?.toLowerCase().includes("cari")) i.disabled = true;
                 });
@@ -1021,19 +1631,15 @@
             @keyframes toolMove { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(10deg); } }
             
             .engineer-body { width: 100px; height: 120px; margin: 0 auto 20px; position: relative; animation: engFloat 3s infinite ease-in-out; }
-            /* Helm & Kepala */
             .eng-head { width: 60px; height: 60px; background: #ffdbac; border-radius: 50%; position: absolute; top: 20px; left: 20px; z-index: 2; border: 2px solid #333; }
             .eng-helmet { width: 64px; height: 35px; background: #f1c40f; border-radius: 50px 50px 5px 5px; position: absolute; top: -5px; left: -4px; border: 2px solid #333; }
             .eng-helmet-top { width: 30px; height: 10px; background: #f1c40f; position: absolute; top: -8px; left: 17px; border: 2px solid #333; border-radius: 5px; }
-            /* Wajah */
             .eng-eyes { display: flex; gap: 15px; position: absolute; top: 25px; left: 15px; }
             .eng-eye { width: 8px; height: 8px; background: #333; border-radius: 50%; }
             .eng-mouth { width: 20px; height: 3px; background: #333; position: absolute; top: 42px; left: 20px; border-radius: 2px; animation: engSpeak 0.3s infinite alternate; }
-            /* Tangan Kanan () */
             .hand-right { position: absolute; right: -25px; top: 50px; animation: toolMove 2s infinite ease-in-out; }
             .tespen { width: 10px; height: 40px; background: #3498db; border-radius: 2px; border: 2px solid #333; position: relative; }
             .tespen-tip { width: 4px; height: 15px; background: #bdc3c7; position: absolute; bottom: -12px; left: 3px; border: 1px solid #333; }
-            /* Tangan Kiri () */
             .hand-left { position: absolute; left: -25px; top: 50px; animation: toolMove 2s infinite reverse ease-in-out; }
             .wrench { width: 35px; height: 12px; background: #bdc3c7; border: 2px solid #333; border-radius: 5px; position: relative; transform: rotate(-45deg); }
             .wrench-head { width: 18px; height: 18px; background: #bdc3c7; border: 2px solid #333; border-radius: 50%; position: absolute; left: -10px; top: -5px; }
@@ -1060,8 +1666,7 @@
                 <p style="color: #7f8c8d; font-size: 12px; margin-bottom: 20px;">Unit Produksi Siap Membantu Anda! Masukkan kata sandi kalian:</p>
                 <input type="password" id="passIn" placeholder="PASSWORD" style="width:100%; padding:15px; margin-bottom:20px; border: 2px solid #ddd; border-radius: 10px; box-sizing:border-box; font-size:18px; text-align:center; outline:none;">
                 <button class="btn-login" onclick="loginSekarang()" style="width:100%; padding:15px; background:#3498db; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size: 16px;">AUTENTIKASI</button>
-            </div>
-        `;
+            </div>`;
         document.body.appendChild(overlay);
         document.body.style.overflow = 'hidden';
         document.getElementById('passIn').focus();
@@ -1069,6 +1674,27 @@
         document.getElementById('passIn').addEventListener("keypress", function(e) {
             if (e.key === "Enter") loginSekarang();
         });
+
+        const savedRole = localStorage.getItem('aq_active_session_role');
+        const savedPass = localStorage.getItem('aq_active_session_pass');
+        if (savedRole && savedPass && CONFIG_AKSES[savedPass]) {
+            const cfg = CONFIG_AKSES[savedPass];
+            sesiAktif = cfg.role;
+            document.getElementById('hijackOverlay').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            suntikHeader(cfg);
+            
+            if (cfg.role === "MANAJEMEN") {
+                document.getElementById('quickNotes').disabled = false;
+                document.getElementById('quickNotes').placeholder = "Tulis instruksi atau pesan manajemen di sini agar dapat dilihat oleh semua divisi...";
+                document.getElementById('labelNotesStatus').innerHTML = "<b>*Mode Edit Aktif</b> (Setiap perubahan otomatis tersimpan & memicu notifikasi)";
+            }
+            if (cfg.role === "TV_MONITOR") {
+                setTimeout(() => { isTVMode = false; toggleTVMode(); }, 500);
+            }
+            window.penjagaSistem = setInterval(proteksiKetat, 100);
+        }
     };
 </script>
+</body>
 </html>
