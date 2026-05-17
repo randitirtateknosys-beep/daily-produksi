@@ -1625,6 +1625,7 @@ firebaseOnValue(ref(db, 'produksi'), (snapshot) => {
         const trendChartEl = document.getElementById('monitoringTrendBox');
         const waDashboardEl = document.getElementById('waDashboard');
 
+        // VALIDASI GRAFIK MONITORING TREN (Hanya Aktif di Mode TV, Admin, Manajemen)
         if (trendChartEl) {
             if (sesiAktif === "TV_MONITOR" || sesiAktif === "ADMIN" || sesiAktif === "MANAJEMEN") {
                 trendChartEl.style.setProperty('display', 'block', 'important');
@@ -1633,8 +1634,9 @@ firebaseOnValue(ref(db, 'produksi'), (snapshot) => {
             }
         }
 
+        // VALIDASI MONITORING WHATSAPP NOTIFIER (Disembunyikan dari Gudang)
         if (waDashboardEl) {
-            if (sesiAktif === "GUDANG") {
+            if (sesiAktif === "GUDANG" || sesiAktif === "TV_MONITOR") {
                 waDashboardEl.style.setProperty('display', 'none', 'important');
             } else {
                 waDashboardEl.style.setProperty('display', 'block', 'important');
@@ -1644,26 +1646,54 @@ firebaseOnValue(ref(db, 'produksi'), (snapshot) => {
         containers.forEach((c, index) => {
             const txt = c.innerText.toLowerCase();
             
+            // =========================================================================
+            // PERBAIKAN LOGIKA KHUSUS MODE: TV_MONITOR (HANYA VIEW, INPUT DITUTUP)
+            // =========================================================================
             if (sesiAktif === "TV_MONITOR") {
-                if (txt.includes("tambah laporan") || txt.includes("form input") || txt.includes("logistik") || txt.includes("pengiriman") || txt.includes("update tim")) {
+                // 1. Sembunyikan Form Input Utama & Form Tambah Laporan agar tidak bisa input
+                if (txt.includes("tambah laporan") || txt.includes("form input") || txt.includes("update tim")) {
                     c.style.setProperty('display', 'none', 'important');
                 }
+                
+                // 2. Pastikan Modul Tengah (Aktivitas & Top Operator) HARUS TETAP MUNCUL
+                const myModul = document.getElementById('middleDashboard');
+                if (myModul) {
+                    myModul.style.setProperty('display', 'block', 'important');
+                }
+
+                // 3. Matikan semua element input/select/action di dalam container yang tersisa (jika ada)
+                c.querySelectorAll('input, select, textarea').forEach(i => {
+                    i.disabled = true;
+                });
+                c.querySelectorAll('button').forEach(b => {
+                    const bt = b.innerText.toLowerCase();
+                    if (bt.includes("simpan") || bt.includes("submit") || bt.includes("save") || bt.includes("hapus") || b.classList.contains('btn-delete')) {
+                        b.style.setProperty('display', 'none', 'important');
+                    }
+                });
+
+                // Sembunyikan tombol aksi atas & tombol dark mode bawaan
                 const hBtn = document.getElementById('actionButtonsHeader');
                 if(hBtn) hBtn.style.setProperty('display', 'none', 'important');
                 const darkBtn = document.getElementById('darkModeBtn');
                 if(darkBtn) darkBtn.style.setProperty('display', 'none', 'important');
             }
+
+            // LOG SAKLAR UNTUK DIVISI GUDANG (Bawaan Asli Anda)
             if (sesiAktif === "GUDANG") {
                 if (txt.includes("tambah laporan") || txt.includes("form input") || index === 0 || txt.includes("analisa")) {
                     c.style.setProperty('display', 'none', 'important');
                 }
             }
+
+            // LOG SAKLAR UNTUK DIVISI PRODUKSI (Bawaan Asli Anda)
             if (sesiAktif === "PRODUKSI") {
                 if (txt.includes("logistik") || txt.includes("pengiriman")) {
                     c.style.setProperty('display', 'none', 'important');
                 }
             }
             
+            // LOG SAKLAR UNTUK MANAJEMEN (Bawaan Asli Anda)
             if (sesiAktif === "MANAJEMEN") {
                 c.querySelectorAll('input, select, textarea').forEach(i => {
                     if (!i.placeholder?.toLowerCase().includes("cari")) i.disabled = true;
@@ -1677,7 +1707,6 @@ firebaseOnValue(ref(db, 'produksi'), (snapshot) => {
             }
         });
     }
-
     window.onload = function() {
         const style = document.createElement('style');
         style.innerHTML = `
