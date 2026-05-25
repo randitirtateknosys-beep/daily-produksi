@@ -173,7 +173,17 @@
         .badge { padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         .bg-reguler { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); } .bg-buffer { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); } .bg-urgent { background: rgba(244, 63, 94, 0.15); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.3); }
 
-        .status-pending { background: rgba(100, 116, 139, 0.2); color: #cbd5e1; border: 1px solid #64748b; } .status-proses { background: rgba(2, 132, 199, 0.2); color: #38bdf8; border: 1px solid #0284c7; } .status-selesai { background: rgba(22, 163, 74, 0.2); color: #4ade80; border: 1px solid #16a34a; } .status-selesaiawal { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; } .status-telat { background: rgba(225, 29, 72, 0.2); color: #f43f5e; border: 1px solid #e11d48; } .status-idle { background: rgba(217, 119, 6, 0.2); color: #fbbf24; border: 1px solid #d97706; } .status-stoppage { background: rgba(225, 29, 72, 0.2); color: #f43f5e; border: 1px solid #e11d48; }
+        /* KELAS STATUS SERAGAM */
+        .status-pending { background: rgba(100, 116, 139, 0.2); color: #cbd5e1; border: 1px solid #64748b; } 
+        .status-proses { background: rgba(2, 132, 199, 0.2); color: #38bdf8; border: 1px solid #0284c7; } 
+        .status-selesai { background: rgba(22, 163, 74, 0.2); color: #4ade80; border: 1px solid #16a34a; } 
+        .status-selesaiawal { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; } 
+        .status-telat { background: rgba(225, 29, 72, 0.2); color: #f43f5e; border: 1px solid #e11d48; } 
+        .status-idle { background: rgba(217, 119, 6, 0.2); color: #fbbf24; border: 1px solid #d97706; } 
+        .status-stoppage { background: rgba(225, 29, 72, 0.2); color: #f43f5e; border: 1px solid #e11d48; }
+        .status-takeover { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; }
+        .status-lanjutbesok { background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid #6366f1; }
+        
         .btn-action-trigger { background: rgba(30, 41, 59, 0.6); color: #e2e8f0; border: 1px solid #334155; padding: 6px 14px; font-size: 11px; font-weight: 800; border-radius: 6px; cursor: pointer; text-transform: uppercase; min-width: 90px; }
         .btn-action-trigger:hover { background: rgba(30, 41, 59, 0.9); border-color: var(--blue-glow); }
 
@@ -467,9 +477,9 @@
                 <h3>⏱️ Monitoring Progres & WhatsApp Notifier</h3>
                 <div class="table-container">
                     <table>
-                        <thead><tr><th>No. SPP</th><th>Nama Item / Produk</th><th>Penanggung Jawab</th><th>Batas Akhir (Deadline)</th><th>Sisa Waktu Pengerjaan</th><th>Status Berjalan</th><th>Aksi Pengingat</th></tr></thead>
+                        <thead><tr><th>No. SPP</th><th>Nama Item / Produk</th><th>Batas Akhir (Deadline)</th><th>Sisa Waktu Pengerjaan</th><th>Status Berjalan</th><th>Aksi Pengingat</th></tr></thead>
                         <tbody id="wa-monitor-body">
-                            <tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:25px;">Belum ada SPP aktif yang dikunci batas durasinya untuk dimonitor.</td></tr>
+                            <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:25px;">Belum ada SPP aktif yang dikunci batas durasinya untuk dimonitor.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -701,16 +711,7 @@
                         </select>
                         <input type="text" id="maker-manual" class="manual-input" placeholder="Ketik nama...">
                     </div>
-                    <div class="form-group">
-                        <label>Penerima Tugas</label>
-                        <select id="spp-receiver" required>
-                            <option value="">-- Pilih Penerima --</option>
-                            <option value="Suhendra">Suhendra</option><option value="Hario Rizki">Hario Rizki</option>
-                            <option value="Dhema Ferlandi Putra">Dhema Ferlandi Putra</option><option value="Muhammad Iqbal">Muhammad Iqbal</option>
-                            <option value="Mohamad Ramadan">Mohamad Ramadan</option><option value="Ngatiyo">Ngatiyo</option>
-                            <option value="Khairuddin">Khairuddin</option><option value="Budi Septiyanto">Budi Septiyanto</option>
-                        </select>
-                    </div>
+                    
                     <div class="form-group full-width-group">
                         <label>Sifat Urgensi</label>
                         <div class="radio-container">
@@ -735,7 +736,7 @@
             </div>
             <div class="table-container" id="table-spp-container">
                 <table id="spp-master-table">
-                    <thead><tr id="spp-master-head"><th>No. SPP</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Pembuat</th><th>Penerima SPP</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th></tr></thead>
+                    <thead><tr id="spp-master-head"><th>No. SPP</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Pembuat</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th></tr></thead>
                     <tbody id="spp-master-body"></tbody>
                 </table>
             </div>
@@ -892,6 +893,21 @@
         const clockEl = document.getElementById('realtime-clock');
         if(clockEl) clockEl.innerText = `${dateStr} | ${timeStr}`;
     }, 1000);
+
+    // --- FUNGSI HELPER UNTUK DESAIN BADGE STATUS SERAGAM ---
+    window.getStatusBadge = function(status) {
+        let badgeClass = "status-proses"; // default
+        if (status === 'Pending') badgeClass = "status-pending";
+        else if (status === 'Idle Time') badgeClass = "status-idle"; 
+        else if (status === 'Stoppage') badgeClass = "status-stoppage";
+        else if (status === 'Takeover') badgeClass = "status-takeover"; 
+        else if (status === 'Lanjutkan Besok') badgeClass = "status-lanjutbesok";
+        else if (status === 'Selesai') badgeClass = "status-selesai"; 
+        else if (status === 'Selesai Awal') badgeClass = "status-selesaiawal";
+        else if (status === 'Telat Selesai') badgeClass = "status-telat";
+        
+        return `<span class="badge ${badgeClass}">${status}</span>`;
+    }
 
     // --- FITUR PENCARIAN CEPAT GLOBAL (CENTRALIZED SEARCH KHUSUS) ---
     window.performCentralizedSearch = function() {
@@ -1176,7 +1192,7 @@
         }
 
         const isDev = window.currentUserRole === "RANDI";
-        document.getElementById('spp-master-head').innerHTML = `<th>No. SPP</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Pembuat</th><th>Penerima SPP</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
+        document.getElementById('spp-master-head').innerHTML = `<th>No. SPP</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Pembuat</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('spl-history-head').innerHTML = `<th>No. SPL</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Penanggung Jawab</th><th>Penerima Tugas</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('shipment-history-head').innerHTML = `<th>Keberangkatan</th><th>Produk</th><th>No. SPP Asal</th><th>Operator Logistik</th><th>Customer</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('operator-history-head').innerHTML = `<th>No. Prod</th><th>No. SPP</th><th>Nama Operator</th><th>Kondisi Progres</th><th>Tahap Produksi</th><th>Waktu Input</th><th>Target Deadline</th><th>Status Hasil</th><th>Keterangan / Poin Tambahan</th>${isDev ? '<th>Aksi</th>' : ''}`;
@@ -1370,7 +1386,6 @@
         const date = document.getElementById('spp-date');
         const product = document.getElementById('spp-product');
         const maker = document.getElementById('spp-maker');
-        const receiver = document.getElementById('spp-receiver');
         const urgensi = document.querySelector('input[name="spp-priority"][value="Reguler"]');
 
         const now = new Date();
@@ -1385,7 +1400,6 @@
             maker.value = "Rizal";
             toggleManualInput(maker, 'maker-manual');
         }
-        if (receiver) receiver.value = "Suhendra";
         if (urgensi) urgensi.checked = true;
         alert("✅ Form Rilis SPP Baru telah diisi dengan contoh.");
     };
@@ -1617,7 +1631,7 @@
     window.renderRealtimeWAMonitor = function() {
         const tbody = document.getElementById('wa-monitor-body'); if (!tbody) return;
         let monitoredSPP = window.databaseMasterSPP.filter(i => !['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && i.isLocked);
-        if (monitoredSPP.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:25px;">Belum ada SPP aktif yang dikunci batas durasinya untuk dimonitor.</td></tr>'; return; }
+        if (monitoredSPP.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:25px;">Belum ada SPP aktif yang dikunci batas durasinya untuk dimonitor.</td></tr>'; return; }
 
         let htmlRows = "";
         monitoredSPP.forEach(item => {
@@ -1629,15 +1643,16 @@
                 const lateMs = Math.abs(timeDiff); const h = Math.floor(lateMs / (1000 * 60 * 60)); const m = Math.floor((lateMs % (1000 * 60 * 60)) / (1000 * 60));
                 cdText = `⚠️ Telat ${h} Jam ${m} Menit`; cdStyle = "color: var(--danger-glow); font-weight: 900;";
             }
-            let statusClass = "status-proses"; if (item.status === 'Idle Time') statusClass = "status-idle"; if (item.status === 'Stoppage') statusClass = "status-stoppage";
-            if (item.status === 'Takeover') statusClass = "status-takeover"; if (item.status === 'Lanjutkan Besok') statusClass = "status-lanjutbesok";
-            htmlRows += `<tr style="border-left: 3px solid var(--purple-glow);"><td><strong>${item.no}</strong></td><td><span style="font-weight:700;">${item.product}</span></td><td><b>👤 ${item.receiver}</b></td><td><code style="color:var(--blue-glow); font-weight:700;">${item.formattedDeadline}</code></td><td><span style="${cdStyle}">${cdText}</span></td><td><span class="badge ${statusClass}">${item.status}</span></td><td><button type="button" class="btn-wa" onclick="sendWhatsAppReminder('${item.no}', '${cdText.replace(/'/g, "\\'")}')">Kirim WA</button></td></tr>`;
+            
+            let badgeHTML = window.getStatusBadge(item.status);
+
+            htmlRows += `<tr style="border-left: 3px solid var(--purple-glow);"><td><strong>${item.no}</strong></td><td><span style="font-weight:700;">${item.product}</span></td><td><code style="color:var(--blue-glow); font-weight:700;">${item.formattedDeadline}</code></td><td><span style="${cdStyle}">${cdText}</span></td><td>${badgeHTML}</td><td><button type="button" class="btn-wa" onclick="sendWhatsAppReminder('${item.no}', '${cdText.replace(/'/g, "\\'")}')">Kirim WA</button></td></tr>`;
         }); tbody.innerHTML = htmlRows;
     }
 
     window.sendWhatsAppReminder = function(sppNo, countdownText) {
         const item = window.databaseMasterSPP.find(i => i.no === sppNo); if (!item) return; const noWhatsApp = "6281234567890";
-        let pesanText = `*PENGINGAT DEADLINE PRODUKSI - INTERNAL SYSTEM V7.9*\n\nHalo *${item.receiver}*,\nMohon perhatian untuk pengerjaan unit berikut:\n\n• *No. SPP:* ${item.no}\n• *Produk:* ${item.product}\n• *Status Terkini:* ${item.status}\n• *Batas Akhir:* ${item.formattedDeadline}\n\n⚠️ *SISA WAKTU Anda:* _*${countdownText}*_\n\nSegera update aktual pengerjaan di sistem. Semangat! 💪`;
+        let pesanText = `*PENGINGAT DEADLINE PRODUKSI - INTERNAL SYSTEM V7.9*\n\nMohon perhatian untuk pengerjaan unit berikut:\n\n• *No. SPP:* ${item.no}\n• *Produk:* ${item.product}\n• *Status Terkini:* ${item.status}\n• *Batas Akhir:* ${item.formattedDeadline}\n\n⚠️ *SISA WAKTU pengerjaan:* _*${countdownText}*_\n\nSegera update aktual pengerjaan di sistem. Semangat! 💪`;
         window.open(`https://api.whatsapp.com/send?phone=${noWhatsApp}&text=${encodeURIComponent(pesanText)}`, '_blank');
     }
 
@@ -1775,8 +1790,10 @@
             let badgeClass = 'bg-reguler'; let msgText = `⚙️ Perintah pengerjaan terdaftar baru.`;
             if (item.priority === 'Buffer Stok') { badgeClass = 'bg-buffer'; msgText = `📦 Pengadaan berkala sistem gudang.`; }
             if (item.priority === 'Urgent') { badgeClass = 'bg-urgent'; msgText = `🚨 Permintaan mendesak! Prioritaskan.`; }
-            let btnStateClass = "btn-action-trigger";
-            msgBody.innerHTML += `<tr><td>${item.datetime}</td><td><strong>${item.no}</strong></td><td><span style="font-weight:700;">${item.product}</span></td><td><span class="badge ${badgeClass}">${item.priority}</span></td><td><span style="color:var(--text-muted); font-weight:600;">${msgText}</span></td><td><button type="button" class="btn-action-trigger ${btnStateClass}" onclick="fillFormFromMessage('${item.no}')">${item.status}</button></td></tr>`;
+            
+            let badgeHTML = window.getStatusBadge(item.status);
+
+            msgBody.innerHTML += `<tr><td>${item.datetime}</td><td><strong>${item.no}</strong></td><td><span style="font-weight:700;">${item.product}</span></td><td><span class="badge ${badgeClass}">${item.priority}</span></td><td><span style="color:var(--text-muted); font-weight:600;">${msgText}</span></td><td><div onclick="fillFormFromMessage('${item.no}')" style="cursor:pointer; display:inline-block; padding: 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.4); border: 1px solid var(--panel-border);" title="Klik untuk Update Aktual"> ${badgeHTML} <span style="font-size:10px; font-weight:700; color:var(--blue-glow); margin-left:6px;">✏️ Update</span></div></td></tr>`;
         });
     };
 
@@ -1894,8 +1911,11 @@
         const dateBase = new Date(document.getElementById('spp-date').value); const datetimeInput = window.formatDateToString(dateBase);
         let product = document.getElementById('spp-product').value; if(product === 'other') product = document.getElementById('product-manual').value;
         let maker = document.getElementById('spp-maker').value; if(maker === 'other') maker = document.getElementById('maker-manual').value;
-        const receiver = document.getElementById('spp-receiver').value; const priority = document.querySelector('input[name="spp-priority"]:checked').value;
-        window.dbPushSPP({ no: noSPP, datetime: datetimeInput, rawTimestampMs: dateBase.getTime(), product: product, maker: maker, receiver: receiver, priority: priority, status: 'Pending', isLocked: false, deadlineRawObjectMs: null, startTimeObjectMs: null, isSPL: false, formattedDeadline: "Belum dimulai", lastEventTimeMs: null, lastEventTimeFormatted: "-", lastInputTimeMs: null, isShipped: false });
+        
+        // Penerima Tugas dihilangkan. Otomatis terisi string kosong / strip.
+        const priority = document.querySelector('input[name="spp-priority"]:checked').value;
+        
+        window.dbPushSPP({ no: noSPP, datetime: datetimeInput, rawTimestampMs: dateBase.getTime(), product: product, maker: maker, receiver: "-", priority: priority, status: 'Pending', isLocked: false, deadlineRawObjectMs: null, startTimeObjectMs: null, isSPL: false, formattedDeadline: "Belum dimulai", lastEventTimeMs: null, lastEventTimeFormatted: "-", lastInputTimeMs: null, isShipped: false });
         this.reset(); document.getElementById('product-manual').style.display = 'none'; document.getElementById('maker-manual').style.display = 'none'; window.resetDateTimeInputs();
         alert("Terimakasih data spp yang anda input akan kami teruskan ke bagian produksi");
     });
@@ -1958,13 +1978,9 @@
         if(onlySPL.length === 0) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada Surat Perintah Langsung yang dirilis.</td></tr>'; return; }
         const isDev = window.currentUserRole === "RANDI";
         onlySPL.forEach(item => {
-            let statusBadgeClass = "status-proses"; let displayStatus = item.status; 
-            if (item.status === 'Idle Time') statusBadgeClass = "status-idle"; if (item.status === 'Stoppage') statusBadgeClass = "status-stoppage";
-            if (item.status === 'Takeover') statusBadgeClass = "status-takeover"; if (item.status === 'Lanjutkan Besok') statusBadgeClass = "status-lanjutbesok";
-            if (item.status === 'Selesai') statusBadgeClass = "status-selesai"; if (item.status === 'Selesai Awal') statusBadgeClass = "status-selesaiawal";
-            if (item.status === 'Telat Selesai') statusBadgeClass = "status-telat"; if (item.isShipped) { statusBadgeClass = "bg-urgent"; displayStatus = "Terkirim 🚚"; }
+            let displayStatus = item.isShipped ? '<span class="badge bg-urgent">Terkirim 🚚</span>' : window.getStatusBadge(item.status); 
             let delBtn = isDev ? `<td><button class="btn-delete" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button></td>` : '';
-            tbody.innerHTML += `<tr style="background: rgba(234, 88, 12, 0.05); border-left: 3px solid #ea580c;"><td><strong style="color:#fb923c;">${item.no}</strong></td><td>${item.datetime}</td><td><span class="badge bg-buffer" style="font-size:12px; font-weight:700;">${item.product}</span></td><td>${item.maker}</td><td><b>${item.receiver}</b></td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td><span class="badge ${statusBadgeClass}">${displayStatus}</span></td>${delBtn}</tr>`;
+            tbody.innerHTML += `<tr style="background: rgba(234, 88, 12, 0.05); border-left: 3px solid #ea580c;"><td><strong style="color:#fb923c;">${item.no}</strong></td><td>${item.datetime}</td><td><span class="badge bg-buffer" style="font-size:12px; font-weight:700;">${item.product}</span></td><td>${item.maker}</td><td><b>${item.receiver}</b></td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${delBtn}</tr>`;
         });
     }
 
@@ -1974,13 +1990,9 @@
         if(filteredSPP.length === 0) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada data dokumen SPP standar.</td></tr>'; return; }
         const isDev = window.currentUserRole === "RANDI";
         filteredSPP.forEach(item => {
-            let statusBadgeClass = "status-proses"; let displayStatus = item.status; 
-            if (item.status === 'Idle Time') statusBadgeClass = "status-idle"; if (item.status === 'Stoppage') statusBadgeClass = "status-stoppage";
-            if (item.status === 'Takeover') statusBadgeClass = "status-takeover"; if (item.status === 'Lanjutkan Besok') statusBadgeClass = "status-lanjutbesok";
-            if (item.status === 'Selesai') statusBadgeClass = "status-selesai"; if (item.status === 'Selesai Awal') statusBadgeClass = "status-selesaiawal";
-            if (item.status === 'Telat Selesai') statusBadgeClass = "status-telat"; if (item.isShipped) { statusBadgeClass = "bg-urgent"; displayStatus = "Terkirim 🚚"; }
+            let displayStatus = item.isShipped ? '<span class="badge bg-urgent">Terkirim 🚚</span>' : window.getStatusBadge(item.status); 
             let delBtn = isDev ? `<td><button class="btn-delete" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button></td>` : '';
-            tbody.innerHTML += `<tr><td><strong>${item.no}</strong></td><td>${item.datetime}</td><td><span class="badge bg-reguler" style="font-size:12px; font-weight:700;">${item.product}</span></td><td>${item.maker}</td><td><b>${item.receiver}</b></td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td><span class="badge ${statusBadgeClass}">${displayStatus}</span></td>${delBtn}</tr>`;
+            tbody.innerHTML += `<tr><td><strong>${item.no}</strong></td><td>${item.datetime}</td><td><span class="badge bg-reguler" style="font-size:12px; font-weight:700;">${item.product}</span></td><td>${item.maker}</td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${delBtn}</tr>`;
         });
     }
 
@@ -1990,13 +2002,9 @@
         if(filteredLogs.length === 0) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat laporan pada rentang waktu ini.</td></tr>'; return; }
         const isDev = window.currentUserRole === "RANDI";
         filteredLogs.forEach((item) => {
-            let statusBadgeClass = "status-proses";
-            if (item.status === 'Idle Time') statusBadgeClass = "status-idle"; if (item.status === 'Stoppage') statusBadgeClass = "status-stoppage";
-            if (item.status === 'Takeover') statusBadgeClass = "status-takeover"; if (item.status === 'Lanjutkan Besok') statusBadgeClass = "status-lanjutbesok";
-            if (item.status === 'Selesai') statusBadgeClass = "status-selesai"; if (item.status === 'Selesai Awal') statusBadgeClass = "status-selesaiawal";
-            if (item.status === 'Telat Selesai') statusBadgeClass = "status-telat";
+            let badgeHTML = window.getStatusBadge(item.status);
             let delBtn = isDev ? `<td><button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
-            tbody.innerHTML += `<tr><td><b>${item.noProd}</b></td><td>${item.noSPP}</td><td><b>${item.operator}</b></td><td><u>${item.condition}</u></td><td><i>${item.stage}</i></td><td>${item.time}</td><td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td><td><span class="badge ${statusBadgeClass}">${item.status}</span></td><td><span style="font-weight:700; color:var(--blue-glow);">${item.reason}</span></td>${delBtn}</tr>`;
+            tbody.innerHTML += `<tr><td><b>${item.noProd}</b></td><td>${item.noSPP}</td><td><b>${item.operator}</b></td><td><u>${item.condition}</u></td><td><i>${item.stage}</i></td><td>${item.time}</td><td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td><td>${badgeHTML}</td><td><span style="font-weight:700; color:var(--blue-glow);">${item.reason}</span></td>${delBtn}</tr>`;
         });
     }
 
@@ -2196,7 +2204,12 @@
         }
 
         window.activeTempData = { noProd, noSPP, operator, condition, stage, time: startTimeFormatted, timestampMs: inputTimeMs, deadline: updates.formattedDeadline || matchedSPP.formattedDeadline, status: calculatedStatus, reason: rewardReasonText, msTerlambat: gapTerlambatMs, processPoints: processPoints };
-        window.activeTempUpdates = updates; window.activeTempSPPKey = matchedSPP.firebaseKey;
+        
+        // PENTING: Menyinkronkan perhitungan status terbaru ke Database Master SPP
+        updates.status = calculatedStatus; 
+        
+        window.activeTempUpdates = updates; 
+        window.activeTempSPPKey = matchedSPP.firebaseKey;
         
         window.triggerPopup(calculatedStatus, updates.formattedDeadline || matchedSPP.formattedDeadline, rewardReasonText, gapTerlambatMs, sisaWaktuTextInfo, processPoints);
     });
@@ -2261,7 +2274,7 @@
         // 1. Simpan Data Log ke Firebase
         window.dbPushLog(window.activeTempData);
         
-        // 2. Update Status SPP di Firebase
+        // 2. Update Status SPP di Firebase (Sinkronisasi dengan master)
         window.dbUpdateSPP(window.activeTempSPPKey, window.activeTempUpdates);
 
         // 3. Tutup Modal
