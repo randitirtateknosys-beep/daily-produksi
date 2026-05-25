@@ -1569,6 +1569,18 @@
         }
     }
 
+    // --- TAMBAHAN FUNGSI SUDAHI JOKE ---
+    window.beeEndJoke = function() {
+        if(window.isBeeBootTyping) return; 
+        document.getElementById('bee-boot-actions').innerHTML = '';
+        window.typeWriterHTML('bee-boot-text', "Baiklah, semoga sedikit hiburan tadi bikin semangat lagi! Selamat bekerja! 💪", 20, () => {
+            setTimeout(() => { 
+                document.getElementById('bee-boot-bubble').style.display = 'none'; 
+                if (window.currentUserRole === "TV Mode") window.startAutoScroll(); 
+            }, 3000);
+        });
+    }
+
     const PENJEDAAN_STATUS_LIST = ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'];
 
     // ========== FILTER WAKTU ==========
@@ -2100,6 +2112,7 @@
         
         let updates = {};
         
+        // Pengecekan Kunci Deadline
         if (!matchedSPP.isLocked) {
             const valInput = parseInt(document.getElementById('prod-deadline-val').value); 
             const unitInput = document.getElementById('prod-deadline-unit').value;
@@ -2119,6 +2132,7 @@
         let currentDeadlineMs = updates.deadlineRawObjectMs || matchedSPP.deadlineRawObjectMs;
         let currentStartMs = updates.startTimeObjectMs || matchedSPP.startTimeObjectMs;
 
+        // Kalkulasi Durasi Penjedaan
         if (PENJEDAAN_STATUS_LIST.includes(matchedSPP.status) && !PENJEDAAN_STATUS_LIST.includes(condition)) {
             if (matchedSPP.lastEventTimeMs) {
                 const durationOfDowntime = operatorInputTime.getTime() - matchedSPP.lastEventTimeMs;
@@ -2136,12 +2150,14 @@
             updates.lastEventTimeFormatted = startTimeFormatted; 
         }
 
+        // Identifikasi Lembur
         let lemburDurationMs = 0; let lemburPoints = 0; let isLemburProses = false;
         if (condition === 'Lembur (Reguler)') { lemburDurationMs = 4 * 60 * 60 * 1000; lemburPoints = 25; isLemburProses = true; }
         else if (condition === 'Lembur (Sabtu/Minggu)') { lemburDurationMs = 9 * 60 * 60 * 1000; lemburPoints = 50; isLemburProses = true; }
         else if (condition === 'Lembur Selesai (Reguler)') { lemburPoints = 25; }
         else if (condition === 'Lembur Selesai (Sabtu/Minggu)') { lemburPoints = 50; }
 
+        // Bonus waktu lembur diperpanjang ke deadline
         if (isLemburProses && currentDeadlineMs) {
             let newDeadline = currentDeadlineMs - lemburDurationMs;
             updates.deadlineRawObjectMs = newDeadline;
@@ -2154,6 +2170,7 @@
         let totalDurationMs = currentDeadlineMs - currentStartMs; 
         let timeSpentMs = inputTimeMs - currentStartMs;
 
+        // Logika Status Akhir & Distribusi Poin Kondisi Lapangan
         if (PENJEDAAN_STATUS_LIST.includes(condition)) { 
             calculatedStatus = condition; 
             processPoints = 0;
@@ -2194,6 +2211,7 @@
             }
         }
 
+        // UI Feedback Waktu
         let sisaWaktuTextInfo = "";
         if (gapTerlambatMs < 0) { 
             const h = Math.floor(Math.abs(gapTerlambatMs) / (1000 * 60 * 60)); 
@@ -2205,11 +2223,9 @@
 
         window.activeTempData = { noProd, noSPP, operator, condition, stage, time: startTimeFormatted, timestampMs: inputTimeMs, deadline: updates.formattedDeadline || matchedSPP.formattedDeadline, status: calculatedStatus, reason: rewardReasonText, msTerlambat: gapTerlambatMs, processPoints: processPoints };
         
-        // PENTING: Menyinkronkan perhitungan status terbaru ke Database Master SPP
         updates.status = calculatedStatus; 
         
-        window.activeTempUpdates = updates; 
-        window.activeTempSPPKey = matchedSPP.firebaseKey;
+        window.activeTempUpdates = updates; window.activeTempSPPKey = matchedSPP.firebaseKey;
         
         window.triggerPopup(calculatedStatus, updates.formattedDeadline || matchedSPP.formattedDeadline, rewardReasonText, gapTerlambatMs, sisaWaktuTextInfo, processPoints);
     });
