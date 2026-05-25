@@ -1796,83 +1796,47 @@
         window.calculateAndRenderRanking();
     }
 
-    // --- LOGIKA RANKING PROPORSI POOL UPDATE ---
     window.calculateAndRenderRanking = function() {
-        let skorPeta = {}; 
-        const filteredLogs = window.getFilteredLogs(); 
-        const filteredSPP = window.getFilteredSPP(); 
-
+        let skorPeta = {}; const filteredLogs = window.getFilteredLogs(); const filteredSPP = window.getFilteredSPP(); 
         filteredLogs.forEach(log => {
             if(skorPeta[log.operator] === undefined) skorPeta[log.operator] = 0;
-            if (log.processPoints) skorPeta[log.operator] += log.processPoints;
+            if (log.status === 'Proses') skorPeta[log.operator] += (log.processPoints || 0);
         });
-
         filteredSPP.forEach(spp => {
             if (['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(spp.status)) {
-                let operatorLogCounts = {}; 
-                let msTerlambat = 0;
-                let totalValidLogs = 0;
-
+                let opsInvolved = new Set(); let msTerlambat = 0;
                 filteredLogs.forEach(log => {
                     if (log.noSPP === spp.no) {
-                        if (['Proses', 'Selesai', 'Selesai Awal', 'Telat Selesai', 'Lembur Selesai (Reguler)', 'Lembur Selesai (Sabtu/Minggu)'].includes(log.status) || log.condition.includes('Lembur')) {
-                            operatorLogCounts[log.operator] = (operatorLogCounts[log.operator] || 0) + 1;
-                            totalValidLogs++;
-                        }
-                        if (log.msTerlambat !== undefined && Math.abs(log.msTerlambat) > Math.abs(msTerlambat)) {
-                            msTerlambat = log.msTerlambat;
-                        }
+                        opsInvolved.add(log.operator);
+                        if (log.status === 'Telat Selesai' && log.msTerlambat > msTerlambat) msTerlambat = log.msTerlambat;
                     }
                 });
-
-                if (totalValidLogs === 0) return; 
-
-                let targetOps = 1; 
-                if (PRODUCT_DICTIONARY[spp.product]) targetOps = PRODUCT_DICTIONARY[spp.product].ops;
-                
-                let basePointPerOperator = 80; 
-                let totalPoolPoints = basePointPerOperator * targetOps;
-                let pointPerLog = totalPoolPoints / totalValidLogs; 
-
-                Object.keys(operatorLogCounts).forEach(op => {
+                let numOps = opsInvolved.size; if (numOps === 0) return; 
+                let reward = 0; let isPenalty = false; let penaltyPoints = 0;
+                if (spp.status === 'Selesai Awal') reward = 100; else if (spp.status === 'Selesai') reward = 75;
+                else if (spp.status === 'Telat Selesai') {
+                    isPenalty = true; let jamTelat = Math.floor(msTerlambat / (1000 * 60 * 60)); if (jamTelat < 0) jamTelat = 0;
+                    penaltyPoints = -20 - (jamTelat * 5); 
+                }
+                let targetOps = 1; if (PRODUCT_DICTIONARY[spp.product]) targetOps = PRODUCT_DICTIONARY[spp.product].ops;
+                if (!isPenalty && numOps > targetOps) { reward = Math.round(reward / numOps); }
+                opsInvolved.forEach(op => {
                     if(skorPeta[op] === undefined) skorPeta[op] = 0;
-                    
-                    let opShare = operatorLogCounts[op] * pointPerLog; 
-                    let porsiRasio = operatorLogCounts[op] / totalValidLogs; 
-                    let finalReward = opShare;
-
-                    if (spp.status === 'Selesai Awal' && msTerlambat < 0) {
-                        let jamLebihAwal = Math.floor(Math.abs(msTerlambat) / (1000 * 60 * 60));
-                        let totalBonus = Math.min(jamLebihAwal * 10, 50); 
-                        finalReward += (totalBonus * porsiRasio); 
-                    } else if (spp.status === 'Telat Selesai' && msTerlambat > 0) {
-                        let jamTelat = Math.floor(msTerlambat / (1000 * 60 * 60));
-                        let totalPenalty = 10 + (jamTelat * 5); 
-                        finalReward -= (totalPenalty * porsiRasio); 
-                    }
-
-                    skorPeta[op] += Math.round(finalReward); 
+                    if (isPenalty) skorPeta[op] += penaltyPoints; else skorPeta[op] += reward; 
                 });
             }
         });
-
         let susunanRangking = Object.keys(skorPeta).map(nama => { return { nama: nama, poin: skorPeta[nama] }; }).sort((a, b) => b.poin - a.poin);
         if (window.isRankingMinimized) susunanRangking = susunanRangking.slice(0, 5);
         const tbody = document.getElementById('operator-ranking-body'); tbody.innerHTML = "";
         if(susunanRangking.length === 0) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 25px; color: var(--text-muted);">Belum ada operator yang aktif bekerja.</td></tr>`; return; }
-        
         susunanRangking.forEach((op, indeks) => {
             const posisi = indeks + 1; let rankClass = "rank-other"; let tropiBadge = `🏅`; let statusEfisiensi = `<span style="color:var(--text-muted); font-weight:600;">Stabil</span>`;
             if (posisi === 1 && window.isRankingMinimized) { rankClass = "rank-1"; tropiBadge = "🥇"; statusEfisiensi = `<span style="color:var(--warning-glow); font-weight:800;">Elite Master (Sangat Efisien)</span>`; }
             else if (posisi === 2 && window.isRankingMinimized) { rankClass = "rank-2"; tropiBadge = "🥈"; statusEfisiensi = `<span style="color:var(--blue-glow); font-weight:800;">Super Efisien</span>`; }
             else if (posisi === 3 && window.isRankingMinimized) { rankClass = "rank-3"; tropiBadge = "🥉"; statusEfisiensi = `<span style="color:var(--emerald-glow); font-weight:800;">Efisien Berkelanjutan</span>`; }
-            
             if (op.poin < 0) statusEfisiensi = `<span class="point-minus">Butuh Bimbingan / Evaluasi</span>`;
-            let poinTeks = ""; 
-            if (op.poin > 0) poinTeks = `<span class="point-plus">+${op.poin} XP</span>`; 
-            else if (op.poin === 0) poinTeks = `<span class="point-neutral">${op.poin} XP</span>`; 
-            else poinTeks = `<span class="point-minus">${op.poin} XP</span>`;
-            
+            let poinTeks = ""; if (op.poin > 0) poinTeks = `<span class="point-plus">+${op.poin} XP</span>`; else if (op.poin === 0) poinTeks = `<span class="point-neutral">${op.poin} XP</span>`; else poinTeks = `<span class="point-minus">${op.poin} XP</span>`;
             tbody.innerHTML += `<tr><td><span class="rank-badge ${rankClass}">${posisi}</span> ${tropiBadge}</td><td><strong>${op.nama}</strong></td><td>${poinTeks}</td><td>${statusEfisiensi}</td></tr>`;
         });
     }
@@ -2073,62 +2037,45 @@
         displayBox.innerHTML = `⏱️ Estimasi Perhitungan Batas Deadline SPP: ${window.formatDateToString(deadlineDate)}`;
     }
 
-    // --- EVENT LISTENER INPUT PRODUKSI UPDATE POOL ---
     document.getElementById('prod-form').addEventListener('submit', function(e) {
         e.preventDefault();
-        const noSPP = document.getElementById('prod-spp-select').value; 
-        const noProd = document.getElementById('prod-number').value || "-";
-        const operator = document.getElementById('prod-operator').value; 
-        const condition = document.getElementById('prod-condition').value;
+        const noSPP = document.getElementById('prod-spp-select').value; const noProd = document.getElementById('prod-number').value || "-";
+        const operator = document.getElementById('prod-operator').value; const condition = document.getElementById('prod-condition').value;
         const stage = document.getElementById('prod-stage').value;
-        
         let operatorInputTime;
-        if (window.currentUserRole === "Produksi") operatorInputTime = new Date();
-        else operatorInputTime = new Date(document.getElementById('prod-datetime').value);
-        
-        const startTimeFormatted = window.formatDateToString(operatorInputTime);
-        const matchedSPP = window.databaseMasterSPP.find(i => i.no === noSPP); 
-        if(!matchedSPP) return;
-        
-        let updates = {};
-        
-        if (!matchedSPP.isLocked) {
-            const valInput = parseInt(document.getElementById('prod-deadline-val').value); 
-            const unitInput = document.getElementById('prod-deadline-unit').value;
-            let calcDeadline = new Date(operatorInputTime); 
-            if (unitInput === 'jam') calcDeadline.setHours(calcDeadline.getHours() + valInput); 
-            else if (unitInput === 'hari') calcDeadline.setDate(calcDeadline.getDate() + valInput);
-            
-            updates.deadlineRawObjectMs = calcDeadline.getTime(); 
-            updates.formattedDeadline = window.formatDateToString(calcDeadline);
-            updates.isLocked = true; 
-            updates.startTimeObjectMs = operatorInputTime.getTime(); 
+        if (window.currentUserRole === "Produksi") {
+            operatorInputTime = new Date();
+        } else {
+            operatorInputTime = new Date(document.getElementById('prod-datetime').value);
         }
-        
+        const startTimeFormatted = window.formatDateToString(operatorInputTime);
+        const matchedSPP = window.databaseMasterSPP.find(i => i.no === noSPP); if(!matchedSPP) return;
+        let updates = {};
+        if (!matchedSPP.isLocked) {
+            const valInput = parseInt(document.getElementById('prod-deadline-val').value); const unitInput = document.getElementById('prod-deadline-unit').value;
+            let calcDeadline = new Date(operatorInputTime); if (unitInput === 'jam') calcDeadline.setHours(calcDeadline.getHours() + valInput); else if (unitInput === 'hari') calcDeadline.setDate(calcDeadline.getDate() + valInput);
+            updates.deadlineRawObjectMs = calcDeadline.getTime(); updates.formattedDeadline = window.formatDateToString(calcDeadline);
+            updates.isLocked = true; updates.startTimeObjectMs = operatorInputTime.getTime(); 
+        }
         if (!matchedSPP.startTimeObjectMs) updates.startTimeObjectMs = operatorInputTime.getTime();
         updates.lastInputTimeMs = operatorInputTime.getTime();
-        
         let currentDeadlineMs = updates.deadlineRawObjectMs || matchedSPP.deadlineRawObjectMs;
         let currentStartMs = updates.startTimeObjectMs || matchedSPP.startTimeObjectMs;
-
-        if (PENJEDAAN_STATUS_LIST.includes(matchedSPP.status) && !PENJEDAAN_STATUS_LIST.includes(condition)) {
+        if (PENJEDAAN_STATUS_LIST.includes(matchedSPP.status) && condition === 'Normal') {
             if (matchedSPP.lastEventTimeMs) {
                 const durationOfDowntime = operatorInputTime.getTime() - matchedSPP.lastEventTimeMs;
                 if (durationOfDowntime > 0) {
                     let newDeadMs = currentDeadlineMs + durationOfDowntime;
-                    updates.deadlineRawObjectMs = newDeadMs; 
-                    updates.formattedDeadline = window.formatDateToString(new Date(newDeadMs));
-                    currentDeadlineMs = newDeadMs;
+                    updates.deadlineRawObjectMs = newDeadMs; updates.formattedDeadline = window.formatDateToString(new Date(newDeadMs));
                 }
             }
             updates.lastEventTimeMs = null;
         } 
-        if (PENJEDAAN_STATUS_LIST.includes(condition)) { 
-            updates.lastEventTimeMs = operatorInputTime.getTime(); 
-            updates.lastEventTimeFormatted = startTimeFormatted; 
-        }
+        if (PENJEDAAN_STATUS_LIST.includes(condition)) { updates.lastEventTimeMs = operatorInputTime.getTime(); updates.lastEventTimeFormatted = startTimeFormatted; }
 
-        let lemburDurationMs = 0; let lemburPoints = 0; let isLemburProses = false;
+        let lemburDurationMs = 0;
+        let lemburPoints = 0;
+        let isLemburProses = false;
         if (condition === 'Lembur (Reguler)') { lemburDurationMs = 4 * 60 * 60 * 1000; lemburPoints = 25; isLemburProses = true; }
         else if (condition === 'Lembur (Sabtu/Minggu)') { lemburDurationMs = 9 * 60 * 60 * 1000; lemburPoints = 50; isLemburProses = true; }
         else if (condition === 'Lembur Selesai (Reguler)') { lemburPoints = 25; }
@@ -2138,66 +2085,41 @@
             let newDeadline = currentDeadlineMs - lemburDurationMs;
             updates.deadlineRawObjectMs = newDeadline;
             updates.formattedDeadline = window.formatDateToString(new Date(newDeadline));
-            currentDeadlineMs = newDeadline;
         }
 
+        const finalDeadlineMs = updates.deadlineRawObjectMs || matchedSPP.deadlineRawObjectMs;
         const inputTimeMs = operatorInputTime.getTime();
-        let calculatedStatus = ""; let rewardReasonText = "-"; let gapTerlambatMs = inputTimeMs - currentDeadlineMs; let processPoints = 0;
-        let totalDurationMs = currentDeadlineMs - currentStartMs; 
-        let timeSpentMs = inputTimeMs - currentStartMs;
+        let calculatedStatus = ""; let rewardReasonText = "-"; let gapTerlambatMs = 0; let processPoints = 0;
+        let totalDurationMs = finalDeadlineMs - currentStartMs; let timeSpentMs = inputTimeMs - currentStartMs;
+        let previousProsesCount = window.databaseLogOperator.filter(l => l.noSPP === matchedSPP.no && l.status === 'Proses').length;
 
-        if (PENJEDAAN_STATUS_LIST.includes(condition)) { 
-            calculatedStatus = condition; 
-            processPoints = 0;
-        } 
-        else if (isLemburProses) {
+        if (PENJEDAAN_STATUS_LIST.includes(condition)) { calculatedStatus = condition; } 
+        else if (condition === 'Lembur (Reguler)' || condition === 'Lembur (Sabtu/Minggu)') {
             calculatedStatus = 'Proses';
-            processPoints = lemburPoints; 
-            rewardReasonText = `Kerja Lembur (+${lemburPoints} Poin)`;
-        } 
-        else if (condition === 'Lembur Selesai (Reguler)' || condition === 'Lembur Selesai (Sabtu/Minggu)') {
-            calculatedStatus = gapTerlambatMs <= 0 ? 'Selesai' : 'Telat Selesai'; 
-            rewardReasonText = `Selesai dengan Lembur (+${lemburPoints} Poin Lembur)`; 
-            processPoints = lemburPoints;
-        } 
-        else if (condition === 'Pekerjaan Selesai Awal' || (stage.includes("7. Packing") && gapTerlambatMs < 0)) {
-            if (gapTerlambatMs < 0) { 
-                calculatedStatus = 'Selesai Awal'; 
-                const diffHours = (Math.abs(gapTerlambatMs) / (1000 * 60 * 60)).toFixed(1); 
-                rewardReasonText = `🌟 Lebih Cepat ${diffHours} Jam dari Target`; 
-            } 
-            else { 
-                calculatedStatus = gapTerlambatMs === 0 ? 'Selesai' : 'Telat Selesai'; 
-            }
+            processPoints = (previousProsesCount === 0 ? 0 : (timeSpentMs < totalDurationMs/2 ? -5 : 20)) + lemburPoints;
+            rewardReasonText = `Lembur (+${lemburPoints} Poin). ` + (previousProsesCount === 0 ? "Proses Pertama" : (timeSpentMs < totalDurationMs/2 ? "Terlalu Cepat" : "Proses Lanjutan"));
+        } else if (condition === 'Lembur Selesai (Reguler)' || condition === 'Lembur Selesai (Sabtu/Minggu)') {
+            calculatedStatus = 'Selesai'; rewardReasonText = `Selesai dengan Lembur (+${lemburPoints} Poin)`; processPoints = lemburPoints;
+        } else if (condition === 'Pekerjaan Selesai Awal') {
+            if (inputTimeMs < finalDeadlineMs) { calculatedStatus = 'Selesai Awal'; const diffHours = ((finalDeadlineMs - inputTimeMs) / (1000 * 60 * 60)).toFixed(1); rewardReasonText = `🌟 REWARD BONUS: +${diffHours} Jam Tabungan Waktu`; } 
+            else if (inputTimeMs === finalDeadlineMs) { calculatedStatus = 'Selesai'; } else { calculatedStatus = 'Telat Selesai'; gapTerlambatMs = inputTimeMs - finalDeadlineMs; }
         } 
         else if (condition === 'Pekerjaan Selesai Tepat Waktu' || stage.includes("7. Packing")) {
-            calculatedStatus = gapTerlambatMs <= 0 ? 'Selesai' : 'Telat Selesai';
+            if (inputTimeMs <= finalDeadlineMs) calculatedStatus = 'Selesai'; else { calculatedStatus = 'Telat Selesai'; gapTerlambatMs = inputTimeMs - finalDeadlineMs; }
         } 
         else {
-            calculatedStatus = gapTerlambatMs <= 0 ? 'Proses' : 'Telat Selesai';
-            if (calculatedStatus === 'Proses') {
-                if (timeSpentMs < (totalDurationMs * 0.15)) { 
-                    processPoints = 0; 
-                    rewardReasonText = "Proses Berjalan (Terlalu Cepat, 0 Poin)"; 
-                } else { 
-                    processPoints = 10; 
-                    rewardReasonText = "Proses Laporan Berjalan (+10 Poin)"; 
+            if (inputTimeMs <= finalDeadlineMs) {
+                calculatedStatus = 'Proses';
+                if (previousProsesCount === 0) { processPoints = 0; rewardReasonText = "Proses Pertama (0 Poin)"; } else {
+                    if (timeSpentMs < (totalDurationMs / 2)) { processPoints = -5; rewardReasonText = "Terlalu Cepat (-5 Poin Pinalti)"; } else { processPoints = 20; rewardReasonText = "Proses Lanjutan (+20 Poin)"; }
                 }
-            }
+            } else { calculatedStatus = 'Telat Selesai'; gapTerlambatMs = inputTimeMs - finalDeadlineMs; }
         }
-
-        let sisaWaktuTextInfo = "";
-        if (gapTerlambatMs < 0) { 
-            const h = Math.floor(Math.abs(gapTerlambatMs) / (1000 * 60 * 60)); 
-            const m = Math.floor((Math.abs(gapTerlambatMs) % (1000 * 60 * 60)) / (1000 * 60)); 
-            sisaWaktuTextInfo = `Sisa Waktu: ${h} Jam ${m} Menit`; 
-        } else { 
-            sisaWaktuTextInfo = "Waktu Telah Habis / Melewati Target"; 
-        }
-
+        let sisaWaktuMs = finalDeadlineMs - inputTimeMs; let sisaWaktuTextInfo = "";
+        if (sisaWaktuMs > 0) { const h = Math.floor(sisaWaktuMs / (1000 * 60 * 60)); const m = Math.floor((sisaWaktuMs % (1000 * 60 * 60)) / (1000 * 60)); sisaWaktuTextInfo = `Sisa Waktu: ${h} Jam ${m} Menit`; } 
+        else { sisaWaktuTextInfo = "Waktu Telah Habis / Melewati Target"; }
         window.activeTempData = { noProd, noSPP, operator, condition, stage, time: startTimeFormatted, timestampMs: inputTimeMs, deadline: updates.formattedDeadline || matchedSPP.formattedDeadline, status: calculatedStatus, reason: rewardReasonText, msTerlambat: gapTerlambatMs, processPoints: processPoints };
         window.activeTempUpdates = updates; window.activeTempSPPKey = matchedSPP.firebaseKey;
-        
         window.triggerPopup(calculatedStatus, updates.formattedDeadline || matchedSPP.formattedDeadline, rewardReasonText, gapTerlambatMs, sisaWaktuTextInfo, processPoints);
     });
 
@@ -2220,8 +2142,8 @@
         } else if (status === 'Proses') {
             title.innerHTML = "<span style='color:var(--blue-glow)'>🔄 PROGRESS LAPORAN TERCATAT</span>";
             let antiCheatBadge = "";
-            if (processPoints === 0 && !rewardText.includes("Lembur")) antiCheatBadge = `<b style="color:var(--danger-glow); display:block; margin-top:8px;">Terlalu Cepat / Penjedaan (0 Poin)</b>`;
-            else if (processPoints >= 10) antiCheatBadge = `<b style="color:var(--emerald-glow); display:block; margin-top:8px;">Proses Kerja Optimal (+${processPoints} Poin)</b>`;
+            if (processPoints === -5) antiCheatBadge = `<b style="color:var(--danger-glow); display:block; margin-top:8px;">Terlalu Cepat (-5 Poin Pinalti)</b>`;
+            else if (processPoints >= 20) antiCheatBadge = `<b style="color:var(--emerald-glow); display:block; margin-top:8px;">Proses Kerja Optimal (+${processPoints} Poin)</b>`;
             else antiCheatBadge = `<b style="color:var(--text-muted); display:block; margin-top:8px;">Proses Kerja Standar (+0 Poin)</b>`;
             desc.innerHTML = `Laporan harian berhasil diperbarui.<br><b style="color:var(--blue-glow); display:inline-block; margin-top:10px; padding:8px 15px; background:rgba(56,189,248,0.1); border-radius:6px; border:1px solid var(--blue-glow);">⏳ ${sisaWaktuTextInfo}</b>${antiCheatBadge}`;
             reasonSection.style.display = "none"; kpiBlock.style.display = "none";
