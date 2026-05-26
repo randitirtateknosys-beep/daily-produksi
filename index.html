@@ -777,7 +777,26 @@
                 </div>
                 <button type="submit" class="btn-shipment" style="margin-top: 20px;">Catat Keberangkatan Logistik</button>
             </form>
-        </div>
+
+            <div style="margin-top: 35px; border-top: 1px dashed rgba(56, 189, 248, 0.3); padding-top: 20px;">
+                <h4 style="color: var(--emerald-glow); margin-top: 0; margin-bottom: 15px; font-size: 14px; text-transform: uppercase;">
+                    📦 Total Stok Produk Yang Sudah Selesai (Ready Kirim)
+                </h4>
+                <div class="table-container">
+                    <table id="ready-stock-table" style="background: rgba(15, 23, 42, 0.6);">
+                        <thead>
+                            <tr>
+                                <th>Nama Produk</th>
+                                <th style="text-align: center; width: 250px;">Total Produk Selesai</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ready-stock-body">
+                            <tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding: 15px;">Loading data stok...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            </div>
 
         <div class="panel" id="panel-history-shipment">
             <div class="header-flex">
@@ -1635,6 +1654,7 @@
         window.renderSPLTable();
         window.updateSPPDropdown(); 
         window.updateWarehouseProductDropdown(); 
+        window.renderReadyStockTable();
         window.renderOperatorTable(); 
         window.renderShipmentTable();
         window.renderWarehouseInbox(); 
@@ -2015,6 +2035,41 @@
         const filteredSPP = window.getFilteredNonSPLSPP(); const produkSelesai = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped);
         produkSelesai.forEach(item => { select.innerHTML += `<option value="${item.product} (${item.no})">${item.product} (${item.no})</option>`; });
     }
+
+    // --- FUNGSI RENDER TABEL STOK READY KIRIM (TAMBAHAN) ---
+    window.renderReadyStockTable = function() {
+        const tbody = document.getElementById('ready-stock-body');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+        
+        // Ambil data produk yang sudah selesai tapi belum dikirim
+        const filteredSPP = window.getFilteredNonSPLSPP(); 
+        const produkSelesai = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped);
+        
+        if(produkSelesai.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding: 15px;">Belum ada stok produk yang siap dikirim di gudang.</td></tr>';
+            return;
+        }
+
+        // Kelompokkan dan hitung total per nama produk
+        let stockMap = {};
+        produkSelesai.forEach(item => {
+            stockMap[item.product] = (stockMap[item.product] || 0) + 1;
+        });
+
+        // Ubah menjadi array dan urutkan dari yang terbanyak
+        let stockArray = Object.keys(stockMap).map(nama => {
+            return { nama: nama, jumlah: stockMap[nama] };
+        }).sort((a, b) => b.jumlah - a.jumlah);
+
+        // Render ke dalam tabel
+        stockArray.forEach(item => {
+            tbody.innerHTML += `<tr>
+                <td><strong style="color: #fff;">${item.nama}</strong></td>
+                <td style="text-align: center;"><span style="color:var(--emerald-glow); font-weight:800; font-size:13px; background:rgba(16,185,129,0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">${item.jumlah} Unit Selesai</span></td>
+            </tr>`;
+        });
+    };
 
     window.renderShipmentTable = function() {
         const tbody = document.getElementById('shipment-history-body'); tbody.innerHTML = ""; 
