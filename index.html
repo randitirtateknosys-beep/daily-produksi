@@ -497,10 +497,15 @@
                         <label>Nama Operator Lapangan</label>
                         <select id="prod-operator" required>
                             <option value="">-- Pilih Operator --</option>
-                            <option value="Suhendra">Suhendra</option><option value="Hario Rizki">Hario Rizki</option>
-                            <option value="Dhema Ferlandi Putra">Dhema Ferlandi Putra</option><option value="Muhammad Iqbal">Muhammad Iqbal</option>
-                            <option value="Mohamad Ramadan">Mohamad Ramadan</option><option value="Ngatiyo">Ngatiyo</option>
-                            <option value="Khairuddin">Khairuddin</option><option value="Budi Septiyanto">Budi Septiyanto</option>
+                            <option value="Suhendra">Suhendra</option>
+                            <option value="Hario Rizki Ardhana">Hario Rizki Ardhana</option>
+                            <option value="Dhema Ferlandy Putra">Dhema Ferlandy Putra</option>
+                            <option value="Muhammad Iqbal">Muhammad Iqbal</option>
+                            <option value="Khairuddin">Khairuddin</option>
+                            <option value="Ngatiyo">Ngatiyo</option>
+                            <option value="Budi Septiyanto">Budi Septiyanto</option>
+                            <option value="Mohammad Ramadan">Mohammad Ramadan</option>
+                            <option value="Arliston Sirait">Arliston Sirait</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -526,6 +531,11 @@
                             <option value="3. Proses Cat / Finishing">3. Proses Cat / Finishing</option><option value="4. Instalasi Membran/Housing">4. Instalasi Membran/Housing</option>
                             <option value="5. Kelistrikan & Panel">5. Kelistrikan & Panel</option><option value="6. Running Test & QC">6. Running Test & QC</option><option value="7. Packing & Selesai (Final)">7. Packing & Selesai (Final)</option>
                         </select>
+                    </div>
+                    
+                    <div class="form-group full-width-group">
+                        <label>Aktivitas Kegiatan</label>
+                        <input type="text" id="prod-aktivitas" placeholder="Ketik detail aktivitas kegiatan saat ini (misal: memotong besi frame, instalasi pompa, running test QC)..." required style="border-color: var(--blue-glow);">
                     </div>
                     
                     <div class="form-group"><label>📅 Tanggal & Jam Update Lapangan</label><input type="text" id="prod-datetime" required title="Hanya Admin/Dev yang bisa mengubah secara manual"></div>
@@ -558,7 +568,7 @@
             </div>
             <div class="table-container" id="table-log-container">
                 <table id="operator-history-table">
-                    <thead><tr id="operator-history-head"><th>No. Prod</th><th>No. SPP</th><th>Nama Operator</th><th>Kondisi Progres</th><th>Tahap Produksi</th><th>Waktu Input</th><th>Target Deadline</th><th>Status Hasil</th><th>Keterangan / Poin Tambahan</th></tr></thead>
+                    <thead><tr id="operator-history-head"><th>No. Prod</th><th>No. SPP</th><th>Nama Operator</th><th>Aktivitas Kegiatan</th><th>Kondisi Progres</th><th>Tahap Produksi</th><th>Waktu Input</th><th>Target Deadline</th><th>Status Hasil</th><th>Keterangan / Poin Tambahan</th></tr></thead>
                     <tbody id="operator-history-body"></tbody>
                 </table>
             </div>
@@ -592,10 +602,15 @@
                         <label>Penerima Tugas Utama</label>
                         <select id="spl-receiver" required>
                             <option value="">-- Pilih Penerima --</option>
-                            <option value="Suhendra">Suhendra</option><option value="Hario Rizki">Hario Rizki</option>
-                            <option value="Dhema Ferlandi Putra">Dhema Ferlandi Putra</option><option value="Muhammad Iqbal">Muhammad Iqbal</option>
-                            <option value="Mohamad Ramadan">Mohamad Ramadan</option><option value="Ngatiyo">Ngatiyo</option>
-                            <option value="Khairuddin">Khairuddin</option><option value="Budi Septiyanto">Budi Septiyanto</option>
+                            <option value="Suhendra">Suhendra</option>
+                            <option value="Hario Rizki Ardhana">Hario Rizki Ardhana</option>
+                            <option value="Dhema Ferlandy Putra">Dhema Ferlandy Putra</option>
+                            <option value="Muhammad Iqbal">Muhammad Iqbal</option>
+                            <option value="Khairuddin">Khairuddin</option>
+                            <option value="Ngatiyo">Ngatiyo</option>
+                            <option value="Budi Septiyanto">Budi Septiyanto</option>
+                            <option value="Mohammad Ramadan">Mohammad Ramadan</option>
+                            <option value="Arliston Sirait">Arliston Sirait</option>
                         </select>
                     </div>
                     
@@ -937,7 +952,7 @@
 
         window.databaseLogOperator.forEach(item => {
             if(Object.values(item).join(' ').toLowerCase().includes(query)) {
-                results.push({ source: "Log Aktual", id: item.noSPP, info: `Opr: ${item.operator} | Thp: ${item.stage}`, status: item.status });
+                results.push({ source: "Log Aktual", id: item.noSPP, info: `Opr: ${item.operator} | Akt: ${item.aktivitas || '-'} | Thp: ${item.stage}`, status: item.status });
             }
         });
 
@@ -1074,15 +1089,25 @@
         "PRE FILTRATION MX": { ops: 2, hours: 16 }
     };
 
-    // --- SISTEM LOGIN & RBAC ---
+    // --- REVISI DATA LOGIN SISTEM & OPERATOR PRODUKSI BARU ---
     const loginData = {
-        "DV123": { role: "RANDI", panel: "all" },
+        "DV123": { role: "Randi", panel: "all" },
         "MW123": { role: "Manager Warehouse", panel: "mw" },
         "AD123": { role: "Admin", panel: "admin" },
-        "PD123": { role: "Produksi", panel: "produksi" },
         "MG123": { role: "Managemen", panel: "viewonly" },
         "GD123": { role: "Gudang", panel: "gudang" },
-        "TV123": { role: "TV Mode", panel: "viewonly" }
+        "TV123": { role: "TV Mode", panel: "viewonly" },
+        
+        // Akun Unik Operator Produksi Baru
+        "450316157": { role: "Suhendra", panel: "produksi" },
+        "2511171107": { role: "Hario Rizki Ardhana", panel: "produksi" },
+        "251117106": { role: "Dhema Ferlandy Putra", panel: "produksi" },
+        "2511171254": { role: "Muhammad Iqbal", panel: "produksi" },
+        "450712103": { role: "Khairuddin", panel: "produksi" },
+        "45020337": { role: "Ngatiyo", panel: "produksi" },
+        "450316158": { role: "Budi Septiyanto", panel: "produksi" },
+        "2511171286": { role: "Mohammad Ramadan", panel: "produksi" },
+        "45040564": { role: "Arliston Sirait", panel: "produksi" }
     };
 
     window.currentUserRole = "Guest";
@@ -1113,9 +1138,23 @@
             localStorage.setItem('savedLoginData', pass); 
             
             document.getElementById('current-user-role').innerText = window.currentUserRole;
-            
             document.getElementById('welcome-role-text').innerText = window.currentUserRole === "RANDI" ? "TN RANDI" : window.currentUserRole;
             
+            // LOGIKA AUTO-FILL & LOCK NAMA OPERATOR LAPANGAN
+            const opSelect = document.getElementById('prod-operator');
+            if (loginData[pass].panel === "produksi") {
+                if (opSelect) {
+                    opSelect.value = window.currentUserRole;
+                    opSelect.style.pointerEvents = 'none';
+                    opSelect.style.background = '#1e293b';
+                }
+            } else {
+                if (opSelect) {
+                    opSelect.style.pointerEvents = 'auto';
+                    opSelect.style.background = 'var(--input-bg)';
+                }
+            }
+
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('chat-fab').style.display = 'flex';
             
@@ -1144,6 +1183,16 @@
         document.getElementById('welcome-popup').style.display = 'none';
         document.getElementById('chat-fab').style.display = 'none';
         document.getElementById('chat-window').style.display = 'none';
+        
+        // Reset proteksi form operator saat logout
+        const opSelect = document.getElementById('prod-operator');
+        if (opSelect) {
+            opSelect.style.pointerEvents = 'auto';
+            opSelect.style.background = 'var(--input-bg)';
+            opSelect.value = "";
+        }
+
+        document.getElementById('login-screen').style.flex = 'flex';
         document.getElementById('login-screen').style.display = 'flex';
         window.stopAutoScroll(); window.currentUserRole = "Guest";
         window.typeWriterHTML('login-robot-text', "Hai salam, selamat datang kembali! Silahkan masukan kata sandi Anda.", 25, null);
@@ -1165,37 +1214,25 @@
         panels.forEach(id => document.getElementById(id).style.display = 'block');
         document.getElementById('panel-monitoring').style.display = 'flex'; document.getElementById('panel-analytics').style.display = 'grid';
 
-        if(window.currentUserRole === "Produksi") { 
+        if(window.currentUserAccess === "produksi") { 
             ['panel-analytics','panel-aktual','panel-ranking','panel-surat-perintah','panel-input-spp','panel-history-spp','panel-input-shipment','panel-history-shipment'].forEach(id=>document.getElementById(id).style.display='none');
             
             document.getElementById('prod-datetime').style.pointerEvents = 'none';
             document.getElementById('prod-datetime').style.background = '#1e293b';
             document.getElementById('prod-datetime').setAttribute('readonly', 'true');
-            
-            document.getElementById('prod-deadline-val').style.pointerEvents = 'none';
-            document.getElementById('prod-deadline-val').style.background = '#1e293b';
-            document.getElementById('prod-deadline-val').setAttribute('readonly', 'true');
-
-            document.getElementById('prod-deadline-unit').style.pointerEvents = 'none';
-            document.getElementById('prod-deadline-unit').style.background = '#1e293b';
         } else {
             document.getElementById('prod-datetime').style.pointerEvents = 'auto';
             document.getElementById('prod-datetime').style.background = 'var(--input-bg)';
             document.getElementById('prod-datetime').removeAttribute('readonly');
-
-            document.getElementById('prod-deadline-val').style.pointerEvents = 'auto';
-            document.getElementById('prod-deadline-val').style.background = 'var(--input-bg)';
-            document.getElementById('prod-deadline-val').removeAttribute('readonly');
-
-            document.getElementById('prod-deadline-unit').style.pointerEvents = 'auto';
-            document.getElementById('prod-deadline-unit').style.background = 'var(--input-bg)';
         }
 
         const isDev = window.currentUserRole === "RANDI";
         document.getElementById('spp-master-head').innerHTML = `<th>No. SPP</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Pembuat</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('spl-history-head').innerHTML = `<th>No. SPL</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Penanggung Jawab</th><th>Penerima Tugas</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('shipment-history-head').innerHTML = `<th>Keberangkatan</th><th>Produk</th><th>No. SPP Asal</th><th>Operator Logistik</th><th>Customer</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
-        document.getElementById('operator-history-head').innerHTML = `<th>No. Prod</th><th>No. SPP</th><th>Nama Operator</th><th>Kondisi Progres</th><th>Tahap Produksi</th><th>Waktu Input</th><th>Target Deadline</th><th>Status Hasil</th><th>Keterangan / Poin Tambahan</th>${isDev ? '<th>Aksi</th>' : ''}`;
+        
+        // REVISI HEADER TABEL HISTORY 2 (LOG AKTIVITAS) UNTUK MENAMPILKAN KOLOM AKTIVITAS KEGIATAN
+        document.getElementById('operator-history-head').innerHTML = `<th>No. Prod</th><th>No. SPP</th><th>Nama Operator</th><th>Aktivitas Kegiatan</th><th>Kondisi Progres</th><th>Tahap Produksi</th><th>Waktu Input</th><th>Target Deadline</th><th>Status Hasil</th><th>Keterangan / Poin Tambahan</th>${isDev ? '<th>Aksi</th>' : ''}`;
 
         const acc = window.currentUserAccess;
         if(acc === "viewonly") { 
@@ -1335,6 +1372,7 @@
         const operator = document.getElementById('prod-operator');
         const condition = document.getElementById('prod-condition');
         const stage = document.getElementById('prod-stage');
+        const aktivitas = document.getElementById('prod-aktivitas');
         const datetime = document.getElementById('prod-datetime');
         const valInput = document.getElementById('prod-deadline-val');
         const unitInput = document.getElementById('prod-deadline-unit');
@@ -1344,9 +1382,10 @@
             handleSppSelection();
         }
         if (noProd) noProd.value = "CONTOH-" + new Date().getFullYear();
-        if (operator) operator.value = "Suhendra";
+        if (operator && window.currentUserAccess !== "produksi") operator.value = "Suhendra";
         if (condition) condition.value = "Normal";
         if (stage) stage.value = "1. Persiapan Material";
+        if (aktivitas) aktivitas.value = "Melakukan QC check list awal komponen";
         if (datetime) {
             const now = new Date();
             datetime.value = now.toISOString().slice(0,16);
@@ -1430,10 +1469,10 @@
         { id: "panel-analytics", title: "3. Ringkasan Master SPP", text: "<b>Statistik Utama:</b> Menampilkan jumlah SPP Selesai, Terjeda, Stoppage, dan Proses. Juga progress penyelesaian keseluruhan dalam persen." },
         { id: "panel-analytics", title: "4. Grafik Tren Volume Produksi", text: "<b>Grafik Line Chart:</b> Visualisasi jumlah barang selesai dari waktu ke waktu. Sangat berguna untuk memantau produktivitas harian." },
         { id: "panel-aktual", title: "5. Aktual Produk Terbanyak Selesai", text: "<b>Tabel Produk Selesai:</b> Menunjukkan produk apa saja yang sudah selesai diproduksi, termasuk jumlah unit dan status pengiriman." },
-        { id: "panel-inbox", title: "6. Inbox Pesan Otomatis", text: "<b>Pesan SPP Aktif:</b> Semua SPP yang masih berjalan muncul di sini sebagai notifikasi. Klik tombol status untuk langsung mengisi laporan operator." },
+        { id: "panel-inbox", title: "6. Inbox Pesan Otomatis", text: "<b>Pesan SPP Aktif:</b> Semua SPP yang masih berjalan muncul di sini as notifikasi. Klik tombol status untuk langsung mengisi laporan operator." },
         { id: "panel-monitoring", title: "7. Monitoring Progres & WhatsApp Notifier", text: "<b>Deadline SPP:</b> Memonitor sisa waktu pengerjaan setiap SPP yang sudah dikunci targetnya. Anda juga bisa mengirim pengingat langsung ke WhatsApp penanggung jawab." },
-        { id: "panel-input-prod", title: "8. Input Aktual Operator Produksi", text: "<b>Form Laporan Harian:</b> Operator mengisi update pekerjaan di sini. Pilih SPP, tentukan kondisi kerja, dan sistem akan otomatis menghitung poin performa.", isForm: true, demoFn: "demoFillProduction" },
-        { id: "panel-history-prod", title: "9. History 2 - Log Aktivitas Operator", text: "<b>Riwayat Lengkap:</b> Semua laporan operator tersimpan di sini. Bisa dicari dan diekspor untuk evaluasi kinerja." },
+        { id: "panel-input-prod", title: "8. Input Aktual Operator Produksi", text: "<b>Form Laporan Harian:</b> Operator mengisi update pekerjaan dan aktivitas harian di sini. Pilih SPP, tentukan kondisi kerja, isi detail apa saja yang Anda kerjakan, dan sistem akan otomatis menghitung poin performa.", isForm: true, demoFn: "demoFillProduction" },
+        { id: "panel-history-prod", title: "9. History 2 - Log Aktivitas Operator", text: "<b>Riwayat Lengkap:</b> Semua laporan operator tersimpan di sini. Kolom baru 'Aktivitas Kegiatan' mencatat secara transparan apa saja yang dilakukan di lapangan." },
         { id: "panel-ranking", title: "10. Dashboard Analisa Produktivitas - Rangking Operator", text: "<b>Peringkat Performa:</b> Poin operator dihitung otomatis dari kecepatan dan ketepatan kerja. Peringkat 1-3 diberi badge spesial." },
         { id: "panel-surat-perintah", title: "11. Surat Perintah Langsung Manager Warehouse", text: "<b>Form SPL:</b> Manager Warehouse bisa menerbitkan perintah mendesak yang langsung mengunci target waktu operator.", isForm: true, demoFn: "demoFillSPL" },
         { id: "panel-surat-perintah", title: "12. History Surat Perintah Langsung", text: "<b>Tabel Riwayat SPL:</b> Scroll ke bawah di panel yang sama untuk melihat semua SPL yang sudah diterbitkan." },
@@ -1831,11 +1870,13 @@
         const filteredLogs = window.getFilteredLogs(); 
         const filteredSPP = window.getFilteredSPP(); 
 
+        // A. Tambah poin progres harian (proses, lembur, dll)
         filteredLogs.forEach(log => {
             if(skorPeta[log.operator] === undefined) skorPeta[log.operator] = 0;
             if (log.processPoints) skorPeta[log.operator] += log.processPoints;
         });
 
+        // B. Hitung Poin Selesai (SISTEM POOL PROPORSIONAL & BONUS DINAMIS)
         filteredSPP.forEach(spp => {
             if (['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(spp.status)) {
                 let operatorLogCounts = {}; 
@@ -1844,7 +1885,8 @@
 
                 filteredLogs.forEach(log => {
                     if (log.noSPP === spp.no) {
-                        if (['Proses', 'Selesai', 'Selesai Awal', 'Telat Selesai', 'Lembur Selesai (Reguler)', 'Lembur Selesai (Sabtu/Minggu)'].includes(log.status) || log.condition.includes('Lembur')) {
+                        // Memasukkan tiket untuk mereka yang melakukan Lanjut Besok, Takeover, dll agar poin akhir dibagi rata
+                        if (['Proses', 'Selesai', 'Selesai Awal', 'Telat Selesai', 'Lembur Selesai (Reguler)', 'Lembur Selesai (Sabtu/Minggu)', 'Lanjutkan Besok', 'Takeover', 'Stoppage', 'Idle Time'].includes(log.status) || log.condition.includes('Lembur')) {
                             operatorLogCounts[log.operator] = (operatorLogCounts[log.operator] || 0) + 1;
                             totalValidLogs++;
                         }
@@ -1859,7 +1901,7 @@
                 let targetOps = 1; 
                 if (PRODUCT_DICTIONARY[spp.product]) targetOps = PRODUCT_DICTIONARY[spp.product].ops;
                 
-                let basePointPerOperator = 80; 
+                let basePointPerOperator = 80; // POIN DASAR 80
                 let totalPoolPoints = basePointPerOperator * targetOps;
                 let pointPerLog = totalPoolPoints / totalValidLogs; 
 
@@ -1870,13 +1912,14 @@
                     let porsiRasio = operatorLogCounts[op] / totalValidLogs; 
                     let finalReward = opShare;
 
+                    // LOGIKA BONUS DINAMIS SESUAI TABEL
                     if (spp.status === 'Selesai Awal' && msTerlambat < 0) {
                         let jamLebihAwal = Math.floor(Math.abs(msTerlambat) / (1000 * 60 * 60));
-                        let totalBonus = Math.min(jamLebihAwal * 10, 50); 
+                        let totalBonus = Math.min(jamLebihAwal * 10, 50); // +10 Poin per jam (Maks +50)
                         finalReward += (totalBonus * porsiRasio); 
                     } else if (spp.status === 'Telat Selesai' && msTerlambat > 0) {
                         let jamTelat = Math.floor(msTerlambat / (1000 * 60 * 60));
-                        let totalPenalty = 10 + (jamTelat * 5); 
+                        let totalPenalty = 10 + (jamTelat * 5); // Penalti telat
                         finalReward -= (totalPenalty * porsiRasio); 
                     }
 
@@ -1885,6 +1928,7 @@
             }
         });
 
+        // C. Render ke HTML
         let susunanRangking = Object.keys(skorPeta).map(nama => { return { nama: nama, poin: skorPeta[nama] }; }).sort((a, b) => b.poin - a.poin);
         if (window.isRankingMinimized) susunanRangking = susunanRangking.slice(0, 5);
         const tbody = document.getElementById('operator-ranking-body'); tbody.innerHTML = "";
@@ -2008,15 +2052,16 @@
         });
     }
 
+    // REVISI METODE RENDER OPERATOR: MENAMPILKAN DATA DARI VARIABEL BARU (item.aktivitas)
     window.renderOperatorTable = function() {
         const tbody = document.getElementById('operator-history-body'); tbody.innerHTML = ''; 
         let filteredLogs = window.getFilteredLogs();
-        if(filteredLogs.length === 0) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat laporan pada rentang waktu ini.</td></tr>'; return; }
+        if(filteredLogs.length === 0) { tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat laporan pada rentang waktu ini.</td></tr>'; return; }
         const isDev = window.currentUserRole === "RANDI";
         filteredLogs.forEach((item) => {
             let badgeHTML = window.getStatusBadge(item.status);
             let delBtn = isDev ? `<td><button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
-            tbody.innerHTML += `<tr><td><b>${item.noProd}</b></td><td>${item.noSPP}</td><td><b>${item.operator}</b></td><td><u>${item.condition}</u></td><td><i>${item.stage}</i></td><td>${item.time}</td><td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td><td>${badgeHTML}</td><td><span style="font-weight:700; color:var(--blue-glow);">${item.reason}</span></td>${delBtn}</tr>`;
+            tbody.innerHTML += `<tr><td><b>${item.noProd}</b></td><td>${item.noSPP}</td><td><b>${item.operator}</b></td><td><span style="color:var(--cyan-glow); font-weight:600;">${item.aktivitas || '-'}</span></td><td><u>${item.condition}</u></td><td><i>${item.stage}</i></td><td>${item.time}</td><td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td><td>${badgeHTML}</td><td><span style="font-weight:700; color:var(--blue-glow);">${item.reason}</span></td>${delBtn}</tr>`;
         });
     }
 
@@ -2049,30 +2094,82 @@
     }
 
     window.handleSppSelection = function() {
-        const selectedSPPNo = document.getElementById('prod-spp-select').value; const displayBox = document.getElementById('live-deadline-display');
-        const valInput = document.getElementById('prod-deadline-val'); const unitInput = document.getElementById('prod-deadline-unit'); 
-        const opsInput = document.getElementById('prod-target-ops'); const alertBar = document.getElementById('live-condition-alert');
+        const selectedSPPNo = document.getElementById('prod-spp-select').value; 
+        const displayBox = document.getElementById('live-deadline-display');
+        const valInput = document.getElementById('prod-deadline-val'); 
+        const unitInput = document.getElementById('prod-deadline-unit'); 
+        const opsInput = document.getElementById('prod-target-ops'); 
+        const alertBar = document.getElementById('live-condition-alert');
+        
         if (!selectedSPPNo) { 
             displayBox.innerHTML = "⚙️ Menunggu penentuan nomor dokumen SPP... "; 
-            if(window.currentUserRole !== "Produksi") { valInput.disabled = false; unitInput.disabled = false; }
+            if(window.currentUserAccess !== "produksi") { valInput.disabled = false; unitInput.disabled = false; }
             valInput.value = ""; opsInput.value = ""; alertBar.style.display = "none"; return; 
         }
+        
         const matchedSPP = window.databaseMasterSPP.find(i => i.no === selectedSPPNo); if (!matchedSPP) return;
+        
         if (PENJEDAAN_STATUS_LIST.includes(matchedSPP.status)) {
             alertBar.style.display = "block"; alertBar.style.background = "rgba(244, 63, 94, 0.2)"; alertBar.style.color = "#f43f5e"; alertBar.style.border = "1px solid #e11d48";
             alertBar.innerHTML = `⚠️ STATUS AKTIF: SPP ${matchedSPP.no} sedang di-set [${matchedSPP.status}] sejak ${matchedSPP.lastEventTimeFormatted}`;
         } else alertBar.style.display = "none";
+        
         const prodInfo = PRODUCT_DICTIONARY[matchedSPP.product];
+        
+        // JIKA SPP SUDAH TERKUNCI (Sudah pernah dilaporkan sebelumnya)
         if (matchedSPP.isLocked) { 
-            valInput.disabled = true; unitInput.disabled = true; 
-            if(prodInfo) opsInput.value = prodInfo.ops + " Orang (Terkunci)"; else opsInput.value = "Custom/SPL";
+            valInput.disabled = true; 
+            unitInput.disabled = true; 
+            valInput.setAttribute('readonly', 'true');
+            valInput.style.pointerEvents = 'none';
+            valInput.style.background = '#1e293b';
+            unitInput.style.pointerEvents = 'none';
+            unitInput.style.background = '#1e293b';
+            
+            if(prodInfo) opsInput.value = prodInfo.ops + " Orang (Terkunci)"; 
+            else opsInput.value = "Custom/SPL";
             window.liveCalculationHandler(); 
-        } else { 
+        } 
+        // JIKA SPP BARU PERTAMA KALI DIBUKA (Belum Terkunci)
+        else { 
             displayBox.innerHTML = "⏳ Masukkan tanggal lapangan untuk mengunci target..."; 
-            if (window.currentUserRole !== "Produksi") { valInput.disabled = false; unitInput.disabled = false; } 
-            else { valInput.disabled = true; unitInput.disabled = true; }
-            if(prodInfo) { valInput.value = prodInfo.hours; unitInput.value = 'jam'; opsInput.value = prodInfo.ops + " Orang Target"; }
-            else { valInput.value = ""; opsInput.value = "Custom Product"; }
+            
+            if (prodInfo) { 
+                // KONDISI 1: PRODUK STANDAR (Ada di Kamus)
+                valInput.value = prodInfo.hours; 
+                unitInput.value = 'jam'; 
+                opsInput.value = prodInfo.ops + " Orang Target"; 
+                
+                // Operator produksi tetap tidak boleh mengubah standar
+                if (window.currentUserAccess === "produksi") {
+                    valInput.disabled = true; unitInput.disabled = true;
+                    valInput.setAttribute('readonly', 'true');
+                    valInput.style.pointerEvents = 'none';
+                    valInput.style.background = '#1e293b';
+                    unitInput.style.pointerEvents = 'none';
+                    unitInput.style.background = '#1e293b';
+                } else {
+                    valInput.disabled = false; unitInput.disabled = false;
+                    valInput.removeAttribute('readonly');
+                    valInput.style.pointerEvents = 'auto';
+                    valInput.style.background = 'var(--input-bg)';
+                    unitInput.style.pointerEvents = 'auto';
+                    unitInput.style.background = 'var(--input-bg)';
+                }
+            } else { 
+                // KONDISI 2: PRODUK CUSTOM (Tidak ada di Kamus)
+                valInput.value = ""; 
+                opsInput.value = "Custom Product"; 
+                
+                // BUKA KUNCI KHUSUS UNTUK SEMUA ROLE (TERMASUK OPERATOR) AGAR BISA ISI TARGET
+                valInput.disabled = false; 
+                unitInput.disabled = false;
+                valInput.removeAttribute('readonly');
+                valInput.style.pointerEvents = 'auto';
+                valInput.style.background = 'var(--input-bg)';
+                unitInput.style.pointerEvents = 'auto';
+                unitInput.style.background = 'var(--input-bg)';
+            }
             window.liveCalculationHandler(); 
         }
     }
@@ -2101,9 +2198,10 @@
         const operator = document.getElementById('prod-operator').value; 
         const condition = document.getElementById('prod-condition').value;
         const stage = document.getElementById('prod-stage').value;
+        const aktivitas = document.getElementById('prod-aktivitas').value.trim() || "-";
         
         let operatorInputTime;
-        if (window.currentUserRole === "Produksi") operatorInputTime = new Date();
+        if (window.currentUserAccess === "produksi") operatorInputTime = new Date();
         else operatorInputTime = new Date(document.getElementById('prod-datetime').value);
         
         const startTimeFormatted = window.formatDateToString(operatorInputTime);
@@ -2112,7 +2210,6 @@
         
         let updates = {};
         
-        // Pengecekan Kunci Deadline
         if (!matchedSPP.isLocked) {
             const valInput = parseInt(document.getElementById('prod-deadline-val').value); 
             const unitInput = document.getElementById('prod-deadline-unit').value;
@@ -2132,7 +2229,6 @@
         let currentDeadlineMs = updates.deadlineRawObjectMs || matchedSPP.deadlineRawObjectMs;
         let currentStartMs = updates.startTimeObjectMs || matchedSPP.startTimeObjectMs;
 
-        // Kalkulasi Durasi Penjedaan
         if (PENJEDAAN_STATUS_LIST.includes(matchedSPP.status) && !PENJEDAAN_STATUS_LIST.includes(condition)) {
             if (matchedSPP.lastEventTimeMs) {
                 const durationOfDowntime = operatorInputTime.getTime() - matchedSPP.lastEventTimeMs;
@@ -2150,14 +2246,17 @@
             updates.lastEventTimeFormatted = startTimeFormatted; 
         }
 
-        // Identifikasi Lembur
+        // ==========================================
+        // LOGIKA POIN & STATUS (LEMBUR & INSTAN)
+        // ==========================================
         let lemburDurationMs = 0; let lemburPoints = 0; let isLemburProses = false;
-        if (condition === 'Lembur (Reguler)') { lemburDurationMs = 4 * 60 * 60 * 1000; lemburPoints = 25; isLemburProses = true; }
-        else if (condition === 'Lembur (Sabtu/Minggu)') { lemburDurationMs = 9 * 60 * 60 * 1000; lemburPoints = 50; isLemburProses = true; }
+        
+        // Lembur awal mula dapat 0 poin, poin cair hanya saat submit "Lembur Selesai"
+        if (condition === 'Lembur (Reguler)') { lemburDurationMs = 4 * 60 * 60 * 1000; lemburPoints = 0; isLemburProses = true; }
+        else if (condition === 'Lembur (Sabtu/Minggu)') { lemburDurationMs = 9 * 60 * 60 * 1000; lemburPoints = 0; isLemburProses = true; }
         else if (condition === 'Lembur Selesai (Reguler)') { lemburPoints = 25; }
         else if (condition === 'Lembur Selesai (Sabtu/Minggu)') { lemburPoints = 50; }
 
-        // Bonus waktu lembur diperpanjang ke deadline
         if (isLemburProses && currentDeadlineMs) {
             let newDeadline = currentDeadlineMs - lemburDurationMs;
             updates.deadlineRawObjectMs = newDeadline;
@@ -2167,51 +2266,55 @@
 
         const inputTimeMs = operatorInputTime.getTime();
         let calculatedStatus = ""; let rewardReasonText = "-"; let gapTerlambatMs = inputTimeMs - currentDeadlineMs; let processPoints = 0;
-        let totalDurationMs = currentDeadlineMs - currentStartMs; 
-        let timeSpentMs = inputTimeMs - currentStartMs;
 
-        // Logika Status Akhir & Distribusi Poin Kondisi Lapangan
+        // Distribusi Poin Sesuai Tabel Keadilan
         if (PENJEDAAN_STATUS_LIST.includes(condition)) { 
             calculatedStatus = condition; 
-            processPoints = 0;
+            if (condition === 'Lanjutkan Besok' || condition === 'Takeover') {
+                processPoints = 15; 
+                rewardReasonText = `Apresiasi progress harian (+15 Poin)`;
+            } else if (condition === 'Stoppage' || condition === 'Idle Time') {
+                processPoints = 10; 
+                rewardReasonText = `Kompensasi waktu kendala (+10 Poin)`;
+            }
         } 
+        else if (condition === 'Normal') {
+            calculatedStatus = gapTerlambatMs <= 0 ? 'Proses' : 'Telat Selesai';
+            if (calculatedStatus === 'Proses') {
+                processPoints = 10;
+                rewardReasonText = "Proses Kerja Aktif (+10 Poin)";
+            }
+        }
         else if (isLemburProses) {
-            calculatedStatus = 'Proses';
-            processPoints = lemburPoints; 
-            rewardReasonText = `Kerja Lembur (+${lemburPoints} Poin)`;
+            calculatedStatus = gapTerlambatMs <= 0 ? 'Proses' : 'Telat Selesai';
+            processPoints = lemburPoints; // (Ini bernilai 0 Poin)
+            rewardReasonText = `Mulai Lembur (Poin ditahan s/d Selesai)`;
         } 
         else if (condition === 'Lembur Selesai (Reguler)' || condition === 'Lembur Selesai (Sabtu/Minggu)') {
             calculatedStatus = gapTerlambatMs <= 0 ? 'Selesai' : 'Telat Selesai'; 
-            rewardReasonText = `Selesai dengan Lembur (+${lemburPoints} Poin Lembur)`; 
+            rewardReasonText = `Selesai dengan Lembur (+${lemburPoints} Poin Lembur Cair)`; 
             processPoints = lemburPoints;
         } 
         else if (condition === 'Pekerjaan Selesai Awal' || (stage.includes("7. Packing") && gapTerlambatMs < 0)) {
             if (gapTerlambatMs < 0) { 
                 calculatedStatus = 'Selesai Awal'; 
                 const diffHours = (Math.abs(gapTerlambatMs) / (1000 * 60 * 60)).toFixed(1); 
-                rewardReasonText = `🌟 Lebih Cepat ${diffHours} Jam dari Target`; 
-            } 
-            else { 
+                rewardReasonText = `🌟 Lebih Cepat ${diffHours} Jam dari Target (Poin Final Cair)`; 
+            } else { 
                 calculatedStatus = gapTerlambatMs === 0 ? 'Selesai' : 'Telat Selesai'; 
             }
+            processPoints = 0; // Poin utama murni dari pembagian kue 80 poin
         } 
         else if (condition === 'Pekerjaan Selesai Tepat Waktu' || stage.includes("7. Packing")) {
             calculatedStatus = gapTerlambatMs <= 0 ? 'Selesai' : 'Telat Selesai';
+            processPoints = 0; // Poin utama murni dari pembagian kue 80 poin
+            rewardReasonText = gapTerlambatMs <= 0 ? "Selesai Tepat Waktu (Poin Final Cair)" : "Telat Selesai";
         } 
         else {
             calculatedStatus = gapTerlambatMs <= 0 ? 'Proses' : 'Telat Selesai';
-            if (calculatedStatus === 'Proses') {
-                if (timeSpentMs < (totalDurationMs * 0.15)) { 
-                    processPoints = 0; 
-                    rewardReasonText = "Proses Berjalan (Terlalu Cepat, 0 Poin)"; 
-                } else { 
-                    processPoints = 10; 
-                    rewardReasonText = "Proses Laporan Berjalan (+10 Poin)"; 
-                }
-            }
+            processPoints = 0;
         }
 
-        // UI Feedback Waktu
         let sisaWaktuTextInfo = "";
         if (gapTerlambatMs < 0) { 
             const h = Math.floor(Math.abs(gapTerlambatMs) / (1000 * 60 * 60)); 
@@ -2221,7 +2324,7 @@
             sisaWaktuTextInfo = "Waktu Telah Habis / Melewati Target"; 
         }
 
-        window.activeTempData = { noProd, noSPP, operator, condition, stage, time: startTimeFormatted, timestampMs: inputTimeMs, deadline: updates.formattedDeadline || matchedSPP.formattedDeadline, status: calculatedStatus, reason: rewardReasonText, msTerlambat: gapTerlambatMs, processPoints: processPoints };
+        window.activeTempData = { noProd, noSPP, operator, aktivitas, condition, stage, time: startTimeFormatted, timestampMs: inputTimeMs, deadline: updates.formattedDeadline || matchedSPP.formattedDeadline, status: calculatedStatus, reason: rewardReasonText, msTerlambat: gapTerlambatMs, processPoints: processPoints };
         
         updates.status = calculatedStatus; 
         
@@ -2230,34 +2333,36 @@
         window.triggerPopup(calculatedStatus, updates.formattedDeadline || matchedSPP.formattedDeadline, rewardReasonText, gapTerlambatMs, sisaWaktuTextInfo, processPoints);
     });
 
+    // FUNGSI POPUP DENGAN TEKS YANG SUDAH DIREVISI MENDUKUNG BONUS DINAMIS
     window.triggerPopup = function(status, deadlineText, rewardText, gapMs, sisaWaktuTextInfo = "", processPoints = 0) {
         const modal = document.getElementById('statusModal'); const title = document.getElementById('modal-title'); const desc = document.getElementById('modal-desc');
         const reasonSection = document.getElementById('reason-section'); const kpiBlock = document.getElementById('kpi-commitment-block'); const generalInput = document.getElementById('general-reason-input');
         window.currentSelectedCommitment = ""; document.getElementById('commit-yes').classList.remove('selected-yes'); document.getElementById('commit-no').classList.remove('selected-no');
         generalInput.value = ""; modal.style.display = "flex";
+        
         if (PENJEDAAN_STATUS_LIST.includes(status)) {
-            title.innerHTML = `⚠️ STATUS: ${status.toUpperCase()}`; desc.innerHTML = `Kondisi pengerjaan menjadi penundaan lapangan. <br><b style="color:var(--text-muted)">Poin Penjedaan: 0 Poin.</b>`;
+            title.innerHTML = `⚠️ STATUS: ${status.toUpperCase()}`; desc.innerHTML = `Kondisi pengerjaan menjadi penundaan lapangan. <br><b style="color:var(--text-muted)">Poin Instan: ${processPoints} Poin.</b>`;
             reasonSection.style.display = "block"; kpiBlock.style.display = "none";
         } else if (status === 'Selesai Awal') {
             title.innerHTML = "<span style='color:var(--emerald-glow)'>🌟 PRESTASI KERJA: SELESAI LEBIH AWAL!</span>";
-            desc.innerHTML = `<span style="color:var(--emerald-glow); font-weight:800; display:block; background:rgba(16,185,129,0.1); padding:15px; border-radius:6px; border:1px solid #34d399;">Luar Biasa! Kerja cepat terverifikasi.<br>${rewardText}.<br>Mendapatkan bonus <b style="color:var(--warning-glow)">+100 Poin Rangking!</b></span>`;
+            desc.innerHTML = `<span style="color:var(--emerald-glow); font-weight:800; display:block; background:rgba(16,185,129,0.1); padding:15px; border-radius:6px; border:1px solid #34d399;">Luar Biasa! Kerja cepat terverifikasi.<br>${rewardText}.<br>Poin Dasar (80) + <b style="color:var(--warning-glow)">Bonus Waktu Dinamis</b> ditambahkan ke Profil Anda!</span>`;
             reasonSection.style.display = "none"; kpiBlock.style.display = "none";
         } else if (status === 'Selesai') {
             title.innerHTML = "<span style='color:var(--success-glow)'>✅ PRODUK SELESAI TEPAT WAKTU</span>";
-            desc.innerHTML = `Dokumen SPP berhasil diselesaikan sesuai target.<br><b style="color:var(--success-glow)">+75 Poin Performa Terpasang.</b>`;
+            desc.innerHTML = `Dokumen SPP berhasil diselesaikan sesuai target waktu.<br><b style="color:var(--success-glow)">Poin Kinerja Standar (80 XP) ditambahkan ke Profil Anda.</b>`;
             reasonSection.style.display = "none"; kpiBlock.style.display = "none";
         } else if (status === 'Proses') {
             title.innerHTML = "<span style='color:var(--blue-glow)'>🔄 PROGRESS LAPORAN TERCATAT</span>";
             let antiCheatBadge = "";
-            if (processPoints === 0 && !rewardText.includes("Lembur")) antiCheatBadge = `<b style="color:var(--danger-glow); display:block; margin-top:8px;">Terlalu Cepat / Penjedaan (0 Poin)</b>`;
-            else if (processPoints >= 10) antiCheatBadge = `<b style="color:var(--emerald-glow); display:block; margin-top:8px;">Proses Kerja Optimal (+${processPoints} Poin)</b>`;
-            else antiCheatBadge = `<b style="color:var(--text-muted); display:block; margin-top:8px;">Proses Kerja Standar (+0 Poin)</b>`;
+            if (processPoints === -5) antiCheatBadge = `<b style="color:var(--danger-glow); display:block; margin-top:8px;">Terlalu Cepat (-5 Poin Pinalti)</b>`;
+            else if (processPoints >= 10) antiCheatBadge = `<b style="color:var(--emerald-glow); display:block; margin-top:8px;">${rewardText}</b>`;
+            else antiCheatBadge = `<b style="color:var(--text-muted); display:block; margin-top:8px;">${rewardText}</b>`;
             desc.innerHTML = `Laporan harian berhasil diperbarui.<br><b style="color:var(--blue-glow); display:inline-block; margin-top:10px; padding:8px 15px; background:rgba(56,189,248,0.1); border-radius:6px; border:1px solid var(--blue-glow);">⏳ ${sisaWaktuTextInfo}</b>${antiCheatBadge}`;
             reasonSection.style.display = "none"; kpiBlock.style.display = "none";
         } else if (status === 'Telat Selesai') {
-            const hitungHari = (gapMs / (1000 * 60 * 60 * 24)).toFixed(2); const perkiraanPotong = Math.round(hitungHari * 20) || 20;
+            const hitungHari = (gapMs / (1000 * 60 * 60 * 24)).toFixed(2);
             title.innerHTML = "<span style='color:var(--danger-glow)'>🚨 PERINGATAN KETERLAMBATAN KERJA</span>";
-            desc.innerHTML = `<span style="color:var(--danger-glow); font-weight:800; display:block; background:rgba(244,63,94,0.1); padding:12px; border-radius:6px;">Anda telat ±${hitungHari} Hari. Mempengaruhi KPI.<br><b style="color:#f43f5e">Pinalti Konsekuensi: -${perkiraanPotong} Poin Rangking!</b></span>`;
+            desc.innerHTML = `<span style="color:var(--danger-glow); font-weight:800; display:block; background:rgba(244,63,94,0.1); padding:12px; border-radius:6px;">Anda telat ±${hitungHari} Hari. Mempengaruhi KPI.<br><b style="color:#f43f5e">Sistem menerapkan pinalti pemotongan Poin Rangking!</b></span>`;
             reasonSection.style.display = "none"; kpiBlock.style.display = "block";     
         }
     }
@@ -2298,6 +2403,17 @@
 
         // 4. Reset Form Input Aktual
         document.getElementById('prod-form').reset();
+        
+        // REVISI: Mempertahankan auto-fill nama operator yang sedang login pasca-form direset
+        if (window.currentUserAccess === "produksi" && window.currentUserRole !== "Produksi") {
+            const opSelect = document.getElementById('prod-operator');
+            if (opSelect) {
+                opSelect.value = window.currentUserRole;
+                opSelect.style.pointerEvents = 'none';
+                opSelect.style.background = '#1e293b';
+            }
+        }
+
         document.getElementById('live-deadline-display').innerHTML = "⚙️ Menunggu penentuan nomor dokumen SPP...";
         document.getElementById('live-condition-alert').style.display = "none";
         if(typeof window.resetDateTimeInputs === "function") window.resetDateTimeInputs();
