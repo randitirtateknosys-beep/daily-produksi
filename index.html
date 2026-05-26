@@ -512,16 +512,16 @@
                         <label>Kondisi Kerja Lapangan</label>
                         <select id="prod-condition" required>
                             <option value="Normal">Normal (Pekerjaan Berjalan / Proses)</option>
-                            <option value="Pekerjaan Selesai Tepat Waktu">Pekerjaan Selesai Tepat Waktu (+75 Poin)</option>
-                            <option value="Pekerjaan Selesai Awal">Pekerjaan Selesai Awal (+100 Poin)</option>
-                            <option value="Idle Time">Idle Time (0 Poin)</option>
-                            <option value="Stoppage">Stoppage (0 Poin)</option>
-                            <option value="Takeover">Takeover (0 Poin)</option>
-                            <option value="Lanjutkan Besok">Lanjutkan Besok (0 Poin)</option>
-                            <option value="Lembur (Reguler)">Lembur (Reguler) - 4 Jam, +25 Poin</option>
-                            <option value="Lembur (Sabtu/Minggu)">Lembur (Sabtu/Minggu) - 9 Jam, +50 Poin</option>
-                            <option value="Lembur Selesai (Reguler)">Lembur Selesai (Reguler) - +25 Poin</option>
-                            <option value="Lembur Selesai (Sabtu/Minggu)">Lembur Selesai (Sabtu/Minggu) - +50 Poin</option>
+                            <option value="Pekerjaan Selesai Tepat Waktu">Pekerjaan Selesai Tepat Waktu ()</option>
+                            <option value="Pekerjaan Selesai Awal">Pekerjaan Selesai Awal ()</option>
+                            <option value="Idle Time">Idle Time ()</option>
+                            <option value="Stoppage">Stoppage ()</option>
+                            <option value="Takeover">Takeover ()</option>
+                            <option value="Lanjutkan Besok">Lanjutkan Besok ()</option>
+                            <option value="Lembur (Reguler)">Lembur (Reguler) - 4 Jam, Mulai</option>
+                            <option value="Lembur (Sabtu/Minggu)">Lembur (Sabtu/Minggu) - 9 Jam, mulai</option>
+                            <option value="Lembur Selesai (Reguler)">Lembur Selesai (Reguler) </option>
+                            <option value="Lembur Selesai (Sabtu/Minggu)">Lembur Selesai (Sabtu/Minggu) </option>
                         </select>
                     </div>
                     <div class="form-group full-width-group">
@@ -796,7 +796,7 @@
                     </table>
                 </div>
             </div>
-            </div>
+        </div>
 
         <div class="panel" id="panel-history-shipment">
             <div class="header-flex">
@@ -1157,7 +1157,7 @@
             localStorage.setItem('savedLoginData', pass); 
             
             document.getElementById('current-user-role').innerText = window.currentUserRole;
-            document.getElementById('welcome-role-text').innerText = window.currentUserRole === "RANDI" ? "TN RANDI" : window.currentUserRole;
+            document.getElementById('welcome-role-text').innerText = (window.currentUserRole.toUpperCase() === "RANDI") ? "TN RANDI" : window.currentUserRole;
             
             // LOGIKA AUTO-FILL & LOCK NAMA OPERATOR LAPANGAN
             const opSelect = document.getElementById('prod-operator');
@@ -1245,7 +1245,7 @@
             document.getElementById('prod-datetime').removeAttribute('readonly');
         }
 
-        const isDev = window.currentUserRole === "RANDI";
+        const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
         document.getElementById('spp-master-head').innerHTML = `<th>No. SPP</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Pembuat</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('spl-history-head').innerHTML = `<th>No. SPL</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Penanggung Jawab</th><th>Penerima Tugas</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('shipment-history-head').innerHTML = `<th>Keberangkatan</th><th>Produk</th><th>No. SPP Asal</th><th>Operator Logistik</th><th>Customer</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
@@ -1288,7 +1288,7 @@
 
     window.renderChat = function() {
         const container = document.getElementById('chat-messages'); container.innerHTML = '';
-        const isDev = window.currentUserRole === "RANDI";
+        const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
         
         document.getElementById('chat-clear-btn').style.display = isDev ? 'block' : 'none';
 
@@ -2074,11 +2074,11 @@
     window.renderShipmentTable = function() {
         const tbody = document.getElementById('shipment-history-body'); tbody.innerHTML = ""; 
         let filteredShips = window.databaseShipment.filter(ship => window.isWithinTimeframe(ship.rawTimestampMs, document.getElementById('global-time-filter').value));
-        if (filteredShips.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding: 30px;">Belum ada riwayat keberangkatan.</td></tr>'; return; }
-        const isDev = window.currentUserRole === "RANDI";
+        const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
+        if (filteredShips.length === 0) { tbody.innerHTML = `<tr><td colspan="${isDev ? '7' : '6'}" style="text-align:center; color:var(--text-muted); padding: 30px;">Belum ada riwayat keberangkatan.</td></tr>`; return; }
         filteredShips.forEach(item => {
-            let delBtn = isDev ? `<td><button class="btn-delete" onclick="deleteShipment('${item.firebaseKey}', '${item.spp}')">Batal</button></td>` : '';
-            tbody.innerHTML += `<tr style="border-left: 4px solid var(--blue-glow);"><td>${item.time}</td><td><strong>${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>👤 -</b></td><td><b>🚚 ${item.carrier}</b></td><td><span style="color: var(--blue-glow); font-weight:700;">🏢 ${item.customer}</span></td><td><span class="badge bg-reguler" style="background:#ccfbf1; color:var(--emerald-glow); border-color:#5eead4;">Dalam Perjalanan</span></td>${delBtn}</tr>`;
+            let delBtn = isDev ? `<td><button class="btn-delete" onclick="deleteShipment('${item.firebaseKey}', '${item.spp}')">Hapus</button></td>` : '';
+            tbody.innerHTML += `<tr style="border-left: 4px solid var(--blue-glow);"><td>${item.time}</td><td><strong>${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>🚚 ${item.carrier}</b></td><td><span style="color: var(--blue-glow); font-weight:700;">🏢 ${item.customer}</span></td><td><span class="badge bg-reguler" style="background:#ccfbf1; color:var(--emerald-glow); border-color:#5eead4;">Dalam Perjalanan</span></td>${delBtn}</tr>`;
         });
     }
 
@@ -2086,8 +2086,8 @@
         const tbody = document.getElementById('spl-history-body'); tbody.innerHTML = ''; 
         let filteredSPP = window.getFilteredSPP(); 
         let onlySPL = filteredSPP.filter(i => i.isSPL);
-        if(onlySPL.length === 0) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada Surat Perintah Langsung yang dirilis.</td></tr>'; return; }
-        const isDev = window.currentUserRole === "RANDI";
+        const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
+        if(onlySPL.length === 0) { tbody.innerHTML = `<tr><td colspan="${isDev ? '9' : '8'}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada Surat Perintah Langsung yang dirilis.</td></tr>`; return; }
         onlySPL.forEach(item => {
             let displayStatus = item.isShipped ? '<span class="badge bg-urgent">Terkirim 🚚</span>' : window.getStatusBadge(item.status); 
             let delBtn = isDev ? `<td><button class="btn-delete" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button></td>` : '';
@@ -2098,8 +2098,8 @@
     window.renderMasterTable = function() {
         const tbody = document.getElementById('spp-master-body'); tbody.innerHTML = ''; 
         let filteredSPP = window.getFilteredNonSPLSPP(); 
-        if(filteredSPP.length === 0) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada data dokumen SPP standar.</td></tr>'; return; }
-        const isDev = window.currentUserRole === "RANDI";
+        const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
+        if(filteredSPP.length === 0) { tbody.innerHTML = `<tr><td colspan="${isDev ? '8' : '7'}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada data dokumen SPP standar.</td></tr>`; return; }
         filteredSPP.forEach(item => {
             let displayStatus = item.isShipped ? '<span class="badge bg-urgent">Terkirim 🚚</span>' : window.getStatusBadge(item.status); 
             let delBtn = isDev ? `<td><button class="btn-delete" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button></td>` : '';
@@ -2111,8 +2111,8 @@
     window.renderOperatorTable = function() {
         const tbody = document.getElementById('operator-history-body'); tbody.innerHTML = ''; 
         let filteredLogs = window.getFilteredLogs();
-        if(filteredLogs.length === 0) { tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat laporan pada rentang waktu ini.</td></tr>'; return; }
-        const isDev = window.currentUserRole === "RANDI";
+        const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
+        if(filteredLogs.length === 0) { tbody.innerHTML = `<tr><td colspan="${isDev ? '11' : '10'}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat laporan pada rentang waktu ini.</td></tr>`; return; }
         filteredLogs.forEach((item) => {
             let badgeHTML = window.getStatusBadge(item.status);
             let delBtn = isDev ? `<td><button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
@@ -2123,7 +2123,7 @@
     window.deleteMasterSPP = function(firebaseKey) { if(confirm("Hapus SPP ini secara permanen?")) window.dbRemoveSPP(firebaseKey); }
     window.deleteOperatorLog = function(firebaseKey) { if(confirm("Yakin menghapus log ini? Peringkat XP akan disesuaikan ulang.")) window.dbRemoveLog(firebaseKey); }
     window.deleteShipment = function(firebaseKey, sppAsal) {
-        if(confirm("Batalkan pengiriman? Barang akan kembali ke gudang.")) {
+        if(confirm("Hapus riwayat pengiriman ini? Barang akan kembali ke stok siap kirim di gudang.")) {
             window.dbRemoveShipment(firebaseKey); 
             let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal);
             if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: false });
