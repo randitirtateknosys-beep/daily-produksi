@@ -49,7 +49,7 @@
         }
         .login-box {
             background: #111827; padding: 40px; border-radius: 12px; border: 1px solid var(--blue-glow);
-            text-align: center; box-shadow: 0 0 40px rgba(56, 189, 248, 0.3); max-width: 450px; width: 90%;
+            text-align: center; box-shadow: 0 0 40px rgba(56, 189, 248, 0.3); max-width: 450px; width: 90%; transition: all 0.3s ease;
         }
         .login-robot-container {
             display: flex; flex-direction: column; align-items: center; gap: 15px; margin-bottom: 25px; 
@@ -60,6 +60,7 @@
             background: #0f172a; color: #fff; padding: 15px 20px; border-radius: 12px;
             border: 1px solid var(--blue-glow); box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
             font-size: 14px; font-weight: bold; width: 100%; text-align: center; position: relative; line-height: 1.5;
+            transition: all 0.3s ease;
         }
         .login-robot-bubble::before {
             content: ''; position: absolute; left: 50%; top: -10px; transform: translateX(-50%);
@@ -1155,6 +1156,20 @@
         if (window.currentUserRole === "Guest") {
             mtScreen.style.display = 'none';
             loginScreen.style.display = 'flex';
+            
+            // --- FITUR BARU: EFEK MERAH DI LAYAR LOGIN SAAT TERKUNCI ---
+            if (window.isMaintenanceActive) {
+                document.getElementById('login-robot-text').innerHTML = "<span style='color:#f43f5e; font-size:16px; font-weight:900;'>🚧 SISTEM TERKUNCI (MAINTENANCE) 🚧</span><br><br>Operator tidak bisa masuk. Hanya <b>Developer</b> yang diizinkan login saat ini.";
+                document.querySelector('.login-box').style.borderColor = "#f43f5e";
+                document.querySelector('.login-box').style.boxShadow = "0 0 40px rgba(244, 63, 94, 0.4)";
+                document.querySelector('.login-robot-bubble').style.borderColor = "#f43f5e";
+                document.querySelector('.login-robot-bubble').style.boxShadow = "0 0 20px rgba(244, 63, 94, 0.4)";
+            } else {
+                document.querySelector('.login-box').style.borderColor = "var(--blue-glow)";
+                document.querySelector('.login-box').style.boxShadow = "0 0 40px rgba(56, 189, 248, 0.3)";
+                document.querySelector('.login-robot-bubble').style.borderColor = "var(--blue-glow)";
+                document.querySelector('.login-robot-bubble').style.boxShadow = "0 0 20px rgba(56, 189, 248, 0.4)";
+            }
         } else {
             if (window.isMaintenanceActive && window.currentUserRole.toUpperCase() !== "RANDI") {
                 mtScreen.style.display = 'flex';
@@ -1643,6 +1658,7 @@
     };
 
     window.setLoginGreeting = function() {
+        if (window.isMaintenanceActive) return; // Cegah sapaan normal saat sedang dikunci
         let grt = window.getGreetingTime();
         let text = `Hi selamat ${grt}, perkenalkan saya BEE-BOOT robot pintar yang di ciptakan oleh team produksi , silahkan masukan kata sandi sesuai divisi anda lalu tekan enter.`;
         window.typeWriterHTML('login-robot-text', text, 25, null);
@@ -3154,7 +3170,8 @@
         
         updates.status = calculatedStatus; 
         
-        window.activeTempUpdates = updates; window.activeTempSPPKey = matchedSPP.firebaseKey;
+        window.activeTempUpdates = updates; 
+        window.activeTempSPPKey = matchedSPP.firebaseKey;
         
         window.triggerPopup(calculatedStatus, updates.formattedDeadline || matchedSPP.formattedDeadline, rewardReasonText, gapTerlambatMs, sisaWaktuTextInfo, processPoints);
     });
@@ -3336,7 +3353,7 @@
         }
     });
 
-    // --- FITUR EDIT MULTIPLE KHUSUS DEV (RANDI) ---
+   // --- FITUR EDIT MULTIPLE KHUSUS DEV (RANDI) ---
     window.editMasterSPP = function(firebaseKey) {
         let choice = prompt("Pilih data SPP/SPL yang ingin diedit:\n1. Status Terkini\n2. Nama Produk\n3. Urgensi Prioritas\n4. Reset Deadline (Buka Kunci SPP)\n5. Tanggal & Jam Keluar\n\nMasukkan angka (1-5):");
         if (!choice) return;
