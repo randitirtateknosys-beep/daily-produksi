@@ -91,6 +91,21 @@
         .welcome-box h3 { color: #fff; margin-bottom: 5px; }
         @keyframes popIn { to { transform: scale(1); } }
 
+        /* --- MAINTENANCE SCREEN --- */
+        #maintenance-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.98); backdrop-filter: blur(15px);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10000; text-align: center; padding: 20px;
+        }
+        .maintenance-box {
+            background: #111827; padding: 40px; border-radius: 12px; border: 2px solid var(--warning-glow);
+            box-shadow: 0 0 50px rgba(251, 191, 36, 0.4); max-width: 550px;
+        }
+        .maintenance-box h1 { color: var(--warning-glow); font-size: 30px; margin-top: 0; text-transform: uppercase;}
+        .maintenance-box p { color: #fff; font-size: 16px; line-height: 1.6; }
+        .maintenance-icon { font-size: 80px; margin-bottom: 10px; animation: floatLogin 3s ease-in-out infinite; }
+
         /* --- DASHBOARD STYLES --- */
         #main-app { display: none; padding: 30px; }
         .container { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; }
@@ -291,6 +306,14 @@
 </head>
 <body>
 
+<div id="maintenance-screen">
+    <div class="maintenance-box">
+        <div class="maintenance-icon">🛠️</div>
+        <h1>Sistem Sedang Perbaikan</h1>
+        <p id="maintenance-msg-text">Mohon maaf, sistem saat ini sedang ditutup untuk sementara waktu karena ada pemeliharaan rutin oleh tim Developer. Silakan kembali beberapa saat lagi.</p>
+    </div>
+</div>
+
 <div id="login-screen">
     <div class="login-box">
         <div class="login-robot-container">
@@ -398,6 +421,23 @@
                     <thead><tr><th>Sumber Data</th><th>No. ID/SPP</th><th>Detail Info</th><th>Status Terkini</th></tr></thead>
                     <tbody id="search-result-body"></tbody>
                 </table>
+            </div>
+        </div>
+
+        <div class="panel" id="panel-dev-maintenance" style="display: none; border-color: var(--warning-glow); box-shadow: 0 0 20px rgba(251, 191, 36, 0.2); margin-bottom: 25px;">
+            <h3 style="color: var(--warning-glow) !important; border-bottom-color: rgba(251, 191, 36, 0.2);">🛠️ [DEV ONLY] Kontrol Maintenance Sistem</h3>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: -15px; margin-bottom: 20px;">
+                Gunakan fitur ini untuk mengunci aplikasi. Layar seluruh operator akan langsung tertutup peringatan, namun <b>akun Anda (Randi)</b> akan tetap bisa mengakses dashboard.
+            </p>
+            <div class="unified-grid">
+                <div class="form-group full-width-group">
+                    <label>Pesan Pemberitahuan Untuk User</label>
+                    <input type="text" id="dev-maintenance-msg" placeholder="Opsional: Tulis alasan perbaikan (Misal: Update bulanan, estimasi selesai 15:00)..." style="border-color: var(--warning-glow);">
+                </div>
+                <div class="form-group full-width-group" style="display: flex; gap: 15px; flex-direction: row; align-items: center; justify-content: center;">
+                    <button type="button" class="action-btn" style="background: var(--danger-glow); max-width: 300px; box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);" onclick="setMaintenanceStatus(true)">🔴 KUNCI APLIKASI</button>
+                    <button type="button" class="action-btn" style="background: var(--emerald-glow); max-width: 300px; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);" onclick="setMaintenanceStatus(false)">🟢 BUKA KEMBALI</button>
+                </div>
             </div>
         </div>
 
@@ -562,8 +602,7 @@
                     <div class="form-group">
                         <label>Kondisi Kerja Lapangan</label>
                         <select id="prod-condition" required>
-                            <!-- Opsi akan digenerate otomatis oleh Javascript untuk fungsi Anti-Cheat -->
-                        </select>
+                            </select>
                     </div>
                     
                     <div class="form-group full-width-group">
@@ -944,7 +983,6 @@
         🤖
     </div>
 </div>
-
 <script>
     // ==========================================
     // FIREBASE INITIALIZATION & REALTIME SYNC
@@ -976,6 +1014,8 @@
     window.isMatrixMinimized = true; 
     window.isRankingMinimized = true; 
     window.isTVModeReady = false; 
+    window.isMaintenanceActive = false;
+    window.maintenanceMessage = "Sistem sedang diperbaiki.";
 
     // Aktifkan TV Mode setelah 5 detik agar pesan Bee-boot tidak spam saat muat awal
     setTimeout(() => { window.isTVModeReady = true; }, 5000); 
@@ -1069,15 +1109,61 @@
         });
     }
 
-    // 2. OTENTIKASI DULU, JIKA BERHASIL BARU JALANKAN REAL-TIME
+    // --- FUNGSI EVALUASI LAYAR MAINTENANCE ---
+    window.evaluateMaintenance = function() {
+        const mtScreen = document.getElementById('maintenance-screen');
+        const mtMsg = document.getElementById('maintenance-msg-text');
+        const mainApp = document.getElementById('main-app');
+        const welcomePopup = document.getElementById('welcome-popup');
+        const loginScreen = document.getElementById('login-screen');
+
+        mtMsg.innerText = window.maintenanceMessage;
+
+        if (window.currentUserRole === "Guest") {
+            // Jika belum login, selalu pastikan layar login terbuka agar Randi bisa masuk
+            mtScreen.style.display = 'none';
+            loginScreen.style.display = 'flex';
+        } else {
+            // Jika sudah login
+            if (window.isMaintenanceActive && window.currentUserRole.toUpperCase() !== "RANDI") {
+                mtScreen.style.display = 'flex';
+                mainApp.style.display = 'none';
+                welcomePopup.style.display = 'none';
+                document.getElementById('chat-fab').style.display = 'none';
+            } else {
+                mtScreen.style.display = 'none';
+                // Jika layar app sebelumnya tersembunyi karena maintenance, kembalikan
+                if(mainApp.style.display === 'none' && welcomePopup.style.display === 'none') {
+                    mainApp.style.display = 'block';
+                    document.getElementById('chat-fab').style.display = 'flex';
+                }
+            }
+        }
+    };
+
+    // 2. OTENTIKASI & MAINTENANCE LISTENER
     auth.onAuthStateChanged((user) => {
         if (user) {
             console.log("Akses Aman. Menyalakan Sistem Real-time...");
             startRealtimeListeners();
+            
+            // LISTENER MAINTENANCE SYSTEM
+            db.ref('appSettings/maintenance').on('value', snap => {
+                let data = snap.val();
+                if (data) {
+                    window.isMaintenanceActive = data.isActive === true;
+                    window.maintenanceMessage = data.message || "Mohon maaf, sistem saat ini sedang ditutup untuk perbaikan oleh tim Developer. Silakan kembali beberapa saat lagi.";
+                } else {
+                    window.isMaintenanceActive = false;
+                }
+                window.evaluateMaintenance();
+            });
+            
         } else {
             // Jika belum ada sesi, minta token anonim baru
             auth.signInAnonymously().catch((error) => {
                 console.error("Gagal mendapatkan akses Firebase:", error);
+                alert("KONEKSI FIREBASE GAGAL DITOLAK!\n\nSepertinya Anda belum mengaktifkan fitur Anonymous Auth di Firebase Console (Menu Authentication > Sign-in Method).\n\nMohon aktifkan fitur tersebut agar data bisa dimuat kembali.");
             });
         }
     });
@@ -1472,13 +1558,18 @@
             }
 
             document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('chat-fab').style.display = 'flex';
             
             window.applyRoleAccess();
             window.applyGlobalFilter();
 
-            if (bypassWelcome) window.closeWelcome(); 
-            else document.getElementById('welcome-popup').style.display = 'flex';
+            // Evaluasi maintenance mode sebelum ke dashboard
+            if (window.isMaintenanceActive && window.currentUserRole.toUpperCase() !== "RANDI") {
+                window.evaluateMaintenance();
+            } else {
+                document.getElementById('chat-fab').style.display = 'flex';
+                if (bypassWelcome) window.closeWelcome(); 
+                else document.getElementById('welcome-popup').style.display = 'flex';
+            }
 
             if (window.currentUserRole === "TV Mode") window.startAutoScroll();
         } else { err.style.display = 'block'; }
@@ -1522,9 +1613,11 @@
             opSelect.value = "";
         }
 
-        document.getElementById('login-screen').style.flex = 'flex';
-        document.getElementById('login-screen').style.display = 'flex';
-        window.stopAutoScroll(); window.currentUserRole = "Guest";
+        window.stopAutoScroll(); 
+        window.currentUserRole = "Guest";
+        
+        // Cek maintenance agar Randi tetap bisa login
+        window.evaluateMaintenance();
         
         // Memanggil text dinamis pre-login
         window.setLoginGreeting();
@@ -1594,12 +1687,13 @@
         }
         
         const devPanel = document.getElementById('panel-dev-inject');
-        if (devPanel) {
-            if (isDev) {
-                devPanel.style.display = 'block';
-            } else {
-                devPanel.style.display = 'none';
-            }
+        const mtPanel = document.getElementById('panel-dev-maintenance');
+        if (isDev) {
+            if (devPanel) devPanel.style.display = 'block';
+            if (mtPanel) mtPanel.style.display = 'block';
+        } else {
+            if (devPanel) devPanel.style.display = 'none';
+            if (mtPanel) mtPanel.style.display = 'none';
         }
     }
 
@@ -3166,22 +3260,6 @@
         }
         // -------------------------------------------------------------------
 
-        // 1. Modifikasi/Hook fungsi applyRoleAccess bawaan untuk memunculkan panel ini HANYA untuk "Randi"
-        const originalApplyRoleAccess = window.applyRoleAccess;
-        window.applyRoleAccess = function() {
-            if(typeof originalApplyRoleAccess === 'function') originalApplyRoleAccess();
-            
-            const devPanel = document.getElementById('panel-dev-inject');
-            if (devPanel) {
-                // Tampilkan hanya jika yang login adalah Randi (DV123)
-                if (window.currentUserRole.toUpperCase() === "RANDI") {
-                    devPanel.style.display = 'block';
-                } else {
-                    devPanel.style.display = 'none';
-                }
-            }
-        };
-
         // 2. Fungsi eksekusi tombol submit Inject
         const injectForm = document.getElementById('dev-inject-form');
         if(injectForm) {
@@ -3291,7 +3369,32 @@
         }
     }
 
- window.editOperatorLog = function(firebaseKey) {
+    // --- FITUR MAINTENANCE KONTROL UNTUK DEV ---
+    window.setMaintenanceStatus = function(status) {
+        if(window.currentUserRole.toUpperCase() !== "RANDI") {
+            alert("Akses Ditolak!");
+            return;
+        }
+        
+        let msg = document.getElementById('dev-maintenance-msg').value.trim();
+        let confirmText = status ? 
+            "PERINGATAN!\\nAnda yakin ingin MENGUNCI aplikasi?\\nSemua user yang sedang online layarnya akan langsung terblokir." : 
+            "Buka Kunci?\\nSistem akan kembali normal dan bisa diakses oleh semua operator.";
+            
+        if (confirm(confirmText)) {
+            db.ref('appSettings/maintenance').set({
+                isActive: status,
+                message: msg
+            }).then(() => {
+                alert(status ? "Sistem Berhasil Dikunci (Maintenance Aktif)!" : "Sistem Kembali Normal (Maintenance Dimatikan)!");
+                document.getElementById('dev-maintenance-msg').value = ""; // Kosongkan form
+            }).catch(error => {
+                alert("Gagal memperbarui status maintenance: " + error.message);
+            });
+        }
+    };
+
+    window.editOperatorLog = function(firebaseKey) {
         let choice = prompt("Pilih data Log Aktual yang ingin diedit:\n1. Aktivitas Kegiatan\n2. Kondisi Progres\n3. Tahap Produksi\n4. No. Produksi\n5. Waktu Input Lapangan\n\nMasukkan angka (1-5):");
         if (!choice) return;
 
