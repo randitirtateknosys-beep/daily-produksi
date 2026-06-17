@@ -383,6 +383,7 @@
         <div class="global-filter-bar" id="top-nav">
             <div class="user-identity">
                 <span>Login sebagai: <b id="current-user-role">Guest</b></span>
+                <button class="btn-action-trigger" style="background:var(--blue-glow); color:#000;" onclick="openChangePassword()">⚙️ GANTI SANDI</button>
                 <button class="btn-logout" onclick="logout()">LOG OUT</button>
             </div>
 
@@ -954,7 +955,6 @@
         </div>
     </div>
 </div>
-
 <div id="statusModal" class="modal">
     <div class="modal-content" id="modal-box-shell">
         <h3 id="modal-title" style="margin-top:0;">Hasil Analisis</h3>
@@ -974,6 +974,28 @@
     </div>
 </div>
 
+<div id="password-modal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <h3 style="color: var(--blue-glow); margin-top:0; border-bottom: 1px solid var(--panel-border); padding-bottom:15px;">⚙️ Ganti Kata Sandi</h3>
+        <div class="form-group" style="text-align:left; margin-top:15px;">
+            <label>Kata Sandi Lama</label>
+            <input type="password" id="old-pass-input" placeholder="Masukkan sandi saat ini...">
+        </div>
+        <div class="form-group" style="text-align:left; margin-top:10px;">
+            <label>Kata Sandi Baru</label>
+            <input type="password" id="new-pass-input" placeholder="Buat sandi baru (min 5 karakter)...">
+        </div>
+        <div class="form-group" style="text-align:left; margin-top:10px;">
+            <label>Konfirmasi Sandi Baru</label>
+            <input type="password" id="confirm-pass-input" placeholder="Ketik ulang sandi baru...">
+        </div>
+        <div style="display:flex; gap:10px; margin-top:25px;">
+            <button class="btn-shipment" style="flex:1;" onclick="submitChangePassword()">Simpan Perubahan</button>
+            <button class="btn-search-clear" style="flex:1;" onclick="closeChangePassword()">Batal</button>
+        </div>
+    </div>
+</div>
+
 <div id="bee-boot-container" class="bee-boot">
     <div class="bee-boot-bubble" id="bee-boot-bubble">
         <p id="bee-boot-text"></p>
@@ -983,6 +1005,7 @@
         🤖
     </div>
 </div>
+
 <script>
     // ==========================================
     // FIREBASE INITIALIZATION & REALTIME SYNC
@@ -1016,6 +1039,10 @@
     window.isTVModeReady = false; 
     window.isMaintenanceActive = false;
     window.maintenanceMessage = "Sistem sedang diperbaiki.";
+    
+    // Variabel Penyimpanan Password Dinamis
+    window.dynamicPasswords = {};
+    window.currentActivePassword = "";
 
     // Aktifkan TV Mode setelah 5 detik agar pesan Bee-boot tidak spam saat muat awal
     setTimeout(() => { window.isTVModeReady = true; }, 5000); 
@@ -1052,6 +1079,12 @@
 
     // --- BUNGKUS SEMUA FUNGSI REAL-TIME KE DALAM FUNGSI INI ---
     function startRealtimeListeners() {
+        
+        // Listener Sinkronisasi Password dari Firebase
+        db.ref('updatedPasswords').on('value', snap => {
+            window.dynamicPasswords = snap.val() || {};
+        });
+
         db.ref('masterSPP').on('value', snap => {
             window.databaseMasterSPP = [];
             snap.forEach(child => { let val = child.val(); val.firebaseKey = child.key; window.databaseMasterSPP.push(val); });
@@ -1120,11 +1153,9 @@
         mtMsg.innerText = window.maintenanceMessage;
 
         if (window.currentUserRole === "Guest") {
-            // Jika belum login, selalu pastikan layar login terbuka agar Randi bisa masuk
             mtScreen.style.display = 'none';
             loginScreen.style.display = 'flex';
         } else {
-            // Jika sudah login
             if (window.isMaintenanceActive && window.currentUserRole.toUpperCase() !== "RANDI") {
                 mtScreen.style.display = 'flex';
                 mainApp.style.display = 'none';
@@ -1132,7 +1163,6 @@
                 document.getElementById('chat-fab').style.display = 'none';
             } else {
                 mtScreen.style.display = 'none';
-                // Jika layar app sebelumnya tersembunyi karena maintenance, kembalikan
                 if(mainApp.style.display === 'none' && welcomePopup.style.display === 'none') {
                     mainApp.style.display = 'block';
                     document.getElementById('chat-fab').style.display = 'flex';
@@ -1160,7 +1190,6 @@
             });
             
         } else {
-            // Jika belum ada sesi, minta token anonim baru
             auth.signInAnonymously().catch((error) => {
                 console.error("Gagal mendapatkan akses Firebase:", error);
                 alert("KONEKSI FIREBASE GAGAL DITOLAK!\n\nSepertinya Anda belum mengaktifkan fitur Anonymous Auth di Firebase Console (Menu Authentication > Sign-in Method).\n\nMohon aktifkan fitur tersebut agar data bisa dimuat kembali.");
@@ -1388,7 +1417,6 @@
         "GD123": { role: "Gudang", panel: "gudang" },
         "TV123": { role: "TV Mode", panel: "viewonly" },
         
-        // Akun Unik Operator Produksi Baru
         "450316157": { role: "Suhendra", panel: "produksi" },
         "2511171107": { role: "Hario Rizki Ardhana", panel: "produksi" },
         "251117106": { role: "Dhema Ferlandy Putra", panel: "produksi" },
@@ -1404,7 +1432,47 @@
     window.currentUserAccess = "all";
     let autoScrollInterval = null;
 
-    // Fungsi klik dari tabel ke form produksi
+    // --- LOGIKA GANTI SANDI BARU ---
+    window.openChangePassword = function() {
+        document.getElementById('old-pass-input').value = "";
+        document.getElementById('new-pass-input').value = "";
+        document.getElementById('confirm-pass-input').value = "";
+        document.getElementById('password-modal').style.display = "flex";
+    }
+
+    window.closeChangePassword = function() {
+        document.getElementById('password-modal').style.display = "none";
+    }
+
+    window.submitChangePassword = function() {
+        let oldP = document.getElementById('old-pass-input').value;
+        let newP = document.getElementById('new-pass-input').value;
+        let confP = document.getElementById('confirm-pass-input').value;
+        
+        if(oldP !== window.currentActivePassword) {
+            alert("Kata sandi lama yang Anda masukkan salah!"); 
+            return;
+        }
+        if(newP.length < 5) {
+            alert("Kata sandi baru terlalu pendek! Minimal 5 karakter."); 
+            return;
+        }
+        if(newP !== confP) {
+            alert("Konfirmasi kata sandi baru tidak cocok!"); 
+            return;
+        }
+        
+        // Simpan ke Firebase Database di path `updatedPasswords`
+        db.ref('updatedPasswords/' + window.currentUserRole).set(newP).then(() => {
+            alert("Kata Sandi berhasil diperbarui!\n\nSilakan gunakan kata sandi baru Anda untuk login selanjutnya.");
+            window.currentActivePassword = newP;
+            localStorage.setItem('savedLoginData', newP); // Update local storage agar tidak logout
+            window.closeChangePassword();
+        }).catch(err => {
+            alert("Gagal mengupdate sandi: " + err.message);
+        });
+    }
+
     window.fillFormFromMessage = function(sppNo) {
         const sppSelect = document.getElementById('prod-spp-select');
         if(sppSelect) {
@@ -1418,9 +1486,6 @@
         }
     };
 
-    // ==========================================
-    // LOGIKA ANTI-CHEAT KONDISI LAPANGAN BARU
-    // ==========================================
     window.updateConditionDropdown = function(matchedSPP) {
         const conditionSelect = document.getElementById('prod-condition');
         if (!conditionSelect) return;
@@ -1428,7 +1493,6 @@
         const currentVal = conditionSelect.value;
         conditionSelect.innerHTML = ""; 
 
-        // Master List Option Pilihan
         const allOptions = [
             { val: "Normal", text: "Normal (Pekerjaan Berjalan / Proses)" },
             { val: "Pekerjaan Selesai Tepat Waktu", text: "Pekerjaan Selesai Tepat Waktu", isSelesaiTepat: true },
@@ -1453,19 +1517,12 @@
         const nowMs = Date.now();
         const currentHour = new Date().getHours();
 
-        // 1. Cek jam untuk opsi lemburan (Hanya muncul jika >= 16:00)
-        if (currentHour >= 16) {
-            showLembur = true;
-        }
+        if (currentHour >= 16) { showLembur = true; }
 
-        // 2. Cek apakah deadline sudah lewat
         if (matchedSPP && matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
-            if (nowMs > matchedSPP.deadlineRawObjectMs) {
-                isPastDeadline = true;
-            }
+            if (nowMs > matchedSPP.deadlineRawObjectMs) { isPastDeadline = true; }
         }
 
-        // Jika lewat batas waktu, HANYA tampilkan "Pekerjaan Selesai Telat"
         if (isPastDeadline) {
             allOptions.forEach(opt => {
                 if (opt.isSelesaiTelat) {
@@ -1476,41 +1533,25 @@
                 }
             });
             conditionSelect.value = "Pekerjaan Selesai Telat";
-            return; // Hentikan fungsi di sini
+            return; 
         }
 
         if (window.currentUserAccess === "produksi") {
-            // Defaultnya semua opsi final dilarang
-            showSelesaiAwal = false;
-            showSelesaiTepat = false;
-            showLanjutBesok = false;
+            showSelesaiAwal = false; showSelesaiTepat = false; showLanjutBesok = false;
+            if (currentHour >= 16) { showLanjutBesok = true; }
 
-            // Opsi Lanjutkan Besok hanya muncul di atas jam 4 sore (16:00)
-            if (currentHour >= 16) {
-                showLanjutBesok = true;
-            }
-
-            // Evaluasi Selesai Awal & Tepat Waktu jika SPP sudah berjalan (isLocked)
             if (matchedSPP && matchedSPP.isLocked && matchedSPP.startTimeObjectMs && matchedSPP.deadlineRawObjectMs) {
                 const targetDurationMs = matchedSPP.deadlineRawObjectMs - matchedSPP.startTimeObjectMs;
                 const elapsedTimeMs = nowMs - matchedSPP.startTimeObjectMs;
                 const remainingTimeMs = matchedSPP.deadlineRawObjectMs - nowMs;
 
-                // Tampilkan Selesai Awal hanya jika sudah lewat dari 1/2 total target durasi
-                if (elapsedTimeMs >= (targetDurationMs / 2)) {
-                    showSelesaiAwal = true;
-                }
-
-                // Tampilkan Selesai Tepat Waktu jika sisa waktu tinggal <= 2 jam 
-                if (remainingTimeMs <= (2 * 60 * 60 * 1000) && elapsedTimeMs >= (targetDurationMs / 2)) {
-                    showSelesaiTepat = true;
-                }
+                if (elapsedTimeMs >= (targetDurationMs / 2)) { showSelesaiAwal = true; }
+                if (remainingTimeMs <= (2 * 60 * 60 * 1000) && elapsedTimeMs >= (targetDurationMs / 2)) { showSelesaiTepat = true; }
             }
         }
 
-        // Susun ulang HTML dropdown sesuai hak akses
         allOptions.forEach(opt => {
-            if (opt.isSelesaiTelat) return; // Sembunyikan jika tidak telat (karena ini khusus kondisi isPastDeadline)
+            if (opt.isSelesaiTelat) return; 
             if (opt.isSelesaiAwal && !showSelesaiAwal) return;
             if (opt.isSelesaiTepat && !showSelesaiTepat) return;
             if (opt.isLanjut && !showLanjutBesok) return;
@@ -1522,29 +1563,40 @@
             conditionSelect.appendChild(optionEl);
         });
 
-        // Kembalikan pilihan user sebelumnya jika pilihan tersebut masih valid di list baru
         if (Array.from(conditionSelect.options).some(o => o.value === currentVal)) {
             conditionSelect.value = currentVal;
-        } else {
-            conditionSelect.value = "Normal";
-        }
+        } else { conditionSelect.value = "Normal"; }
     };
 
+    // --- REVISI LOGIKA CHECK LOGIN MENDUKUNG SANDI DINAMIS ---
     window.checkLogin = function(bypassWelcome = false) {
-        const pass = document.getElementById('login-password').value.trim();
+        const inputPass = document.getElementById('login-password').value.trim();
         const err = document.getElementById('login-error');
         
-        if(loginData[pass]) {
-            window.currentUserRole = loginData[pass].role;
-            window.currentUserAccess = loginData[pass].panel;
-            localStorage.setItem('savedLoginData', pass); 
+        let userFound = null;
+        
+        // 1. Cari kecocokan di loginData dengan override dynamicPasswords
+        for (const [defaultPass, data] of Object.entries(loginData)) {
+            // Jika ada sandi baru tersimpan di database, gunakan itu, jika tidak pakai sandi default
+            let expectedPass = window.dynamicPasswords[data.role] || defaultPass;
+            
+            if (inputPass === expectedPass) {
+                userFound = data;
+                break;
+            }
+        }
+
+        if(userFound) {
+            window.currentUserRole = userFound.role;
+            window.currentUserAccess = userFound.panel;
+            window.currentActivePassword = inputPass; // Simpan untuk memverifikasi sandi lama
+            localStorage.setItem('savedLoginData', inputPass); 
             
             document.getElementById('current-user-role').innerText = window.currentUserRole;
             document.getElementById('welcome-role-text').innerText = (window.currentUserRole.toUpperCase() === "RANDI") ? "TN RANDI" : window.currentUserRole;
             
-            // LOGIKA AUTO-FILL & LOCK NAMA OPERATOR LAPANGAN
             const opSelect = document.getElementById('prod-operator');
-            if (loginData[pass].panel === "produksi") {
+            if (userFound.panel === "produksi") {
                 if (opSelect) {
                     opSelect.value = window.currentUserRole;
                     opSelect.style.pointerEvents = 'none';
@@ -1562,7 +1614,6 @@
             window.applyRoleAccess();
             window.applyGlobalFilter();
 
-            // Evaluasi maintenance mode sebelum ke dashboard
             if (window.isMaintenanceActive && window.currentUserRole.toUpperCase() !== "RANDI") {
                 window.evaluateMaintenance();
             } else {
@@ -1572,7 +1623,9 @@
             }
 
             if (window.currentUserRole === "TV Mode") window.startAutoScroll();
-        } else { err.style.display = 'block'; }
+        } else { 
+            err.style.display = 'block'; 
+        }
     }
 
     window.closeWelcome = function() {
@@ -1581,7 +1634,6 @@
         document.getElementById('bee-boot-container').style.display = 'flex';
     }
 
-    // --- FUNGSI PENENTU WAKTU ---
     window.getGreetingTime = function() {
         let hr = new Date().getHours();
         if(hr >= 4 && hr < 11) return "pagi";
@@ -1615,11 +1667,9 @@
 
         window.stopAutoScroll(); 
         window.currentUserRole = "Guest";
+        window.currentActivePassword = "";
         
-        // Cek maintenance agar Randi tetap bisa login
         window.evaluateMaintenance();
-        
-        // Memanggil text dinamis pre-login
         window.setLoginGreeting();
     }
 
@@ -1643,7 +1693,6 @@
         document.getElementById('panel-monitoring').style.display = 'flex'; 
         document.getElementById('panel-analytics').style.display = 'grid';
 
-        // Hanya Gudang dan Randi yang bisa lihat Pengeluaran Internal
         const isGudang = (window.currentUserAccess === "gudang");
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
         if (!isGudang && !isDev) {
@@ -1666,7 +1715,6 @@
             document.getElementById('prod-datetime').removeAttribute('readonly');
         }
 
-        // Terapkan limitasi anti-cheat pada saat awal load
         window.updateConditionDropdown(null);
 
         document.getElementById('spp-master-head').innerHTML = `<th>No. SPP</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Pembuat</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
@@ -1697,7 +1745,6 @@
         }
     }
 
-    // --- CHAT SYSTEM DENGAN FITUR DELETE ---
     let chatOpen = false; let unreadCount = 0; let initialLoad = true;
 
     window.toggleChat = function() {
@@ -1748,11 +1795,9 @@
         const badge = document.getElementById('chat-badge'); badge.innerText = unreadCount; badge.style.display = unreadCount > 0 ? 'flex' : 'none';
     }
 
-    // --- BEE BOOT SYSTEM (UPDATE SCROLL & TV MODE ALERTS) ---
     window.isBeeBootTyping = false;
     let tvAlertTimeout;
 
-    // Core Typing Function
     window.typeWriterHTML = function(elementId, html, speed, callback) {
         if(window.isBeeBootTyping) return; 
         window.isBeeBootTyping = true; 
@@ -1778,7 +1823,6 @@
         type();
     }
 
-    // Function specifically for rendering alerts on TV Mode
     window.showTVAlert = function(htmlContent, durationMs = 10000) {
         if (window.currentUserRole !== "TV Mode") return;
         clearTimeout(tvAlertTimeout);
@@ -1791,7 +1835,6 @@
         });
     }
 
-    // --- PERCAKAPAN BEE-BOOT TERBARU ---
     window.hasSeenBeeIntro = false;
 
     window.toggleBeeBoot = function() {
@@ -1799,7 +1842,6 @@
         const bubble = document.getElementById('bee-boot-bubble'); 
         const actions = document.getElementById('bee-boot-actions');
         
-        // Jika bubble sudah terbuka, klik lagi untuk menutupnya
         if (bubble.style.display === 'block') {
             bubble.style.display = 'none';
             return;
@@ -1808,7 +1850,6 @@
         bubble.style.display = 'block'; actions.innerHTML = ''; 
         let grt = window.getGreetingTime();
 
-        // Cek apakah ini pertama kali Bee-Boot ditekan setelah login
         if (!window.hasSeenBeeIntro) {
             window.hasSeenBeeIntro = true;
             const text = `Hai selamat ${grt}! Perkenalkan kembali saya BEE-BOOT.<br><br>hi sobat Bee-boot,apakah kalian tahu? Apa itu Bee-boot? Kenapa harus Bee-boot?`;
@@ -1816,7 +1857,6 @@
                 actions.innerHTML = `<button class="bee-boot-btn bee-btn-yes" onclick="beeIntroStep2()">Lanjutkan</button><button class="bee-boot-btn bee-btn-no" onclick="beeSkipToIntroEnd()">Tidak</button>`;
             });
         } else {
-            // Jika sudah pernah perkenalan, langsung tawarkan menu
             const text = `Apakah Anda butuh panduan manual atau ingin melihat data?`;
             window.typeWriterHTML('bee-boot-text', text, 15, () => {
                 actions.innerHTML = `<button class="bee-boot-btn bee-btn-yes" style="background:#38bdf8;" onclick="beeOfferTour()">Panduan Manual</button><button class="bee-boot-btn bee-btn-yes" style="background:var(--emerald-glow);" onclick="beeShowDynamicStats()">Lihat Data</button><button class="bee-boot-btn bee-btn-no" onclick="beeExplainNo()">Tutup</button>`;
@@ -1908,7 +1948,6 @@
         window.typeWriterHTML('bee-boot-text', text, 1, () => { document.getElementById('bee-boot-actions').innerHTML = '<button class="bee-boot-btn bee-btn-yes" onclick="beeOfferTour()">Lanjut Tour</button><button class="bee-boot-btn bee-btn-no" onclick="beeExplainNo()">Tutup</button>'; });
     }
 
-    // --- TV MODE SPECIFIC ANALYTICS ---
     window.beeShowDynamicStatsTV = function() {
         const filteredSPP = window.getFilteredNonSPLSPP();
         const filteredShipments = window.databaseShipment.filter(ship => window.isWithinTimeframe(ship.rawTimestampMs, document.getElementById('global-time-filter').value));
@@ -1964,12 +2003,11 @@
         showTVAlert(text, 25000); 
     }
 
-    // --- TV MODE INTERVALS (Tanpa duplikat listener) ---
     setInterval(() => {
         if(window.currentUserRole === "TV Mode" && window.isTVModeReady && !window.isBeeBootTyping) {
             window.beeShowDynamicStatsTV();
         }
-    }, 300000); // 5 Menit Analisis Menyeluruh
+    }, 300000); 
 
     setInterval(() => {
         if(window.currentUserRole === "TV Mode" && window.isTVModeReady && !window.isBeeBootTyping && document.getElementById('bee-boot-bubble').style.display === 'none') {
@@ -1982,7 +2020,7 @@
             ];
             window.showTVAlert(`💡 <b>BEE-BOOT BILANG:</b><br>${msgs[Math.floor(Math.random() * msgs.length)]}`, 10000);
         }
-    }, 180000); // 3 Menit Motivasi Acak
+    }, 180000); 
 
 
     window.beeOfferTour = function() {
@@ -2102,7 +2140,6 @@
         alert("✅ Form Laporan Pengiriman telah diisi otomatis. Coba klik 'Catat Keberangkatan Logistik' untuk melihat hasilnya!");
     };
 
-    // ==================== UPDATE: TOUR BARU (17 LANGKAH TERBARU) ====================
     const fixedTourSteps = [
         { id: "top-nav", title: "1. Navigasi & Filter Waktu", text: "<b>Baris Kontrol Utama:</b> Di sini Anda bisa memfilter data berdasarkan hari, minggu, atau waktu tertentu, serta mencetak keseluruhan halaman menjadi laporan PDF." },
         { id: "global-search-box", title: "2. Pencarian Sentral (Tracking)", text: "<b>Fitur Pelacakan Akurat!</b> Ketik No. SPP/Produk dan pantau statusnya dari awal pembuatan hingga dikirim melalui tabel khusus di bawah kolom pencarian ini.", isSearch: true },
@@ -2189,16 +2226,16 @@
         }
     }
 
-    window.endBeeTour = function() { 
-        document.getElementById('bee-boot-bubble').style.display = 'none'; 
-        if (window.currentUserRole === "TV Mode") window.startAutoScroll(); 
+    window.endBeeTour = function() {
+        if(window.isBeeBootTyping) return; 
+        document.getElementById('bee-boot-actions').innerHTML = '';
+        window.beeOfferJoke(); 
     }
 
     window.beeExplainNo = function() {
-        if(window.isBeeBootTyping) return; document.getElementById('bee-boot-actions').innerHTML = '';
-        window.typeWriterHTML('bee-boot-text', "Wah sayang sekali. Terimakasih atas waktunya Tuan, jangan bermalas-malasan kerjanya yah! 😊", 20, () => {
-            setTimeout(() => { document.getElementById('bee-boot-bubble').style.display = 'none'; if (window.currentUserRole === "TV Mode") window.startAutoScroll(); }, 3000);
-        });
+        if(window.isBeeBootTyping) return; 
+        document.getElementById('bee-boot-actions').innerHTML = '';
+        window.beeOfferJoke();
     }
 
     // --- FITUR MENCARI JOKES DINAMIS ---
@@ -2248,7 +2285,6 @@
         }
     }
 
-    // --- TAMBAHAN FUNGSI SUDAHI JOKE ---
     window.beeEndJoke = function() {
         if(window.isBeeBootTyping) return; 
         document.getElementById('bee-boot-actions').innerHTML = '';
@@ -2275,7 +2311,6 @@
         window.renderSPLTable();
         window.updateSPPDropdown(); 
         
-        // Panggil untuk mengupdate Dropdown + Tabel internal & pengiriman
         window.updateInternalProductDropdown();
         window.renderInternalStockTable();
         window.renderInternalHistoryTable();
@@ -2381,7 +2416,6 @@
         const selesaiSPP = filteredSPP.filter(i => ['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status)).length;
         document.getElementById('stat-selesai').innerText = selesaiSPP;
         
-        // PEMBARUAN: Pisah Box Proses dan Box Pending
         document.getElementById('stat-idle').innerText = filteredSPP.filter(i => ['Idle Time', 'Lanjutkan Besok'].includes(i.status)).length;
         document.getElementById('stat-stoppage').innerText = filteredSPP.filter(i => ['Stoppage', 'Takeover'].includes(i.status)).length;
         document.getElementById('stat-pending').innerText = filteredSPP.filter(i => i.status === 'Pending').length;
@@ -2523,14 +2557,12 @@
         const filteredLogs = window.getFilteredLogs(); 
         const filteredSPP = window.getFilteredSPP(); 
 
-        // A. Tambah poin progres harian (proses, lembur, dll)
         filteredLogs.forEach(log => {
-            if (log.operator.toLowerCase().includes('dev')) return; // EXCLUDE DEV
+            if (log.operator.toLowerCase().includes('dev')) return; 
             if(skorPeta[log.operator] === undefined) skorPeta[log.operator] = 0;
             if (log.processPoints) skorPeta[log.operator] += log.processPoints;
         });
 
-        // B. Hitung Poin Selesai (SISTEM POOL PROPORSIONAL & BONUS DINAMIS)
         filteredSPP.forEach(spp => {
             if (['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(spp.status)) {
                 let operatorLogCounts = {}; 
@@ -2538,9 +2570,8 @@
                 let totalValidLogs = 0;
 
                 filteredLogs.forEach(log => {
-                    if (log.operator.toLowerCase().includes('dev')) return; // EXCLUDE DEV
+                    if (log.operator.toLowerCase().includes('dev')) return; 
                     if (log.noSPP === spp.no) {
-                        // Memasukkan tiket untuk mereka yang melakukan Lanjut Besok, Takeover, dll agar poin akhir dibagi rata
                         if (['Proses', 'Selesai', 'Selesai Awal', 'Telat Selesai', 'Lembur Selesai (Reguler)', 'Lembur Selesai (Sabtu/Minggu)', 'Lanjutkan Besok', 'Takeover', 'Stoppage', 'Idle Time'].includes(log.status) || log.condition.includes('Lembur')) {
                             operatorLogCounts[log.operator] = (operatorLogCounts[log.operator] || 0) + 1;
                             totalValidLogs++;
@@ -2556,7 +2587,7 @@
                 let targetOps = 1; 
                 if (PRODUCT_DICTIONARY[spp.product]) targetOps = PRODUCT_DICTIONARY[spp.product].ops;
                 
-                let basePointPerOperator = 80; // POIN DASAR 80
+                let basePointPerOperator = 80; 
                 let totalPoolPoints = basePointPerOperator * targetOps;
                 let pointPerLog = totalPoolPoints / totalValidLogs; 
 
@@ -2567,14 +2598,13 @@
                     let porsiRasio = operatorLogCounts[op] / totalValidLogs; 
                     let finalReward = opShare;
 
-                    // LOGIKA BONUS DINAMIS SESUAI TABEL
                     if (spp.status === 'Selesai Awal' && msTerlambat < 0) {
                         let jamLebihAwal = Math.floor(Math.abs(msTerlambat) / (1000 * 60 * 60));
-                        let totalBonus = Math.min(jamLebihAwal * 10, 50); // +10 Poin per jam (Maks +50)
+                        let totalBonus = Math.min(jamLebihAwal * 10, 50); 
                         finalReward += (totalBonus * porsiRasio); 
                     } else if (spp.status === 'Telat Selesai' && msTerlambat > 0) {
                         let jamTelat = Math.floor(msTerlambat / (1000 * 60 * 60));
-                        let totalPenalty = 10 + (jamTelat * 5); // Penalti telat
+                        let totalPenalty = 10 + (jamTelat * 5); 
                         finalReward -= (totalPenalty * porsiRasio); 
                     }
 
@@ -2583,7 +2613,6 @@
             }
         });
 
-        // C. Render ke HTML
         let susunanRangking = Object.keys(skorPeta).map(nama => { return { nama: nama, poin: skorPeta[nama] }; }).sort((a, b) => b.poin - a.poin);
         if (window.isRankingMinimized) susunanRangking = susunanRangking.slice(0, 5);
         const tbody = document.getElementById('operator-ranking-body'); tbody.innerHTML = "";
@@ -2623,7 +2652,6 @@
         let product = document.getElementById('spp-product').value; if(product === 'other') product = document.getElementById('product-manual').value;
         let maker = document.getElementById('spp-maker').value; if(maker === 'other') maker = document.getElementById('maker-manual').value;
         
-        // Penerima Tugas dihilangkan. Otomatis terisi string kosong / strip.
         const priority = document.querySelector('input[name="spp-priority"]:checked').value;
         
         window.dbPushSPP({ no: noSPP, datetime: datetimeInput, rawTimestampMs: dateBase.getTime(), product: product, maker: maker, receiver: "-", priority: priority, status: 'Pending', isLocked: false, deadlineRawObjectMs: null, startTimeObjectMs: null, isSPL: false, formattedDeadline: "Belum dimulai", lastEventTimeMs: null, lastEventTimeFormatted: "-", lastInputTimeMs: null, isShipped: false });
@@ -2647,7 +2675,6 @@
         alert("Surat Perintah Langsung telah masuk ke antrean operator Produksi!");
     });
 
-    // --- FORM INTERNAL PENGELUARAN PRODUKSI ---
     document.getElementById('internal-out-form').addEventListener('submit', function(e) {
         e.preventDefault();
         let productSelection = document.getElementById('internal-product-select').value; 
@@ -2658,7 +2685,7 @@
         if (match) { productSelection = match[1]; sppAsal = match[2]; }
         
         let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal); 
-        if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: true }); // Tetap gunakan isShipped agar hilang dari ready stock
+        if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: true }); 
         
         const targetProduct = document.getElementById('internal-target-product').value; 
         const rawTime = new Date(document.getElementById('internal-datetime').value); 
@@ -2703,7 +2730,6 @@
         produkSelesaiEksternal.forEach(item => { select.innerHTML += `<option value="${item.product} (${item.no})">${item.product} (${item.no})</option>`; });
     }
 
-    // --- FUNGSI RENDER TABEL STOK INTERNAL (TAMBAHAN) ---
     window.renderInternalStockTable = function() {
         const tbody = document.getElementById('internal-stock-body');
         if(!tbody) return;
@@ -2730,7 +2756,6 @@
         });
     };
     
-    // --- FUNGSI RENDER RIWAYAT INTERNAL ---
     window.renderInternalHistoryTable = function() {
         const tbody = document.getElementById('internal-history-body'); 
         if(!tbody) return;
@@ -2747,7 +2772,6 @@
         });
     }
 
-    // --- FUNGSI RENDER TABEL STOK READY KIRIM (EKSTERNAL SAJA) ---
     window.renderReadyStockTable = function() {
         const tbody = document.getElementById('ready-stock-body');
         if(!tbody) return;
@@ -2907,7 +2931,7 @@
             displayBox.innerHTML = "⚙️ Menunggu penentuan nomor dokumen SPP... "; 
             if(window.currentUserAccess !== "produksi") { valInput.disabled = false; unitInput.disabled = false; }
             valInput.value = ""; opsInput.value = ""; alertBar.style.display = "none"; 
-            window.updateConditionDropdown(null); // Sembunyikan opsi "Selesai" untuk SPP kosong
+            window.updateConditionDropdown(null); 
             return; 
         }
         
@@ -2920,7 +2944,6 @@
         
         const prodInfo = PRODUCT_DICTIONARY[matchedSPP.product];
         
-        // JIKA SPP SUDAH TERKUNCI (Sudah pernah dilaporkan sebelumnya)
         if (matchedSPP.isLocked) { 
             valInput.disabled = true; 
             unitInput.disabled = true; 
@@ -2934,17 +2957,14 @@
             else opsInput.value = "Custom/SPL";
             window.liveCalculationHandler(); 
         } 
-        // JIKA SPP BARU PERTAMA KALI DIBUKA (Belum Terkunci)
         else { 
             displayBox.innerHTML = "⏳ Masukkan tanggal lapangan untuk mengunci target..."; 
             
             if (prodInfo) { 
-                // KONDISI 1: PRODUK STANDAR (Ada di Kamus)
                 valInput.value = prodInfo.hours; 
                 unitInput.value = 'jam'; 
                 opsInput.value = prodInfo.ops + " Orang Target"; 
                 
-                // Operator produksi tetap tidak boleh mengubah standar
                 if (window.currentUserAccess === "produksi") {
                     valInput.disabled = true; unitInput.disabled = true;
                     valInput.setAttribute('readonly', 'true');
@@ -2961,11 +2981,9 @@
                     unitInput.style.background = 'var(--input-bg)';
                 }
             } else { 
-                // KONDISI 2: PRODUK CUSTOM (Tidak ada di Kamus)
                 valInput.value = ""; 
                 opsInput.value = "Custom Product"; 
                 
-                // BUKA KUNCI KHUSUS UNTUK SEMUA ROLE (TERMASUK OPERATOR) AGAR BISA ISI TARGET
                 valInput.disabled = false; 
                 unitInput.disabled = false;
                 valInput.removeAttribute('readonly');
@@ -2977,7 +2995,6 @@
             window.liveCalculationHandler(); 
         }
 
-        // Terapkan limitasi opsi Anti-Cheat berdasarkan SPP yang dipilih
         window.updateConditionDropdown(matchedSPP);
     }
 
@@ -2997,7 +3014,6 @@
         displayBox.innerHTML = `⏱️ Estimasi Perhitungan Batas Deadline SPP: ${window.formatDateToString(deadlineDate)}`;
     }
 
-    // --- EVENT LISTENER INPUT PRODUKSI UPDATE POOL ---
     document.getElementById('prod-form').addEventListener('submit', function(e) {
         e.preventDefault();
         const noSPP = document.getElementById('prod-spp-select').value; 
@@ -3056,12 +3072,8 @@
             updates.lastEventTimeFormatted = startTimeFormatted; 
         }
 
-        // ==========================================
-        // LOGIKA POIN & STATUS (LEMBUR & INSTAN)
-        // ==========================================
         let lemburDurationMs = 0; let lemburPoints = 0; let isLemburProses = false;
         
-        // Lembur awal mula dapat 0 poin, poin cair hanya saat submit "Lembur Selesai"
         if (condition === 'Lembur (Reguler)') { lemburDurationMs = 4 * 60 * 60 * 1000; lemburPoints = 0; isLemburProses = true; }
         else if (condition === 'Lembur (Sabtu/Minggu)') { lemburDurationMs = 9 * 60 * 60 * 1000; lemburPoints = 0; isLemburProses = true; }
         else if (condition === 'Lembur Selesai (Reguler)') { lemburPoints = 25; }
@@ -3077,7 +3089,6 @@
         const inputTimeMs = operatorInputTime.getTime();
         let calculatedStatus = ""; let rewardReasonText = "-"; let gapTerlambatMs = inputTimeMs - currentDeadlineMs; let processPoints = 0;
 
-        // Distribusi Poin Sesuai Tabel Keadilan
         if (PENJEDAAN_STATUS_LIST.includes(condition)) { 
             calculatedStatus = condition; 
             if (condition === 'Lanjutkan Besok' || condition === 'Takeover') {
@@ -3097,7 +3108,7 @@
         }
         else if (isLemburProses) {
             calculatedStatus = gapTerlambatMs <= 0 ? 'Proses' : 'Telat Selesai';
-            processPoints = lemburPoints; // (Ini bernilai 0 Poin)
+            processPoints = lemburPoints; 
             rewardReasonText = `Mulai Lembur (Poin ditahan s/d Selesai)`;
         } 
         else if (condition === 'Lembur Selesai (Reguler)' || condition === 'Lembur Selesai (Sabtu/Minggu)') {
@@ -3113,11 +3124,11 @@
             } else { 
                 calculatedStatus = gapTerlambatMs === 0 ? 'Selesai' : 'Telat Selesai'; 
             }
-            processPoints = 0; // Poin utama murni dari pembagian kue 80 poin
+            processPoints = 0; 
         } 
         else if (condition === 'Pekerjaan Selesai Tepat Waktu' || stage.includes("7. Packing")) {
             calculatedStatus = gapTerlambatMs <= 0 ? 'Selesai' : 'Telat Selesai';
-            processPoints = 0; // Poin utama murni dari pembagian kue 80 poin
+            processPoints = 0; 
             rewardReasonText = gapTerlambatMs <= 0 ? "Selesai Tepat Waktu (Poin Final Cair)" : "Telat Selesai";
         } 
         else if (condition === 'Pekerjaan Selesai Telat') {
@@ -3378,8 +3389,8 @@
         
         let msg = document.getElementById('dev-maintenance-msg').value.trim();
         let confirmText = status ? 
-            "PERINGATAN!\\nAnda yakin ingin MENGUNCI aplikasi?\\nSemua user yang sedang online layarnya akan langsung terblokir." : 
-            "Buka Kunci?\\nSistem akan kembali normal dan bisa diakses oleh semua operator.";
+            "PERINGATAN!\nAnda yakin ingin MENGUNCI aplikasi?\nSemua user yang sedang online layarnya akan langsung terblokir." : 
+            "Buka Kunci?\nSistem akan kembali normal dan bisa diakses oleh semua operator.";
             
         if (confirm(confirmText)) {
             db.ref('appSettings/maintenance').set({
