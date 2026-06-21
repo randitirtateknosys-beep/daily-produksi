@@ -154,7 +154,46 @@
         .chart-panel-box { width: 100%; height: 250px; padding: 5px; }
 
         .panel { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 25px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); transition: box-shadow 0.3s; }
-        .panel.highlight-tour { box-shadow: 0 0 35px var(--blue-glow); border-color: var(--blue-glow); transition: 0.5s; }
+        
+        /* --- CSS BARU UNTUK HIGHLIGHT ROOM TOUR --- */
+        .highlight-tour {
+            outline: 4px dashed var(--emerald-glow) !important;
+            outline-offset: 4px !important;
+            box-shadow: 0 0 40px rgba(52, 211, 153, 0.5) !important;
+            position: relative !important;
+            z-index: 999 !important;
+            animation: pulse-tour 1.5s infinite !important;
+        }
+
+        .highlight-tour::after {
+            content: '🤖 SEDANG DIJELASKAN 👈';
+            position: absolute;
+            top: -20px;
+            right: 10px;
+            background: var(--emerald-glow);
+            color: #000;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 900;
+            font-size: 11px;
+            box-shadow: 0 0 15px rgba(52, 211, 153, 0.8);
+            animation: bounceIndicator 1s infinite;
+            z-index: 1000;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        @keyframes pulse-tour {
+            0% { box-shadow: 0 0 20px rgba(52, 211, 153, 0.4); outline-color: var(--emerald-glow); }
+            50% { box-shadow: 0 0 50px rgba(52, 211, 153, 0.9); outline-color: #fff; }
+            100% { box-shadow: 0 0 20px rgba(52, 211, 153, 0.4); outline-color: var(--emerald-glow); }
+        }
+
+        @keyframes bounceIndicator {
+            0%, 100% { transform: translateY(0) scale(1) translateX(0); }
+            50% { transform: translateY(-5px) scale(1.05) translateX(-5px); }
+        }
+
         .panel h3 { margin-top: 0; margin-bottom: 25px; color: var(--blue-glow) !important; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid rgba(56, 189, 248, 0.2); text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
 
         .header-flex { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(56, 189, 248, 0.2); margin-bottom: 25px; padding-bottom: 12px; flex-wrap:wrap; gap:10px;}
@@ -166,6 +205,11 @@
         .form-group label { margin-bottom: 8px; font-weight: 700; font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
         .form-group input, .form-group select { width: 100%; height: 45px; padding: 0 16px; border: 1px solid var(--input-border); background: var(--input-bg); color: #fff; border-radius: 8px; font-size: 14px; transition: all 0.2s ease; }
         .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--blue-glow); box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); background: rgba(15, 23, 42, 0.9); }
+        
+        /* Style for file input specifically */
+        .form-group input[type="file"] { padding: 8px; background: rgba(15, 23, 42, 0.9); border: 1px dashed var(--blue-glow); color: var(--text-muted); height: auto; cursor: pointer; }
+        .form-group input[type="file"]::file-selector-button { background: var(--blue-glow); color: #000; font-weight: bold; padding: 6px 12px; border: none; border-radius: 4px; margin-right: 15px; cursor: pointer; }
+        
         .duration-container { display: flex; gap: 10px; width: 100%; height: 45px; } .duration-container input, .duration-container select { height: 45px; }
         .manual-input { display: none; margin-top: 10px; border-color: var(--warning-glow) !important; }
         .radio-container { display: flex; gap: 20px; align-items: center; height: 45px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; padding: 0 16px; }
@@ -273,16 +317,21 @@
             animation: breathe 3s ease-in-out infinite, floatBot 4s ease-in-out infinite; 
             border: 2px solid rgba(255,255,255,0.8); transition: 0.3s;
             position: relative;
+            order: 1;
         }
         @keyframes breathe { 0%, 100% { filter: brightness(1); box-shadow: 0 0 20px rgba(56, 189, 248, 0.5); } 50% { filter: brightness(1.2); box-shadow: 0 0 40px rgba(56, 189, 248, 0.9); } }
         @keyframes floatBot { 0%, 100% { transform: translateY(0px) scale(1); } 50% { transform: translateY(-8px) scale(1.03); } }
         .bee-boot-avatar:hover { transform: scale(1.1) rotate(5deg) !important; animation: none; }
 
         .bee-boot-bubble { 
-            background: rgba(15, 23, 42, 0.95); color: #fff; padding: 20px; border-radius: 12px 12px 0 12px; 
-            margin-bottom: 15px; max-width: 380px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
+            background: rgba(15, 23, 42, 0.95); color: #fff; padding: 20px; 
+            border-radius: 12px 0 12px 12px;
+            margin-top: 15px; 
+            margin-bottom: 0; 
+            max-width: 380px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
             border: 1px solid var(--blue-glow); text-align: left; backdrop-filter: blur(8px);
             font-size: 14px; line-height: 1.6; display: none;
+            order: 2;
         }
         .bee-boot-bubble p { margin: 0 0 15px 0; min-height: 20px; }
         .bee-boot-btn { padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; border: none; font-size: 13px; text-transform: uppercase; margin: 0 5px; }
@@ -361,7 +410,7 @@
 <div id="main-app">
     <div class="container">
         
-        <header style="display: flex; justify-content: space-between; align-items: center; padding: 25px; background: linear-gradient(135deg, #111827, #0f172a); border: 1px solid var(--panel-border); border-radius: 12px; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.1); position: relative;">
+        <header id="main-header" style="display: flex; justify-content: space-between; align-items: center; padding: 25px; background: linear-gradient(135deg, #111827, #0f172a); border: 1px solid var(--panel-border); border-radius: 12px; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.1); position: relative;">
             
             <div style="display:flex; align-items:center; justify-content:center;">
                 <img src="https://i.ibb.co.com/4RWMGX0P/logo-tanpa-background-png.png" alt="PT Tirta Teknosys" style="height: 65px; width: auto; object-fit: contain; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));" onerror="this.style.display='none';">
@@ -492,6 +541,7 @@
                 </table>
             </div>
         </div>
+        
         <div class="analytics-grid" id="panel-analytics">
             <div class="panel">
                 <h3>📈 Ringkasan Master SPP</h3>
@@ -603,8 +653,7 @@
                     </div>
                     <div class="form-group">
                         <label>Kondisi Kerja Lapangan</label>
-                        <select id="prod-condition" required>
-                            </select>
+                        <select id="prod-condition" required></select>
                     </div>
                     
                     <div class="form-group full-width-group">
@@ -825,6 +874,12 @@
                             <label class="radio-label"><input type="radio" name="spp-priority" value="Urgent"> Urgent</label>
                         </div>
                     </div>
+
+                    <div class="form-group full-width-group">
+                        <label>Upload Dokumen SPP (Opsional - PDF/Image)</label>
+                        <input type="file" id="spp-file" accept=".pdf, image/png, image/jpeg">
+                        <small style="color:var(--blue-glow); margin-top:5px; font-weight:bold;">File akan diunggah ke Google Drive secara otomatis.</small>
+                    </div>
                 </div>
                 <button type="submit" class="btn-spp">Submit & Rilis Master SPP</button>
             </form>
@@ -868,7 +923,7 @@
             </form>
 
             <div style="margin-top: 35px; border-top: 1px dashed rgba(168, 85, 247, 0.3); padding-top: 20px;">
-                <h4 style="color: var(--purple-glow); margin-top: 0; margin-bottom: 15px; font-size: 14px; text-transform: uppercase;">
+                <h4 style="color: var(--purple-glow); margin: 0; margin-bottom: 15px; font-size: 14px; text-transform: uppercase;">
                     🛠️ Total Stok Komponen Internal (Ready Digunakan)
                 </h4>
                 <div class="table-container">
@@ -919,7 +974,7 @@
             </form>
 
             <div style="margin-top: 35px; border-top: 1px dashed rgba(56, 189, 248, 0.3); padding-top: 20px;">
-                <h4 style="color: var(--emerald-glow); margin-top: 0; margin-bottom: 15px; font-size: 14px; text-transform: uppercase;">
+                <h4 style="color: var(--emerald-glow); margin: 0; margin-bottom: 15px; font-size: 14px; text-transform: uppercase;">
                     📦 Total Stok Produk Eksternal (Ready Kirim)
                 </h4>
                 <div class="table-container">
@@ -1008,6 +1063,21 @@
 </div>
 
 <script>
+    // ==========================================
+    // URL WEB APP GOOGLE APPS SCRIPT ANDA
+    // ==========================================
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxzoVSP2zkZ-I5ikMvJq5oDGjg83EmIy2a2jNSLsAyHGFLcu2xpPbbeJ9hSgh8bNsyxkQ/exec"; 
+
+    // Helper Fungsi Konversi File ke Base64
+    function getBase64(file) {
+       return new Promise((resolve, reject) => {
+         const reader = new FileReader();
+         reader.readAsDataURL(file);
+         reader.onload = () => resolve(reader.result.split(',')[1]);
+         reader.onerror = error => reject(error);
+       });
+    }
+
     // ==========================================
     // FIREBASE INITIALIZATION & REALTIME SYNC
     // ==========================================
@@ -1169,6 +1239,11 @@
                 document.querySelector('.login-box').style.boxShadow = "0 0 40px rgba(56, 189, 248, 0.3)";
                 document.querySelector('.login-robot-bubble').style.borderColor = "var(--blue-glow)";
                 document.querySelector('.login-robot-bubble').style.boxShadow = "0 0 20px rgba(56, 189, 248, 0.4)";
+                
+                // --- PERBAIKAN 2: Jika dilepas dari mode terkunci, kembali sapa normal ---
+                if (document.getElementById('login-robot-text').innerHTML === "" || document.getElementById('login-robot-text').innerHTML.includes("SISTEM TERKUNCI")) {
+                    window.setLoginGreeting();
+                }
             }
         } else {
             if (window.isMaintenanceActive && window.currentUserRole.toUpperCase() !== "RANDI") {
@@ -1711,6 +1786,9 @@
 
         const isGudang = (window.currentUserAccess === "gudang");
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
+        const isAdmin = (window.currentUserRole === "Admin");
+        const showDocCol = (isDev || isAdmin);
+        
         if (!isGudang && !isDev) {
             let el = document.getElementById('panel-internal-produksi');
             if(el) el.style.display = 'none';
@@ -1733,7 +1811,7 @@
 
         window.updateConditionDropdown(null);
 
-        document.getElementById('spp-master-head').innerHTML = `<th>No. SPP</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Pembuat</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
+        document.getElementById('spp-master-head').innerHTML = `<th>No. SPP</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Pembuat</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${showDocCol ? '<th>Dokumen SPP</th>' : ''}${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('spl-history-head').innerHTML = `<th>No. SPL</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Penanggung Jawab</th><th>Penerima Tugas</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('shipment-history-head').innerHTML = `<th>Keberangkatan</th><th>Produk</th><th>No. SPP Asal</th><th>Operator Logistik</th><th>Customer</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('operator-history-head').innerHTML = `<th>No. Prod</th><th>No. SPP</th><th>Nama Operator</th><th>Aktivitas Kegiatan</th><th>Kondisi Progres</th><th>Tahap Produksi</th><th>Waktu Input</th><th>Target Deadline</th><th>Status Hasil</th><th>Keterangan / Poin Tambahan</th>${isDev ? '<th>Aksi</th>' : ''}`;
@@ -2038,14 +2116,6 @@
         }
     }, 180000); 
 
-
-    window.beeOfferTour = function() {
-        if(window.isBeeBootTyping) return; document.getElementById('bee-boot-actions').innerHTML = '';
-        window.typeWriterHTML('bee-boot-text', "Apakah kalian ingin room tour? Saya akan menjelaskan secara singkat fungsi-fungsi terbaru di dashboard ini.", 15, () => {
-            document.getElementById('bee-boot-actions').innerHTML = `<button class="bee-boot-btn bee-btn-yes" onclick="startBeeTour()">Ya, Mulai!</button><button class="bee-boot-btn bee-btn-no" onclick="beeExplainNo()">Tidak</button>`;
-        });
-    }
-
     // ==================== FUNGSI DEMO PENGISIAN FORM ====================
     window.demoFillProduction = function() {
         const noProd = document.getElementById('prod-number');
@@ -2156,56 +2226,132 @@
         alert("✅ Form Laporan Pengiriman telah diisi otomatis. Coba klik 'Catat Keberangkatan Logistik' untuk melihat hasilnya!");
     };
 
-    const fixedTourSteps = [
-        { id: "top-nav", title: "1. Navigasi & Filter Waktu", text: "<b>Baris Kontrol Utama:</b> Di sini Anda bisa memfilter data berdasarkan hari, minggu, atau waktu tertentu, serta mencetak keseluruhan halaman menjadi laporan PDF." },
-        { id: "global-search-box", title: "2. Pencarian Sentral (Tracking)", text: "<b>Fitur Pelacakan Akurat!</b> Ketik No. SPP/Produk dan pantau statusnya dari awal pembuatan hingga dikirim melalui tabel khusus di bawah kolom pencarian ini.", isSearch: true },
-        { id: "panel-dev-inject", title: "3. Fast-Track Inject (Khusus Dev)", text: "<b>Jalur Cepat:</b> Fitur rahasia agar Developer (Randi) bisa mem-bypass sistem dengan menginject SPP/Produk langsung menjadi Selesai ke gudang." },
-        { id: "panel-analytics", title: "4. Analitik Master SPP", text: "<b>Kotak Statistik:</b> Box Proses dan Pending sekarang dipisah agar lebih jelas, ditambah bar progres penyelesaian target total." },
-        { id: "panel-analytics", title: "5. Grafik Volume Produksi", text: "<b>Visualisasi Data:</b> Pilih mode Line, Bar, atau Pie Chart untuk melihat performa produksi produk tertentu dari waktu ke waktu." },
-        { id: "panel-aktual", title: "6. Aktual Produk Terbanyak Selesai", text: "<b>Tabel Papan Atas:</b> Menampilkan daftar produk mana saja yang paling banyak di gudang dan seberapa banyak yang sudah terkirim ke *customer*." },
-        { id: "panel-inbox", title: "7. Inbox Antrean SPP", text: "<b>Notifikasi Produksi:</b> SPP baru otomatis muncul di sini. Cukup klik tombol statusnya untuk mulai mengerjakan laporan operator." },
-        { id: "panel-monitoring", title: "8. Countdown & WA Reminder", text: "<b>Pengingat Sistem:</b> Memantau deadline secara langsung. Jika waktu menipis, Anda bisa menekan tombol untuk mengirim *warning* otomatis via WhatsApp." },
-        { id: "panel-input-prod", title: "9. Form Input Aktual Operator", text: "<b>Laporan Utama:</b> Operator mengisi kegiatan kerjanya. Sistem otomatis mengunci durasi dan tahap produksi (bisa diketik manual jika memilih 'Other').", isForm: true, demoFn: "demoFillProduction" },
-        { id: "panel-history-prod", title: "10. Log Aktivitas Operator", text: "<b>Riwayat Lengkap:</b> Menyimpan jejak aktivitas. Kini dilengkapi tombol Minimize, pencarian per-tabel, dan tombol Edit/Hapus khusus untuk Developer." },
-        { id: "panel-ranking", title: "11. Klasemen Performa Operator", text: "<b>Sistem XP & Bonus:</b> Memberikan peringkat secara otomatis berdasarkan proporsi kerja dan ketepatan waktu. Peringkat atas mendapat piala badge." },
-        { id: "panel-surat-perintah", title: "12. Form Surat Perintah Langsung", text: "<b>Tugas Dadakan:</b> Fitur khusus Manager Warehouse untuk membypass urutan PPIC dan memberikan tugas mendesak dengan target spesifik.", isForm: true, demoFn: "demoFillSPL" },
-        { id: "panel-input-spp", title: "13. Rilis Master SPP Baru", text: "<b>Form Pembuatan Dokumen:</b> Digunakan PPIC/Admin untuk merilis pesanan standar ke antrean tim Produksi.", isForm: true, demoFn: "demoFillSPP" },
-        { id: "panel-history-spp", title: "14. Tabel Master SPP", text: "<b>Jejak Master:</b> Melihat semua pesanan SPP reguler yang masuk ke sistem beserta posisi berjalannya." },
-        { id: "panel-internal-produksi", title: "15. Pengeluaran Barang Internal", text: "<b>Distribusi Internal:</b> Untuk komponen seperti Frame/Support yang selesai dan akan digunakan langsung oleh Produksi, barangnya akan muncul dan ditarik melalui form ini." },
-        { id: "panel-input-shipment", title: "16. Form Pengiriman Eksternal & Stok Logistik", text: "<b>Pintu Keluar Ekspedisi:</b> Tim Logistik mencatat pengiriman barang (non-internal) ke customer di sini. Di bawahnya juga terdapat rekap total Stok Ready.", isForm: true, demoFn: "demoFillShipment" },
-        { id: "panel-history-shipment", title: "17. Riwayat Pengiriman Eksternal", text: "<b>Tabel Pengiriman:</b> Catatan final riwayat keberangkatan logistik, yang mencakup tanggal berangkat, kurir, dan tujuan barang *customer*." }
-    ];
+    // ==========================================
+    // LOGIKA PERCABANGAN ROOM TOUR BEE-BOOT
+    // ==========================================
+    
+    const tourData = {
+        full: [
+            { id: "main-header", title: "1. Header Utama", text: "Tabel paling atas: Menampilkan nama dashboard, jam realtime, dan tanggal aktual." },
+            { id: "top-nav", title: "2. Navigasi & Filter", text: "Tabel ke-2: Menampilkan nama login, opsi ganti sandi, log out, cetak laporan PDF, dan filter tampilan data waktu." },
+            { id: "global-search-box", title: "3. Pencarian Cepat (Tracking)", text: "Fitur pelacakan terpusat. Anda bisa memasukkan No SPP atau produk di sini.", isSearch: true },
+            { id: "panel-analytics", title: "4. Ringkasan Master SPP", text: "Bagian analitik ringkasan status Master SPP secara keseluruhan." },
+            { id: "panel-analytics", title: "5. Grafik Tren Volume Produksi", text: "Grafik aktual barang yang telah selesai diproduksi." },
+            { id: "panel-aktual", title: "6. Aktual Produk Terbanyak Selesai", text: "Tabel ranking produk apa saja yang paling banyak diselesaikan dan ready di gudang." },
+            { id: "panel-inbox", title: "7. Inbox Pesan Otomatis", text: "Daftar SPP masuk yang masih aktif dan berjalan." },
+            { id: "panel-monitoring", title: "8. Monitoring Progress", text: "Fitur hitung mundur deadline dan WhatsApp Notifier untuk peringatan." },
+            { id: "panel-input-prod", title: "9. Input Aktual Produksi", text: "Form utama untuk operator mengisi progres pekerjaan.", isForm: true, demoFn: "demoFillProduction" },
+            { id: "panel-history-prod", title: "10. History 2: Aktivitas Operator", text: "Tabel riwayat yang mencatat seluruh kegiatan aktual harian operator." },
+            { id: "panel-ranking", title: "11. Dashboard Analisa Produktivitas", text: "Rangking operator berdasarkan poin efisiensi kerja." },
+            { id: "panel-surat-perintah", title: "12. Surat Perintah Langsung", text: "Form tugas mendesak/bypass dari Manager Warehouse langsung ke operator.", isForm: true, demoFn: "demoFillSPL" },
+            { id: "table-spl-container", title: "13. Histori Surat Perintah Langsung", text: "Riwayat tugas SPL yang sedang berjalan maupun selesai." },
+            { id: "panel-input-spp", title: "14. Rilis SPP Baru", text: "Form untuk PPIC/Admin/Gudang menerbitkan antrean pesanan baru.", isForm: true, demoFn: "demoFillSPP" },
+            { id: "panel-history-spp", title: "15. History 1: Status Master SPP", text: "Tabel riwayat status terbaru dokumen Master SPP standar." },
+            { id: "panel-internal-produksi", title: "16. Pengeluaran Barang Internal", text: "Form untuk menarik stok khusus produksi (seperti perakitan frame).", isForm: true, demoFn: "demoFillSPP" }, 
+            { id: "internal-history-container", title: "17. Riwayat Pengambilan Internal", text: "Tabel pencatatan siapa dan kapan barang internal diambil." },
+            { id: "panel-input-shipment", title: "18. Input Laporan Pengiriman", text: "Form pencatatan pengiriman barang ke customer oleh tim logistik.", isForm: true, demoFn: "demoFillShipment" },
+            { id: "ready-stock-table", title: "19. Total Stok Produk Eksternal", text: "Kumpulan total barang yang ready kirim di gudang." },
+            { id: "panel-history-shipment", title: "20. Riwayat Pengiriman & Pengeluaran", text: "Tabel logistik pengeluaran barang keluar pabrik." }
+        ],
+        produksi: [
+            { id: "prod-spp-select", title: "1. Pilih No SPP", text: "Pilih nomor SPP yang sedang aktif untuk Anda kerjakan." },
+            { id: "prod-operator", title: "2. Nama Operator", text: "Pilih nama Anda. Jika sudah login sebagai produksi, ini otomatis terisi." },
+            { id: "prod-stage", title: "3. Tahap Produksi", text: "Pilih tahap pengerjaan. Sub di dalamnya mulai dari 'Persiapan Material' hingga 'Packing & Selesai'." },
+            { id: "prod-aktivitas", title: "4. Aktivitas Kegiatan", text: "Ketik detail spesifik pekerjaan atau aktivitas Anda saat ini." },
+            { id: "prod-datetime", title: "5. Tanggal & Jam Update", text: "Mencatat waktu update lapangan secara otomatis saat form dikirim." },
+            { id: "live-deadline-display", title: "6. Status Batas Akhir", text: "Menampilkan sisa waktu pengerjaan dokumen SPP (Hitung mundur target)." },
+            { id: "prod-number", title: "7. No Produksi", text: "Wajib diisi sesuai dengan nomor urut identitas produk." },
+            { id: "prod-condition", title: "8. Kondisi Kerja Lapangan", text: "Pilih kondisi. <b>Normal</b>: kerja biasa. <b>Selesai Awal/Tepat/Telat</b>: jika produk beres. <b>Lembur</b>: tambahan jam kerja. <b>Stoppage/Idle</b>: jika ada kendala." },
+            { id: "prod-deadline-val", title: "9. Standar Target Waktu & Ops", text: "Durasi standar dan jumlah operator yang dibutuhkan untuk menyelesaikan produk ini." },
+            { id: "prod-form", title: "10. Kirim Laporan Aktual", text: "Klik tombol submit di bawah untuk menyimpan laporan aktual Anda ke tabel histori." }
+        ],
+        gudang: [
+            { id: "spp-no", title: "1. No SPP Master", text: "Masukkan nomor dokumen SPP dari PPIC/Admin." },
+            { id: "spp-product", title: "2. Nama Item/Produk", text: "Pilih jenis produk yang akan dimasukkan ke antrean produksi." },
+            { id: "spp-maker", title: "3. Penanggung Jawab", text: "Siapa pihak yang merilis atau bertanggung jawab atas dokumen ini." },
+            { id: "spp-date", title: "4. Tanggal/Jam Keluar", text: "Waktu terbitnya dokumen SPP tersebut." },
+            { id: "spp-form", title: "5. Status Urgensi", text: "<b>Reguler</b>: standar. <b>Buffer Stok</b>: pengadaan berkala gudang. <b>Urgent</b>: prioritas utama segera dikerjakan." },
+            { id: "spp-form", title: "6. Submit & Rilis SPP", text: "Klik tombol ini untuk mengirim dokumen ke daftar kerja Produksi." },
+            { id: "internal-product-select", title: "7. Pilih Komponen Internal", text: "Pilih komponen (misal: frame) yang sudah selesai diproduksi." },
+            { id: "internal-target-product", title: "8. Digunakan Untuk Produk", text: "Tentukan produk final apa yang akan menggunakan komponen ini." },
+            { id: "internal-datetime", title: "9. Tanggal Pengambilan", text: "Kapan komponen ini diambil untuk dirakit." },
+            { id: "internal-out-form", title: "10. Tarik Komponen", text: "Klik tombol ini untuk mengeksekusi penarikan." },
+            { id: "internal-stock-table", title: "11. Total Stok Internal", text: "Menampilkan jumlah sisa komponen internal yang ready digunakan." },
+            { id: "shipment-product-select", title: "12. Pilih Produk Eksternal", text: "Pilih produk yang sudah siap dikirim." },
+            { id: "shipment-datetime", title: "13. Waktu Keberangkatan", text: "Kapan barang keluar dari gudang." },
+            { id: "shipment-customer", title: "14. Penerima (Tujuan)", text: "Ketik nama customer atau klien yang menerima barang." },
+            { id: "shipment-carrier", title: "15. Operator Logistik", text: "Siapa kurir atau ekspedisi yang membawanya." },
+            { id: "shipment-form", title: "16. Catat Keberangkatan", text: "Simpan data pengiriman ke histori." },
+            { id: "ready-stock-table", title: "17. Total Stok Eksternal", text: "Menampilkan jumlah produk jadi yang masih ready untuk dikirim." }
+        ]
+    };
 
+    let windowActiveTourSteps = [];
     let currentTourStep = 0;
 
-    window.startBeeTour = function() { 
+    window.beeOfferTour = function() {
+        if(window.isBeeBootTyping) return; document.getElementById('bee-boot-actions').innerHTML = '';
+        window.typeWriterHTML('bee-boot-text', "Apakah anda ingin mulai room tour pada keseluruhan atau perbagian?", 15, () => {
+            document.getElementById('bee-boot-actions').innerHTML = `<button class="bee-boot-btn bee-btn-yes" onclick="startBeeTour('full')">Ya, Keseluruhan</button><button class="bee-boot-btn bee-btn-no" onclick="beeOfferPartialTour()">Tidak</button>`;
+        });
+    }
+
+    window.beeOfferPartialTour = function() {
+        if(window.isBeeBootTyping) return; document.getElementById('bee-boot-actions').innerHTML = '';
+        window.typeWriterHTML('bee-boot-text', "Apakah anda ingin saya menjelaskan hanya pada bagian apa?", 15, () => {
+            document.getElementById('bee-boot-actions').innerHTML = `<button class="bee-boot-btn" style="background:#059669; color:white;" onclick="startBeeTour('produksi')">Produksi</button><button class="bee-boot-btn" style="background:#7c3aed; color:white;" onclick="startBeeTour('gudang')">Gudang</button><button class="bee-boot-btn bee-btn-no" onclick="beeExplainNo()">Tidak</button>`;
+        });
+    }
+
+    window.startBeeTour = function(type) { 
         currentTourStep = 0;
+        windowActiveTourSteps = tourData[type];
         document.getElementById('bee-boot-container').style.bottom = '30%'; 
         window.runTourStep(); 
     }
+
+    // Fungsi untuk menghapus semua indikator Tour yang aktif
+    window.clearAllHighlights = function() {
+        document.querySelectorAll('.highlight-tour').forEach(el => {
+            el.classList.remove('highlight-tour');
+        });
+    };
 
     window.runTourStep = function() {
         if(window.isBeeBootTyping) return; 
         const actions = document.getElementById('bee-boot-actions'); 
         actions.innerHTML = '';
         
-        if (currentTourStep >= fixedTourSteps.length) {
-            window.typeWriterHTML('bee-boot-text', "Selesai! Itulah seluruh bagian penting di dashboard terbaru ini. Semoga harimu menyenangkan! ✨", 15, () => {
+        // Hapus sorotan dari elemen sebelumnya agar tidak menumpuk
+        window.clearAllHighlights(); 
+
+        if (currentTourStep >= windowActiveTourSteps.length) {
+            window.typeWriterHTML('bee-boot-text', "Selesai! Itulah panduan detail untuk bagian ini. Semoga pekerjaan Anda makin efisien bersama Bee-Boot! ✨", 15, () => {
                 actions.innerHTML = '<button class="bee-boot-btn bee-btn-yes" onclick="endBeeTour()">Selesai</button>';
             });
             return;
         }
 
-        const step = fixedTourSteps[currentTourStep];
+        const step = windowActiveTourSteps[currentTourStep];
         const targetEl = document.getElementById(step.id);
         
-        if (targetEl && targetEl.style.display !== 'none') {
+        if (targetEl) {
+            // Jika elemen target berada di dalam tabel yang di-minimize, buka (maximize) otomatis
+            if (targetEl.closest('.table-container') && targetEl.closest('.table-container').classList.contains('hidden')) {
+                targetEl.closest('.table-container').classList.remove('hidden');
+                targetEl.closest('.table-container').style.display = 'block';
+            }
+            
+            // Gulir layar ke arah target elemen
             targetEl.scrollIntoView({behavior: 'smooth', block: 'center'});
-            targetEl.classList.add('highlight-tour'); 
-            setTimeout(() => { targetEl.classList.remove('highlight-tour'); }, 2000);
+            
+            // Berikan jeda sedikit agar layar selesai menggulir baru efek penunjuk muncul
+            setTimeout(() => {
+                targetEl.classList.add('highlight-tour');
+            }, 300);
         }
 
-        const stepIndicator = `Langkah ${currentTourStep+1} dari ${fixedTourSteps.length}`;
+        const stepIndicator = `Langkah ${currentTourStep+1} dari ${windowActiveTourSteps.length}`;
         const html = `<div style="text-align:left; font-size:13px; line-height:1.6;"><b style="color:var(--emerald-glow);">${stepIndicator}: ${step.title}</b><br>${step.text}</div>`;
 
         window.typeWriterHTML('bee-boot-text', html, 15, () => {
@@ -2214,10 +2360,10 @@
                 navButtons += `<button class="bee-boot-btn bee-btn-no" onclick="previousTourStep()">« Kembali</button>`;
             }
             if (step.isSearch) {
-                navButtons += `<button class="bee-boot-btn" style="background:#38bdf8; color:white;" onclick="demoSearchFromTour()">Coba Contoh</button>`;
+                navButtons += `<button class="bee-boot-btn" style="background:#38bdf8; color:white;" onclick="demoSearchFromTour()">Contoh</button>`;
             }
             if (step.isForm && step.demoFn && typeof window[step.demoFn] === 'function') {
-                navButtons += `<button class="bee-boot-btn" style="background:#38bdf8; color:white;" onclick="${step.demoFn}()">Coba Contoh</button>`;
+                navButtons += `<button class="bee-boot-btn" style="background:#38bdf8; color:white;" onclick="${step.demoFn}()">Contoh</button>`;
             }
             navButtons += `<button class="bee-boot-btn bee-btn-yes" onclick="nextTourStep()">Lanjut »</button>`;
             navButtons += `<button class="bee-boot-btn" style="background: #64748b; color:white;" onclick="endBeeTour()">Lewati Tur</button>`;
@@ -2226,7 +2372,7 @@
     }
 
     window.demoSearchFromTour = function() {
-        document.getElementById('global-search-input').value = "SPP-702";
+        document.getElementById('global-search-input').value = "AQUATECH"; // Menggunakan kata umum agar muncul di simulasi
         performCentralizedSearch();
     }
 
@@ -2244,13 +2390,17 @@
 
     window.endBeeTour = function() {
         if(window.isBeeBootTyping) return; 
+        window.clearAllHighlights(); // Bersihkan efek highlight
         document.getElementById('bee-boot-actions').innerHTML = '';
+        document.getElementById('bee-boot-container').style.bottom = '30px'; 
         window.beeOfferJoke(); 
     }
 
     window.beeExplainNo = function() {
         if(window.isBeeBootTyping) return; 
+        window.clearAllHighlights(); // Bersihkan efek highlight
         document.getElementById('bee-boot-actions').innerHTML = '';
+        document.getElementById('bee-boot-container').style.bottom = '30px'; 
         window.beeOfferJoke();
     }
 
@@ -2369,7 +2519,13 @@
     window.resetDateTimeInputs = function() {
         const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); const timeString = now.toISOString().slice(0, 16); 
         const els = ['spp-date','spl-date','prod-datetime','shipment-datetime', 'internal-datetime'];
-        els.forEach(id => { let e=document.getElementById(id); if(e){ e.value = timeString; if(e._flatpickr) e._flatpickr.setDate(timeString); } });
+        els.forEach(id => { 
+            let e = document.getElementById(id); 
+            if(e) { 
+                e.value = timeString; 
+                if(e._flatpickr) e._flatpickr.setDate(now); 
+            } 
+        });
     }
 
     window.formatDateToString = function(dateObj) {
@@ -2660,19 +2816,84 @@
         if (value === 'YA') { yesBtn.classList.add('selected-yes'); noBtn.classList.remove('selected-no'); } else { yesBtn.classList.remove('selected-yes'); noBtn.classList.add('selected-no'); }
     }
 
-    document.getElementById('spp-form').addEventListener('submit', function(e) {
+    document.getElementById('spp-form').addEventListener('submit', async function(e) {
         e.preventDefault();
+        const btnSubmit = document.querySelector('.btn-spp'); 
+        
         const noSPP = document.getElementById('spp-no').value.trim(); if(!noSPP) return;
         if(window.databaseMasterSPP.some(i => i.no === noSPP)) { alert("No SPP ini sudah ada!"); return; }
-        const dateBase = new Date(document.getElementById('spp-date').value); const datetimeInput = window.formatDateToString(dateBase);
+        
+        const dateBase = new Date(document.getElementById('spp-date').value); 
+        const datetimeInput = window.formatDateToString(dateBase);
         let product = document.getElementById('spp-product').value; if(product === 'other') product = document.getElementById('product-manual').value;
         let maker = document.getElementById('spp-maker').value; if(maker === 'other') maker = document.getElementById('maker-manual').value;
         
         const priority = document.querySelector('input[name="spp-priority"]:checked').value;
         
-        window.dbPushSPP({ no: noSPP, datetime: datetimeInput, rawTimestampMs: dateBase.getTime(), product: product, maker: maker, receiver: "-", priority: priority, status: 'Pending', isLocked: false, deadlineRawObjectMs: null, startTimeObjectMs: null, isSPL: false, formattedDeadline: "Belum dimulai", lastEventTimeMs: null, lastEventTimeFormatted: "-", lastInputTimeMs: null, isShipped: false });
-        this.reset(); document.getElementById('product-manual').style.display = 'none'; document.getElementById('maker-manual').style.display = 'none'; window.resetDateTimeInputs();
-        alert("Terimakasih data spp yang anda input akan kami teruskan ke bagian produksi");
+        const fileInput = document.getElementById('spp-file');
+        const file = fileInput ? fileInput.files[0] : null;
+        let uploadedFileUrl = null;
+
+        if (file) {
+            btnSubmit.innerHTML = "⏳ MENGUNGGAH DOKUMEN KE G-DRIVE...";
+            btnSubmit.disabled = true;
+            btnSubmit.style.background = "var(--warning-glow)";
+            
+            try {
+                let base64Data = await getBase64(file);
+                
+                let response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        filename: `${noSPP}_${file.name}`,
+                        mimeType: file.type,
+                        base64: base64Data
+                    })
+                });
+
+                let result = await response.json();
+                if (result.success) {
+                    uploadedFileUrl = result.url;
+                } else {
+                    alert("Gagal mengunggah file ke Google Drive: " + result.error);
+                }
+            } catch (error) {
+                alert("Terjadi kesalahan sistem saat menghubungi Google Drive API.");
+                console.error(error);
+            }
+        }
+
+        window.dbPushSPP({ 
+            no: noSPP, 
+            datetime: datetimeInput, 
+            rawTimestampMs: dateBase.getTime(), 
+            product: product, 
+            maker: maker, 
+            receiver: "-", 
+            priority: priority, 
+            status: 'Pending', 
+            isLocked: false, 
+            deadlineRawObjectMs: null, 
+            startTimeObjectMs: null, 
+            isSPL: false, 
+            formattedDeadline: "Belum dimulai", 
+            lastEventTimeMs: null, 
+            lastEventTimeFormatted: "-", 
+            lastInputTimeMs: null, 
+            isShipped: false,
+            fileUrl: uploadedFileUrl 
+        });
+        
+        this.reset(); 
+        document.getElementById('product-manual').style.display = 'none'; 
+        document.getElementById('maker-manual').style.display = 'none'; 
+        window.resetDateTimeInputs();
+        
+        btnSubmit.innerHTML = "Submit & Rilis Master SPP";
+        btnSubmit.disabled = false;
+        btnSubmit.style.background = "linear-gradient(135deg, #7c3aed, #a855f7)";
+        
+        alert("Terimakasih data spp yang anda input akan kami teruskan ke bagian produksi" + (uploadedFileUrl ? " beserta dokumen lampiran!" : "!"));
     });
 
     document.getElementById('spl-form').addEventListener('submit', function(e) {
@@ -2725,6 +2946,213 @@
         this.reset(); document.getElementById('shipment-carrier-manual').style.display = "none"; window.resetDateTimeInputs();
         alert("Terimakasih data yang sudah anda berikan akan terekam di log history gudang");
     });
+
+    // ==========================================================
+    // PENAMBAHAN 1: FUNGSI SUBMIT UNTUK DEV INJECT (YANG SEBELUMNYA MATI)
+    // ==========================================================
+    const devInjectForm = document.getElementById('dev-inject-form');
+    if(devInjectForm) {
+        devInjectForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const sppNo = document.getElementById('dev-spp').value.trim();
+            const prodNo = document.getElementById('dev-prod').value.trim();
+            const productName = document.getElementById('dev-product').value.trim();
+
+            if (!sppNo || !prodNo || !productName) return;
+
+            if (window.databaseMasterSPP.some(i => i.no === sppNo)) {
+                alert("No SPP ini sudah ada di sistem!");
+                return;
+            }
+
+            const now = new Date();
+            const timeMs = now.getTime();
+            const formattedTime = window.formatDateToString(now);
+
+            // 1. Inject ke Master SPP langsung selesai
+            window.dbPushSPP({
+                no: sppNo,
+                datetime: formattedTime,
+                rawTimestampMs: timeMs,
+                product: productName,
+                maker: "Randi (Dev System)",
+                receiver: "-",
+                priority: "Reguler",
+                status: "Selesai",
+                isLocked: true,
+                deadlineRawObjectMs: timeMs,
+                startTimeObjectMs: timeMs - (3600 * 1000), 
+                isSPL: false,
+                formattedDeadline: formattedTime,
+                lastEventTimeMs: timeMs,
+                lastEventTimeFormatted: formattedTime,
+                lastInputTimeMs: timeMs,
+                isShipped: false,
+                fileUrl: null
+            });
+
+            // 2. Inject ke Log Operator langsung selesai
+            window.dbPushLog({
+                noSPP: sppNo,
+                noProd: prodNo,
+                operator: "Randi (Dev System)",
+                condition: "Pekerjaan Selesai Tepat Waktu",
+                stage: "7. Packing & Selesai (Final)",
+                aktivitas: "Inject Data Fast-Track By Dev",
+                time: formattedTime,
+                timestampMs: timeMs,
+                deadline: "Inject Otomatis",
+                status: "Selesai",
+                reason: "-",
+                processPoints: 50,
+                msTerlambat: 0
+            });
+
+            this.reset();
+            alert("Berhasil! Data Inject langsung tembus masuk ke tabel Gudang Ready.");
+        });
+    }
+
+    // ==========================================================
+    // PENAMBAHAN 2: FUNGSI SUBMIT FORM PRODUKSI (YANG SEBELUMNYA HILANG)
+    // ==========================================================
+    
+    // Fungsi auto-fill saat SPP dipilih
+    window.handleSppSelection = function() {
+        const sppNo = document.getElementById('prod-spp-select').value;
+        const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
+        const deadlineDisplay = document.getElementById('live-deadline-display');
+        
+        if (!matchedSPP) {
+            deadlineDisplay.innerHTML = "⚙️ Menunggu penentuan nomor dokumen SPP...";
+            deadlineDisplay.style.color = "#e9d5ff";
+            document.getElementById('prod-target-ops').value = "";
+            window.updateConditionDropdown(null);
+            return;
+        }
+
+        if (PRODUCT_DICTIONARY[matchedSPP.product]) {
+            document.getElementById('prod-target-ops').value = PRODUCT_DICTIONARY[matchedSPP.product].ops + " Orang";
+            document.getElementById('prod-deadline-val').value = PRODUCT_DICTIONARY[matchedSPP.product].hours;
+            document.getElementById('prod-deadline-unit').value = "jam";
+        }
+
+        if (matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
+            const timeDiff = matchedSPP.deadlineRawObjectMs - Date.now();
+            if (timeDiff > 0) {
+                const h = Math.floor(timeDiff / (1000 * 60 * 60));
+                const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                deadlineDisplay.innerHTML = `⏳ Sisa Waktu Pekerjaan: ${h} Jam ${m} Menit (${matchedSPP.formattedDeadline})`;
+                deadlineDisplay.style.color = "var(--warning-glow)";
+            } else {
+                deadlineDisplay.innerHTML = `🚨 WAKTU HABIS! Target Awal: ${matchedSPP.formattedDeadline}`;
+                deadlineDisplay.style.color = "var(--danger-glow)";
+            }
+        } else {
+            deadlineDisplay.innerHTML = "🟢 SPP Belum dikerjakan (Waktu akan dikunci saat Anda submit pertama kali).";
+            deadlineDisplay.style.color = "var(--emerald-glow)";
+        }
+
+        window.updateConditionDropdown(matchedSPP);
+    };
+
+    window.liveCalculationHandler = function() { };
+
+    document.getElementById('prod-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const sppNo = document.getElementById('prod-spp-select').value;
+        const noProd = document.getElementById('prod-number').value;
+        const operator = document.getElementById('prod-operator').value;
+        const condition = document.getElementById('prod-condition').value;
+        let stage = document.getElementById('prod-stage').value;
+        if (stage === 'other') stage = document.getElementById('prod-stage-manual').value;
+        const aktivitas = document.getElementById('prod-aktivitas').value;
+        const targetVal = document.getElementById('prod-deadline-val').value;
+        const targetUnit = document.getElementById('prod-deadline-unit').value;
+
+        if (!sppNo || !noProd || !operator || !condition) {
+            alert("Harap lengkapi semua data laporan yang wajib!");
+            return;
+        }
+
+        const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
+        if (!matchedSPP) return;
+
+        const timeMs = Date.now();
+        const dateNow = new Date();
+        const formattedTimeStr = window.formatDateToString(dateNow);
+        
+        let statusKirim = "Proses";
+        let isSelesai = false;
+
+        if (condition.includes("Selesai") || stage.includes("7. Packing")) {
+            statusKirim = condition.includes("Selesai") ? condition : "Selesai";
+            isSelesai = true;
+        } else if (PENJEDAAN_STATUS_LIST.includes(condition)) {
+            statusKirim = condition;
+        }
+
+        let processPoints = 10; 
+        if (isSelesai) processPoints = 50;
+
+        // Hitung Keterlambatan untuk kebutuhan ranking operator (Perbaikan algoritma)
+        let delayMs = 0;
+        if (matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
+            delayMs = timeMs - matchedSPP.deadlineRawObjectMs; // (+) Telat, (-) Lebih Awal
+        }
+
+        const logData = {
+            noSPP: sppNo,
+            noProd: noProd,
+            operator: operator,
+            condition: condition,
+            stage: stage,
+            aktivitas: aktivitas,
+            time: formattedTimeStr,
+            timestampMs: timeMs,
+            deadline: `${targetVal} ${targetUnit}`,
+            status: statusKirim,
+            reason: "-",
+            processPoints: processPoints,
+            msTerlambat: delayMs
+        };
+
+        window.dbPushLog(logData);
+
+        let sppUpdates = {
+            lastInputTimeMs: timeMs,
+            lastEventTimeFormatted: formattedTimeStr,
+            status: statusKirim
+        };
+
+        if (!matchedSPP.isLocked && !matchedSPP.isSPL) {
+            sppUpdates.isLocked = true;
+            sppUpdates.startTimeObjectMs = timeMs;
+            
+            let calcTarget = new Date(timeMs);
+            if (targetUnit === "jam") {
+                calcTarget.setHours(calcTarget.getHours() + parseInt(targetVal));
+            } else {
+                calcTarget.setDate(calcTarget.getDate() + parseInt(targetVal));
+            }
+            sppUpdates.deadlineRawObjectMs = calcTarget.getTime();
+            sppUpdates.formattedDeadline = window.formatDateToString(calcTarget);
+        }
+
+        window.dbUpdateSPP(matchedSPP.firebaseKey, sppUpdates);
+
+        this.reset();
+        document.getElementById('prod-stage-manual').style.display = 'none';
+        window.resetDateTimeInputs();
+        
+        if (window.currentUserAccess === "produksi") {
+            document.getElementById('prod-operator').value = window.currentUserRole;
+        }
+        
+        alert("Pekerjaan berhasil diperbarui! Terimakasih telah melakukan pelaporan.");
+    });
+
 
     window.updateSPPDropdown = function() {
         const select = document.getElementById('prod-spp-select'); const currentSavedValue = select.value; select.innerHTML = '<option value="">-- Pilih SPP --</option>';
@@ -2814,7 +3242,7 @@
         });
     };
 
-    window.renderShipmentTable = function() {
+window.renderShipmentTable = function() {
         const tbody = document.getElementById('shipment-history-body'); tbody.innerHTML = ""; 
         let filteredShips = window.databaseShipment.filter(ship => window.isWithinTimeframe(ship.rawTimestampMs, document.getElementById('global-time-filter').value));
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
@@ -2842,11 +3270,20 @@
         const tbody = document.getElementById('spp-master-body'); tbody.innerHTML = ''; 
         let filteredSPP = window.getFilteredNonSPLSPP(); 
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
-        if(filteredSPP.length === 0) { tbody.innerHTML = `<tr><td colspan="${isDev ? '8' : '7'}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada data dokumen SPP standar.</td></tr>`; return; }
+        const isAdmin = (window.currentUserRole === "Admin");
+        const showDocCol = (isDev || isAdmin);
+        let cols = 7 + (showDocCol ? 1 : 0) + (isDev ? 1 : 0);
+        
+        if(filteredSPP.length === 0) { tbody.innerHTML = `<tr><td colspan="${cols}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada data dokumen SPP standar.</td></tr>`; return; }
         filteredSPP.forEach(item => {
+            let fileLinkHtml = item.fileUrl 
+                ? `<a href="${item.fileUrl}" target="_blank" style="background:var(--blue-glow); color:#000; padding:6px 12px; font-size:11px; font-weight:bold; border-radius:6px; text-decoration:none;">📄 Lihat Dokumen</a>` 
+                : `<span style="color:var(--text-muted); font-size:11px;">Tidak ada lampiran</span>`;
+                
             let displayStatus = item.isShipped ? '<span class="badge bg-urgent">Digunakan/Terkirim</span>' : window.getStatusBadge(item.status); 
+            let docColHtml = showDocCol ? `<td>${fileLinkHtml}</td>` : '';
             let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editMasterSPP('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button></td>` : '';
-            tbody.innerHTML += `<tr><td><strong>${item.no}</strong></td><td>${item.datetime}</td><td><span class="badge bg-reguler" style="font-size:12px; font-weight:700;">${item.product}</span></td><td>${item.maker}</td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${actionBtns}</tr>`;
+            tbody.innerHTML += `<tr><td><strong>${item.no}</strong></td><td>${item.datetime}</td><td><span class="badge bg-reguler" style="font-size:12px; font-weight:700;">${item.product}</span></td><td>${item.maker}</td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${docColHtml}${actionBtns}</tr>`;
         });
     }
 
@@ -2935,532 +3372,199 @@
         link.click();
     }
 
-    window.handleSppSelection = function() {
-        const selectedSPPNo = document.getElementById('prod-spp-select').value; 
-        const displayBox = document.getElementById('live-deadline-display');
-        const valInput = document.getElementById('prod-deadline-val'); 
-        const unitInput = document.getElementById('prod-deadline-unit'); 
-        const opsInput = document.getElementById('prod-target-ops'); 
-        const alertBar = document.getElementById('live-condition-alert');
-        
-        if (!selectedSPPNo) { 
-            displayBox.innerHTML = "⚙️ Menunggu penentuan nomor dokumen SPP... "; 
-            if(window.currentUserAccess !== "produksi") { valInput.disabled = false; unitInput.disabled = false; }
-            valInput.value = ""; opsInput.value = ""; alertBar.style.display = "none"; 
-            window.updateConditionDropdown(null); 
-            return; 
-        }
-        
-        const matchedSPP = window.databaseMasterSPP.find(i => i.no === selectedSPPNo); if (!matchedSPP) return;
-        
-        if (PENJEDAAN_STATUS_LIST.includes(matchedSPP.status)) {
-            alertBar.style.display = "block"; alertBar.style.background = "rgba(244, 63, 94, 0.2)"; alertBar.style.color = "#f43f5e"; alertBar.style.border = "1px solid #e11d48";
-            alertBar.innerHTML = `⚠️ STATUS AKTIF: SPP ${matchedSPP.no} sedang di-set [${matchedSPP.status}] sejak ${matchedSPP.lastEventTimeFormatted}`;
-        } else alertBar.style.display = "none";
-        
-        const prodInfo = PRODUCT_DICTIONARY[matchedSPP.product];
-        
-        if (matchedSPP.isLocked) { 
-            valInput.disabled = true; 
-            unitInput.disabled = true; 
-            valInput.setAttribute('readonly', 'true');
-            valInput.style.pointerEvents = 'none';
-            valInput.style.background = '#1e293b';
-            unitInput.style.pointerEvents = 'none';
-            unitInput.style.background = '#1e293b';
-            
-            if(prodInfo) opsInput.value = prodInfo.ops + " Orang (Terkunci)"; 
-            else opsInput.value = "Custom/SPL";
-            window.liveCalculationHandler(); 
-        } 
-        else { 
-            displayBox.innerHTML = "⏳ Masukkan tanggal lapangan untuk mengunci target..."; 
-            
-            if (prodInfo) { 
-                valInput.value = prodInfo.hours; 
-                unitInput.value = 'jam'; 
-                opsInput.value = prodInfo.ops + " Orang Target"; 
-                
-                if (window.currentUserAccess === "produksi") {
-                    valInput.disabled = true; unitInput.disabled = true;
-                    valInput.setAttribute('readonly', 'true');
-                    valInput.style.pointerEvents = 'none';
-                    valInput.style.background = '#1e293b';
-                    unitInput.style.pointerEvents = 'none';
-                    unitInput.style.background = '#1e293b';
-                } else {
-                    valInput.disabled = false; unitInput.disabled = false;
-                    valInput.removeAttribute('readonly');
-                    valInput.style.pointerEvents = 'auto';
-                    valInput.style.background = 'var(--input-bg)';
-                    unitInput.style.pointerEvents = 'auto';
-                    unitInput.style.background = 'var(--input-bg)';
-                }
-            } else { 
-                valInput.value = ""; 
-                opsInput.value = "Custom Product"; 
-                
-                valInput.disabled = false; 
-                unitInput.disabled = false;
-                valInput.removeAttribute('readonly');
-                valInput.style.pointerEvents = 'auto';
-                valInput.style.background = 'var(--input-bg)';
-                unitInput.style.pointerEvents = 'auto';
-                unitInput.style.background = 'var(--input-bg)';
-            }
-            window.liveCalculationHandler(); 
-        }
-
-        window.updateConditionDropdown(matchedSPP);
-    }
-
-    window.liveCalculationHandler = function() {
-        const selectedSPPNo = document.getElementById('prod-spp-select').value; const displayBox = document.getElementById('live-deadline-display'); if (!selectedSPPNo) return;
-        const matchedSPP = window.databaseMasterSPP.find(i => i.no === selectedSPPNo);
-        const dateInput = document.getElementById('prod-datetime').value; const valInput = parseInt(document.getElementById('prod-deadline-val').value); const unitInput = document.getElementById('prod-deadline-unit').value;
-        if (matchedSPP && matchedSPP.isLocked) {
-            if (dateInput) {
-                const inputDate = new Date(dateInput); const diffMs = matchedSPP.deadlineRawObjectMs - inputDate.getTime();
-                if (diffMs > 0) { const h = Math.floor(diffMs / (1000 * 60 * 60)); const m = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60)); displayBox.innerHTML = `🔒 DEADLINE TERKUNCI: ${matchedSPP.formattedDeadline} <span style="color:var(--emerald-glow); margin-left:10px; font-weight:800;">(⏳ Sisa: ${h} Jam ${m} Menit)</span>`; } 
-                else { const lateMs = Math.abs(diffMs); const h = Math.floor(lateMs / (1000 * 60 * 60)); const m = Math.floor((lateMs % (1000 * 60 * 60)) / (1000 * 60)); displayBox.innerHTML = `🔒 DEADLINE TERKUNCI: ${matchedSPP.formattedDeadline} <span style="color:var(--danger-glow); margin-left:10px; font-weight:800;">(⚠️ Telat: ${h} Jam ${m} Menit)</span>`; }
-            } else displayBox.innerHTML = `🔒 DEADLINE TERKUNCI PERMANEN: ${matchedSPP.formattedDeadline}`; return;
-        }
-        if (!dateInput || isNaN(valInput)) { displayBox.innerHTML = "⏳ Masukkan tanggal lapangan & target durasi..."; return; }
-        let deadlineDate = new Date(dateInput); if (unitInput === 'jam') deadlineDate.setHours(deadlineDate.getHours() + valInput); else if (unitInput === 'hari') deadlineDate.setDate(deadlineDate.getDate() + valInput);
-        displayBox.innerHTML = `⏱️ Estimasi Perhitungan Batas Deadline SPP: ${window.formatDateToString(deadlineDate)}`;
-    }
-
-    document.getElementById('prod-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const noSPP = document.getElementById('prod-spp-select').value; 
-        const noProd = document.getElementById('prod-number').value || "-";
-        const operator = document.getElementById('prod-operator').value; 
-        const condition = document.getElementById('prod-condition').value;
-        
-        let stage = document.getElementById('prod-stage').value;
-        if (stage === 'other') stage = document.getElementById('prod-stage-manual').value.trim() || "-";
-        
-        const aktivitas = document.getElementById('prod-aktivitas').value.trim() || "-";
-        
-        let operatorInputTime;
-        if (window.currentUserAccess === "produksi") operatorInputTime = new Date();
-        else operatorInputTime = new Date(document.getElementById('prod-datetime').value);
-        
-        const startTimeFormatted = window.formatDateToString(operatorInputTime);
-        const matchedSPP = window.databaseMasterSPP.find(i => i.no === noSPP); 
-        if(!matchedSPP) return;
-        
-        let updates = {};
-        
-        if (!matchedSPP.isLocked) {
-            const valInput = parseInt(document.getElementById('prod-deadline-val').value); 
-            const unitInput = document.getElementById('prod-deadline-unit').value;
-            let calcDeadline = new Date(operatorInputTime); 
-            if (unitInput === 'jam') calcDeadline.setHours(calcDeadline.getHours() + valInput); 
-            else if (unitInput === 'hari') calcDeadline.setDate(calcDeadline.getDate() + valInput);
-            
-            updates.deadlineRawObjectMs = calcDeadline.getTime(); 
-            updates.formattedDeadline = window.formatDateToString(calcDeadline);
-            updates.isLocked = true; 
-            updates.startTimeObjectMs = operatorInputTime.getTime(); 
-        }
-        
-        if (!matchedSPP.startTimeObjectMs) updates.startTimeObjectMs = operatorInputTime.getTime();
-        updates.lastInputTimeMs = operatorInputTime.getTime();
-        
-        let currentDeadlineMs = updates.deadlineRawObjectMs || matchedSPP.deadlineRawObjectMs;
-        let currentStartMs = updates.startTimeObjectMs || matchedSPP.startTimeObjectMs;
-
-        if (PENJEDAAN_STATUS_LIST.includes(matchedSPP.status) && !PENJEDAAN_STATUS_LIST.includes(condition)) {
-            if (matchedSPP.lastEventTimeMs) {
-                const durationOfDowntime = operatorInputTime.getTime() - matchedSPP.lastEventTimeMs;
-                if (durationOfDowntime > 0) {
-                    let newDeadMs = currentDeadlineMs + durationOfDowntime;
-                    updates.deadlineRawObjectMs = newDeadMs; 
-                    updates.formattedDeadline = window.formatDateToString(new Date(newDeadMs));
-                    currentDeadlineMs = newDeadMs;
-                }
-            }
-            updates.lastEventTimeMs = null;
-        } 
-        if (PENJEDAAN_STATUS_LIST.includes(condition)) { 
-            updates.lastEventTimeMs = operatorInputTime.getTime(); 
-            updates.lastEventTimeFormatted = startTimeFormatted; 
-        }
-
-        let lemburDurationMs = 0; let lemburPoints = 0; let isLemburProses = false;
-        
-        if (condition === 'Lembur (Reguler)') { lemburDurationMs = 4 * 60 * 60 * 1000; lemburPoints = 0; isLemburProses = true; }
-        else if (condition === 'Lembur (Sabtu/Minggu)') { lemburDurationMs = 9 * 60 * 60 * 1000; lemburPoints = 0; isLemburProses = true; }
-        else if (condition === 'Lembur Selesai (Reguler)') { lemburPoints = 25; }
-        else if (condition === 'Lembur Selesai (Sabtu/Minggu)') { lemburPoints = 50; }
-
-        if (isLemburProses && currentDeadlineMs) {
-            let newDeadline = currentDeadlineMs - lemburDurationMs;
-            updates.deadlineRawObjectMs = newDeadline;
-            updates.formattedDeadline = window.formatDateToString(new Date(newDeadline));
-            currentDeadlineMs = newDeadline;
-        }
-
-        const inputTimeMs = operatorInputTime.getTime();
-        let calculatedStatus = ""; let rewardReasonText = "-"; let gapTerlambatMs = inputTimeMs - currentDeadlineMs; let processPoints = 0;
-
-        if (PENJEDAAN_STATUS_LIST.includes(condition)) { 
-            calculatedStatus = condition; 
-            if (condition === 'Lanjutkan Besok' || condition === 'Takeover') {
-                processPoints = 15; 
-                rewardReasonText = `Apresiasi progress harian (+15 Poin)`;
-            } else if (condition === 'Stoppage' || condition === 'Idle Time') {
-                processPoints = 10; 
-                rewardReasonText = `Kompensasi waktu kendala (+10 Poin)`;
-            }
-        } 
-        else if (condition === 'Normal') {
-            calculatedStatus = gapTerlambatMs <= 0 ? 'Proses' : 'Telat Selesai';
-            if (calculatedStatus === 'Proses') {
-                processPoints = 10;
-                rewardReasonText = "Proses Kerja Aktif (+10 Poin)";
-            }
-        }
-        else if (isLemburProses) {
-            calculatedStatus = gapTerlambatMs <= 0 ? 'Proses' : 'Telat Selesai';
-            processPoints = lemburPoints; 
-            rewardReasonText = `Mulai Lembur (Poin ditahan s/d Selesai)`;
-        } 
-        else if (condition === 'Lembur Selesai (Reguler)' || condition === 'Lembur Selesai (Sabtu/Minggu)') {
-            calculatedStatus = gapTerlambatMs <= 0 ? 'Selesai' : 'Telat Selesai'; 
-            rewardReasonText = `Selesai dengan Lembur (+${lemburPoints} Poin Lembur Cair)`; 
-            processPoints = lemburPoints;
-        } 
-        else if (condition === 'Pekerjaan Selesai Awal' || (stage.includes("7. Packing") && gapTerlambatMs < 0)) {
-            if (gapTerlambatMs < 0) { 
-                calculatedStatus = 'Selesai Awal'; 
-                const diffHours = (Math.abs(gapTerlambatMs) / (1000 * 60 * 60)).toFixed(1); 
-                rewardReasonText = `🌟 Lebih Cepat ${diffHours} Jam dari Target (Poin Final Cair)`; 
-            } else { 
-                calculatedStatus = gapTerlambatMs === 0 ? 'Selesai' : 'Telat Selesai'; 
-            }
-            processPoints = 0; 
-        } 
-        else if (condition === 'Pekerjaan Selesai Tepat Waktu' || stage.includes("7. Packing")) {
-            calculatedStatus = gapTerlambatMs <= 0 ? 'Selesai' : 'Telat Selesai';
-            processPoints = 0; 
-            rewardReasonText = gapTerlambatMs <= 0 ? "Selesai Tepat Waktu (Poin Final Cair)" : "Telat Selesai";
-        } 
-        else if (condition === 'Pekerjaan Selesai Telat') {
-            calculatedStatus = 'Telat Selesai';
-            processPoints = 0;
-            rewardReasonText = "Pekerjaan Telat Diselesaikan";
-        }
-        else {
-            calculatedStatus = gapTerlambatMs <= 0 ? 'Proses' : 'Telat Selesai';
-            processPoints = 0;
-        }
-
-        let sisaWaktuTextInfo = "";
-        if (gapTerlambatMs < 0) { 
-            const h = Math.floor(Math.abs(gapTerlambatMs) / (1000 * 60 * 60)); 
-            const m = Math.floor((Math.abs(gapTerlambatMs) % (1000 * 60 * 60)) / (1000 * 60)); 
-            sisaWaktuTextInfo = `Sisa Waktu: ${h} Jam ${m} Menit`; 
-        } else { 
-            sisaWaktuTextInfo = "Waktu Telah Habis / Melewati Target"; 
-        }
-
-        window.activeTempData = { noProd, noSPP, operator, aktivitas, condition, stage, time: startTimeFormatted, timestampMs: inputTimeMs, deadline: updates.formattedDeadline || matchedSPP.formattedDeadline, status: calculatedStatus, reason: rewardReasonText, msTerlambat: gapTerlambatMs, processPoints: processPoints };
-        
-        updates.status = calculatedStatus; 
-        
-        window.activeTempUpdates = updates; 
-        window.activeTempSPPKey = matchedSPP.firebaseKey;
-        
-        window.triggerPopup(calculatedStatus, updates.formattedDeadline || matchedSPP.formattedDeadline, rewardReasonText, gapTerlambatMs, sisaWaktuTextInfo, processPoints);
-    });
-
-    // FUNGSI POPUP DENGAN TEKS YANG SUDAH DIREVISI MENDUKUNG BONUS DINAMIS
-    window.triggerPopup = function(status, deadlineText, rewardText, gapMs, sisaWaktuTextInfo = "", processPoints = 0) {
-        const modal = document.getElementById('statusModal'); const title = document.getElementById('modal-title'); const desc = document.getElementById('modal-desc');
-        const reasonSection = document.getElementById('reason-section'); const kpiBlock = document.getElementById('kpi-commitment-block'); const generalInput = document.getElementById('general-reason-input');
-        window.currentSelectedCommitment = ""; document.getElementById('commit-yes').classList.remove('selected-yes'); document.getElementById('commit-no').classList.remove('selected-no');
-        generalInput.value = ""; modal.style.display = "flex";
-        
-        if (PENJEDAAN_STATUS_LIST.includes(status)) {
-            title.innerHTML = `⚠️ STATUS: ${status.toUpperCase()}`; desc.innerHTML = `Kondisi pengerjaan menjadi penundaan lapangan. <br><b style="color:var(--text-muted)">Poin Instan: ${processPoints} Poin.</b>`;
-            reasonSection.style.display = "block"; kpiBlock.style.display = "none";
-        } else if (status === 'Selesai Awal') {
-            title.innerHTML = "<span style='color:var(--emerald-glow)'>🌟 PRESTASI KERJA: SELESAI LEBIH AWAL!</span>";
-            desc.innerHTML = `<span style="color:var(--emerald-glow); font-weight:800; display:block; background:rgba(16,185,129,0.1); padding:15px; border-radius:6px; border:1px solid #34d399;">Luar Biasa! Kerja cepat terverifikasi.<br>${rewardText}.<br>Poin Dasar (80) + <b style="color:var(--warning-glow)">Bonus Waktu Dinamis</b> ditambahkan ke Profil Anda!</span>`;
-            reasonSection.style.display = "none"; kpiBlock.style.display = "none";
-        } else if (status === 'Selesai') {
-            title.innerHTML = "<span style='color:var(--success-glow)'>✅ PRODUK SELESAI TEPAT WAKTU</span>";
-            desc.innerHTML = `Dokumen SPP berhasil diselesaikan sesuai target waktu.<br><b style="color:var(--success-glow)">Poin Kinerja Standar (80 XP) ditambahkan ke Profil Anda.</b>`;
-            reasonSection.style.display = "none"; kpiBlock.style.display = "none";
-        } else if (status === 'Proses') {
-            title.innerHTML = "<span style='color:var(--blue-glow)'>🔄 PROGRESS LAPORAN TERCATAT</span>";
-            let antiCheatBadge = "";
-            if (processPoints === -5) antiCheatBadge = `<b style="color:var(--danger-glow); display:block; margin-top:8px;">Terlalu Cepat (-5 Poin Pinalti)</b>`;
-            else if (processPoints >= 10) antiCheatBadge = `<b style="color:var(--emerald-glow); display:block; margin-top:8px;">${rewardText}</b>`;
-            else antiCheatBadge = `<b style="color:var(--text-muted); display:block; margin-top:8px;">${rewardText}</b>`;
-            desc.innerHTML = `Laporan harian berhasil diperbarui.<br><b style="color:var(--blue-glow); display:inline-block; margin-top:10px; padding:8px 15px; background:rgba(56,189,248,0.1); border-radius:6px; border:1px solid var(--blue-glow);">⏳ ${sisaWaktuTextInfo}</b>${antiCheatBadge}`;
-            reasonSection.style.display = "none"; kpiBlock.style.display = "none";
-        } else if (status === 'Telat Selesai') {
-            const hitungHari = (gapMs / (1000 * 60 * 60 * 24)).toFixed(2);
-            title.innerHTML = "<span style='color:var(--danger-glow)'>🚨 PERINGATAN KETERLAMBATAN KERJA</span>";
-            desc.innerHTML = `<span style="color:var(--danger-glow); font-weight:800; display:block; background:rgba(244,63,94,0.1); padding:12px; border-radius:6px;">Anda telat ±${hitungHari} Hari. Mempengaruhi KPI.<br><b style="color:#f43f5e">Sistem menerapkan pinalti pemotongan Poin Rangking!</b></span>`;
-            reasonSection.style.display = "none"; kpiBlock.style.display = "block";     
-        }
-    }
-
-    // --- FUNGSI KLIK TOMBOL SIMPAN DI MODAL (POPUP) ---
-    document.getElementById('modal-close-btn').addEventListener('click', function() {
-        if (!window.activeTempData) return;
-
-        const kpiBlock = document.getElementById('kpi-commitment-block');
-        
-        // Pengecekan jika form KPI muncul (saat telat)
-        if (kpiBlock.style.display === "block") {
-            if (!window.currentSelectedCommitment) {
-                alert("Harap pilih komitmen KPI terlebih dahulu (YA / TIDAK) sebelum menyimpan!");
-                return;
-            }
-            if (window.currentSelectedCommitment === "TIDAK") {
-                alert("Anda harus berkomitmen untuk memperbaiki kinerja agar dapat menyimpan laporan ini.");
-                return;
-            }
-            window.activeTempData.reason += " | Komitmen: " + window.currentSelectedCommitment;
-        }
-
-        // Tambahkan catatan lapangan jika ada
-        const generalInput = document.getElementById('general-reason-input').value.trim();
-        if (generalInput) {
-            window.activeTempData.reason += " | Catatan: " + generalInput;
-        }
-
-        // 1. Simpan Data Log ke Firebase
-        window.dbPushLog(window.activeTempData);
-        
-        // 2. Update Status SPP di Firebase (Sinkronisasi dengan master)
-        window.dbUpdateSPP(window.activeTempSPPKey, window.activeTempUpdates);
-
-        // 3. Tutup Modal
-        document.getElementById('statusModal').style.display = "none";
-
-        // 4. Reset Form Input Aktual
-        document.getElementById('prod-form').reset();
-        document.getElementById('prod-stage-manual').style.display = 'none'; // Sembunyikan kembali opsi manual
-        
-        // REVISI: Mempertahankan auto-fill nama operator yang sedang login pasca-form direset
-        if (window.currentUserAccess === "produksi" && window.currentUserRole !== "Produksi") {
-            const opSelect = document.getElementById('prod-operator');
-            if (opSelect) {
-                opSelect.value = window.currentUserRole;
-                opSelect.style.pointerEvents = 'none';
-                opSelect.style.background = '#1e293b';
-            }
-        }
-
-        document.getElementById('live-deadline-display').innerHTML = "⚙️ Menunggu penentuan nomor dokumen SPP...";
-        document.getElementById('live-condition-alert').style.display = "none";
-        
-        // Paksa render dropdown ulang untuk mereset pilihan yang terlarang
-        window.updateConditionDropdown(null);
-        
-        if(typeof window.resetDateTimeInputs === "function") window.resetDateTimeInputs();
-        
-        // 5. Bersihkan Variabel Sementara
-        window.activeTempData = null;
-        window.activeTempUpdates = null;
-        window.activeTempSPPKey = null;
-
-        alert("Berhasil! Laporan aktual lapangan telah disimpan ke riwayat.");
-    });
-
-    // --- FITUR RAHASIA: INJECT DATA KHUSUS RANDI ---
-    document.addEventListener("DOMContentLoaded", function() {
-        
-        // Panggil sapaan waktu otomatis sebelum login
-        window.setLoginGreeting(); 
-
-        // --- TAMBAHAN BARU: CEK SESI LOGIN SAAT RELOAD AGAR TIDAK LOGOUT ---
-        const savedPass = localStorage.getItem('savedLoginData');
-        if (savedPass) {
-            document.getElementById('login-password').value = savedPass;
-            window.checkLogin(true); // 'true' untuk mem-bypass pop-up welcome agar langsung masuk dashboard
-        }
-        // -------------------------------------------------------------------
-
-        // 2. Fungsi eksekusi tombol submit Inject
-        const injectForm = document.getElementById('dev-inject-form');
-        if(injectForm) {
-            injectForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const sppNo = document.getElementById('dev-spp').value.trim();
-                const prodNo = document.getElementById('dev-prod').value.trim();
-                const product = document.getElementById('dev-product').value.trim();
-
-                if(!sppNo || !prodNo || !product) return;
-                
-                // Cek agar No SPP tidak duplikat dengan yang sudah ada
-                if(window.databaseMasterSPP.some(i => i.no === sppNo)) { 
-                    alert("⚠️ No SPP ini sudah dipakai! Harap gunakan nomor SPP manual yang berbeda."); 
-                    return; 
-                }
-
-                const now = new Date();
-                const datetimeStr = window.formatDateToString(now);
-                const ms = now.getTime();
-
-                // A. PUSH KE MASTER SPP (Agar statusnya Selesai dan terbaca oleh Gudang Stok Ready)
-                window.dbPushSPP({
-                    no: sppNo,
-                    datetime: datetimeStr,
-                    rawTimestampMs: ms,
-                    product: product,
-                    maker: "Dev System",
-                    receiver: "-",
-                    priority: "Reguler",
-                    status: "Selesai", 
-                    isLocked: true,
-                    deadlineRawObjectMs: ms,
-                    startTimeObjectMs: ms - 3600000, // Manipulasi mulai dari 1 jam lalu
-                    isSPL: false,
-                    formattedDeadline: datetimeStr,
-                    lastEventTimeMs: null,
-                    lastEventTimeFormatted: "-",
-                    lastInputTimeMs: ms,
-                    isShipped: false // Kunci agar masuk ke tabel Ready Stock Pengiriman
-                });
-
-                // B. PUSH KE LOG OPERATOR (Agar No Produksi & Nama Produk masuk ke Aktual Matrix Produk Selesai)
-                window.dbPushLog({
-                    noProd: prodNo,
-                    noSPP: sppNo,
-                    operator: "Randi (Dev System)",
-                    aktivitas: "Bypass Auto-Inject System",
-                    condition: "Pekerjaan Selesai Tepat Waktu",
-                    stage: "7. Packing & Selesai (Final)",
-                    time: datetimeStr,
-                    timestampMs: ms,
-                    deadline: datetimeStr,
-                    status: "Selesai",
-                    reason: "Inject Manual System (+0 Poin)",
-                    msTerlambat: 0,
-                    processPoints: 0
-                });
-
-                alert("✅ SUCCESS! Data produksi berhasil di-inject.\nProduk kini masuk ke:\n1. Stok Ready Gudang (Siap Kirim)\n2. Aktual Produk Selesai Terbanyak");
-                this.reset();
-            });
-        }
-    });
-
-   // --- FITUR EDIT MULTIPLE KHUSUS DEV (RANDI) ---
     window.editMasterSPP = function(firebaseKey) {
-        let choice = prompt("Pilih data SPP/SPL yang ingin diedit:\n1. Status Terkini\n2. Nama Produk\n3. Urgensi Prioritas\n4. Reset Deadline (Buka Kunci SPP)\n5. Tanggal & Jam Keluar\n\nMasukkan angka (1-5):");
+        let choice = prompt("Pilih data SPP/SPL yang ingin diedit:\n1. Status Terkini\n2. Nama Produk\n3. Urgensi Prioritas\n4. Reset Deadline\n5. Tanggal & Jam Keluar");
         if (!choice) return;
-
         let updates = {};
-        if (choice === '1') {
-            let val = prompt("Masukkan Status Baru (Proses/Pending/Selesai/dsb):");
-            if(val) updates.status = val.trim();
-        } else if (choice === '2') {
-            let val = prompt("Masukkan Nama Produk Baru:");
-            if(val) updates.product = val.trim();
-        } else if (choice === '3') {
-            let val = prompt("Masukkan Urgensi Baru (Reguler/Buffer Stok/Urgent):");
-            if(val) updates.priority = val.trim();
-        } else if (choice === '4') {
-            if(confirm("Apakah Anda yakin ingin mereset/membuka kunci deadline SPP ini agar bisa diinput ulang target durasinya oleh operator?")) {
-                updates.isLocked = false;
-                updates.deadlineRawObjectMs = null;
-                updates.formattedDeadline = "Belum dimulai";
-            }
-        } else if (choice === '5') {
-            let val = prompt("Masukkan Tanggal & Jam Baru (Format: YYYY-MM-DD HH:MM)\nContoh: 2026-12-31 14:30");
-            if (val) {
-                let d = new Date(val);
-                if (!isNaN(d.getTime())) {
-                    updates.datetime = window.formatDateToString(d);
-                    updates.rawTimestampMs = d.getTime();
-                } else {
-                    alert("Format tanggal/jam tidak valid! Gunakan format YYYY-MM-DD HH:MM");
-                    return;
-                }
-            }
-        } else {
-            alert("Pilihan tidak valid.");
-            return;
-        }
-
-        if (Object.keys(updates).length > 0) {
-            window.dbUpdateSPP(firebaseKey, updates);
-            alert("Data SPP/SPL berhasil diperbarui!");
-        }
+        if (choice === '1') { let val = prompt("Status Baru:"); if(val) updates.status = val.trim(); }
+        else if (choice === '2') { let val = prompt("Nama Produk Baru:"); if(val) updates.product = val.trim(); }
+        else if (choice === '3') { let val = prompt("Urgensi Baru:"); if(val) updates.priority = val.trim(); }
+        else if (choice === '4') { updates.isLocked = false; updates.deadlineRawObjectMs = null; updates.formattedDeadline = "Belum dimulai"; }
+        else if (choice === '5') { let val = prompt("Format YYYY-MM-DD HH:MM"); if(val) { let d = new Date(val); updates.datetime = window.formatDateToString(d); updates.rawTimestampMs = d.getTime(); } }
+        
+        if (Object.keys(updates).length > 0) { window.dbUpdateSPP(firebaseKey, updates); alert("Data berhasil diperbarui!"); }
     }
 
-    // --- FITUR MAINTENANCE KONTROL UNTUK DEV ---
     window.setMaintenanceStatus = function(status) {
-        if(window.currentUserRole.toUpperCase() !== "RANDI") {
-            alert("Akses Ditolak!");
-            return;
-        }
-        
+        if(window.currentUserRole.toUpperCase() !== "RANDI") { alert("Akses Ditolak!"); return; }
         let msg = document.getElementById('dev-maintenance-msg').value.trim();
-        let confirmText = status ? 
-            "PERINGATAN!\nAnda yakin ingin MENGUNCI aplikasi?\nSemua user yang sedang online layarnya akan langsung terblokir." : 
-            "Buka Kunci?\nSistem akan kembali normal dan bisa diakses oleh semua operator.";
-            
-        if (confirm(confirmText)) {
-            db.ref('appSettings/maintenance').set({
-                isActive: status,
-                message: msg
-            }).then(() => {
-                alert(status ? "Sistem Berhasil Dikunci (Maintenance Aktif)!" : "Sistem Kembali Normal (Maintenance Dimatikan)!");
-                document.getElementById('dev-maintenance-msg').value = ""; // Kosongkan form
-            }).catch(error => {
-                alert("Gagal memperbarui status maintenance: " + error.message);
+        if (confirm("Ubah status maintenance?")) {
+            db.ref('appSettings/maintenance').set({ isActive: status, message: msg }).then(() => {
+                alert("Status Maintenance diperbarui!");
             });
         }
     };
 
     window.editOperatorLog = function(firebaseKey) {
-        let choice = prompt("Pilih data Log Aktual yang ingin diedit:\n1. Aktivitas Kegiatan\n2. Kondisi Progres\n3. Tahap Produksi\n4. No. Produksi\n5. Waktu Input Lapangan\n\nMasukkan angka (1-5):");
+        let choice = prompt("Pilih data Log Aktual yang ingin diedit:\n1. Aktivitas\n2. Kondisi\n3. Tahap Produksi\n4. No. Produksi\n5. Waktu Input");
         if (!choice) return;
-
         let updates = {};
-        if (choice === '1') {
-            let val = prompt("Masukkan Detail Aktivitas Baru:");
-            if(val) updates.aktivitas = val.trim();
-        } else if (choice === '2') {
-            let val = prompt("Masukkan Kondisi Progres Baru (Normal/Stoppage/Idle Time/dsb):");
-            if(val) updates.condition = val.trim();
-        } else if (choice === '3') {
-            let val = prompt("Masukkan Tahap Produksi Baru:");
-            if(val) updates.stage = val.trim();
-        } else if (choice === '4') {
-            let val = prompt("Masukkan No. Produksi Baru:");
-            if(val) updates.noProd = val.trim();
-        } else if (choice === '5') {
-            let val = prompt("Masukkan Waktu Input Baru (Format: YYYY-MM-DD HH:MM)\nContoh: 2026-12-31 14:30");
-            if (val) {
-                let d = new Date(val);
-                if (!isNaN(d.getTime())) {
-                    updates.time = window.formatDateToString(d);
-                    updates.timestampMs = d.getTime();
-                } else {
-                    alert("Format tanggal/jam tidak valid! Gunakan format YYYY-MM-DD HH:MM");
-                    return;
-                }
-            }
-        } else {
-            alert("Pilihan tidak valid.");
+        if (choice === '1') { let val = prompt("Detail Aktivitas Baru:"); if(val) updates.aktivitas = val.trim(); }
+        else if (choice === '2') { let val = prompt("Kondisi Progres Baru:"); if(val) updates.condition = val.trim(); }
+        else if (choice === '3') { let val = prompt("Tahap Produksi Baru:"); if(val) updates.stage = val.trim(); }
+        else if (choice === '4') { let val = prompt("No. Produksi Baru:"); if(val) updates.noProd = val.trim(); }
+        else if (choice === '5') { let val = prompt("Format YYYY-MM-DD HH:MM"); if(val) { let d = new Date(val); updates.time = window.formatDateToString(d); updates.timestampMs = d.getTime(); } }
+        
+        if (Object.keys(updates).length > 0) { db.ref('logOperator/' + firebaseKey).update(updates); alert("Data log berhasil diperbarui!"); }
+    }
+
+    // ==========================================================
+    // BLOK FUNGSI PRODUKSI YANG HILANG/TERPOTONG
+    // ==========================================================
+
+    // 1. Fungsi Saat Operator Memilih No SPP (Auto-fill Data)
+    window.handleSppSelection = function() {
+        const sppNo = document.getElementById('prod-spp-select').value;
+        const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
+        const deadlineDisplay = document.getElementById('live-deadline-display');
+        
+        if (!matchedSPP) {
+            deadlineDisplay.innerHTML = "⚙️ Menunggu penentuan nomor dokumen SPP...";
+            deadlineDisplay.style.color = "#e9d5ff";
+            document.getElementById('prod-target-ops').value = "";
+            window.updateConditionDropdown(null);
             return;
         }
 
-        if (Object.keys(updates).length > 0) {
-            db.ref('logOperator/' + firebaseKey).update(updates);
-            alert("Data log berhasil diperbarui!");
+        // Auto-fill target durasi & operator berdasarkan kamus produk
+        if (PRODUCT_DICTIONARY[matchedSPP.product]) {
+            document.getElementById('prod-target-ops').value = PRODUCT_DICTIONARY[matchedSPP.product].ops + " Orang";
+            document.getElementById('prod-deadline-val').value = PRODUCT_DICTIONARY[matchedSPP.product].hours;
+            document.getElementById('prod-deadline-unit').value = "jam";
         }
-    }
+
+        // Kalkulasi sisa waktu (Deadline) secara Real-time
+        if (matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
+            const timeDiff = matchedSPP.deadlineRawObjectMs - Date.now();
+            if (timeDiff > 0) {
+                const h = Math.floor(timeDiff / (1000 * 60 * 60));
+                const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                deadlineDisplay.innerHTML = `⏳ Sisa Waktu Pekerjaan: ${h} Jam ${m} Menit (${matchedSPP.formattedDeadline})`;
+                deadlineDisplay.style.color = "var(--warning-glow)";
+            } else {
+                deadlineDisplay.innerHTML = `🚨 WAKTU HABIS! Target Awal: ${matchedSPP.formattedDeadline}`;
+                deadlineDisplay.style.color = "var(--danger-glow)";
+            }
+        } else {
+            deadlineDisplay.innerHTML = "🟢 SPP Belum dikerjakan (Waktu akan dikunci saat Anda submit pertama kali).";
+            deadlineDisplay.style.color = "var(--emerald-glow)";
+        }
+
+        // Perbarui pilihan status (Selesai Tepat, Telat, dll) sesuai sisa waktu
+        window.updateConditionDropdown(matchedSPP);
+    };
+
+    // 2. Handler untuk input durasi manual (agar tidak error)
+    window.liveCalculationHandler = function() { };
+
+    // 3. Fungsi Eksekusi & Simpan Laporan Produksi ke Firebase
+    document.getElementById('prod-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const sppNo = document.getElementById('prod-spp-select').value;
+        const noProd = document.getElementById('prod-number').value;
+        const operator = document.getElementById('prod-operator').value;
+        const condition = document.getElementById('prod-condition').value;
+        let stage = document.getElementById('prod-stage').value;
+        if (stage === 'other') stage = document.getElementById('prod-stage-manual').value;
+        const aktivitas = document.getElementById('prod-aktivitas').value;
+        const targetVal = document.getElementById('prod-deadline-val').value;
+        const targetUnit = document.getElementById('prod-deadline-unit').value;
+
+        if (!sppNo || !noProd || !operator || !condition) {
+            alert("Harap lengkapi semua data laporan yang wajib!");
+            return;
+        }
+
+        const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
+        if (!matchedSPP) return;
+
+        const timeMs = Date.now();
+        const dateNow = new Date();
+        const formattedTimeStr = window.formatDateToString(dateNow);
+        
+        // Logika penentuan status akhir
+        let statusKirim = "Proses";
+        let isSelesai = false;
+
+        if (condition.includes("Selesai") || stage.includes("7. Packing")) {
+            statusKirim = condition.includes("Selesai") ? condition : "Selesai";
+            isSelesai = true;
+        } else if (PENJEDAAN_STATUS_LIST.includes(condition)) {
+            statusKirim = condition;
+        }
+
+        // Kalkulasi Poin Performa Operator untuk Ranking
+        let processPoints = 10; // Poin standar setiap kali update log
+        if (isSelesai) processPoints = 50; // Bonus poin jika selesai
+
+        // Hitung Keterlambatan untuk kebutuhan ranking operator
+        let delayMs = 0;
+        if (matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
+            delayMs = timeMs - matchedSPP.deadlineRawObjectMs; // (+) Telat, (-) Lebih Awal
+        }
+
+        // 3A. Susun data riwayat log operator
+        const logData = {
+            noSPP: sppNo,
+            noProd: noProd,
+            operator: operator,
+            condition: condition,
+            stage: stage,
+            aktivitas: aktivitas,
+            time: formattedTimeStr,
+            timestampMs: timeMs,
+            deadline: `${targetVal} ${targetUnit}`,
+            status: statusKirim,
+            reason: "-",
+            processPoints: processPoints,
+            msTerlambat: delayMs
+        };
+
+        // Kirim data riwayat log ke database
+        window.dbPushLog(logData);
+
+        // 3B. Update status dokumen Master SPP yang bersangkutan
+        let sppUpdates = {
+            lastInputTimeMs: timeMs,
+            lastEventTimeFormatted: formattedTimeStr,
+            status: statusKirim
+        };
+
+        // Kunci timer SPP jika ini adalah laporan pertama kali
+        if (!matchedSPP.isLocked && !matchedSPP.isSPL) {
+            sppUpdates.isLocked = true;
+            sppUpdates.startTimeObjectMs = timeMs;
+            
+            let calcTarget = new Date(timeMs);
+            if (targetUnit === "jam") {
+                calcTarget.setHours(calcTarget.getHours() + parseInt(targetVal));
+            } else {
+                calcTarget.setDate(calcTarget.getDate() + parseInt(targetVal));
+            }
+            sppUpdates.deadlineRawObjectMs = calcTarget.getTime();
+            sppUpdates.formattedDeadline = window.formatDateToString(calcTarget);
+        }
+
+        // Simpan update master SPP
+        window.dbUpdateSPP(matchedSPP.firebaseKey, sppUpdates);
+
+        // 3C. Bersihkan formulir setelah terkirim
+        this.reset();
+        document.getElementById('prod-stage-manual').style.display = 'none';
+        window.resetDateTimeInputs();
+        
+        // Kembalikan nama operator (karena di-reset oleh form)
+        if (window.currentUserAccess === "produksi") {
+            document.getElementById('prod-operator').value = window.currentUserRole;
+        }
+        
+        alert("Pekerjaan berhasil diperbarui! Terimakasih telah melakukan pelaporan.");
+    });
+
+    // Panggil sapaan Bee-Boot saat halaman pertama kali dibuka
+    window.setLoginGreeting();
+    
 </script>
 </body>
 </html>
