@@ -1,6 +1,29 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script>
+        // ==========================================
+        // CEGAT RENDER: Eksekusi super cepat sebelum browser menggambar UI
+        // Mencegah munculnya layar login sekilas saat refresh
+        // ==========================================
+        window.loginSelesai = false; // Flag penanda untuk mencegah race condition loader
+
+        if (localStorage.getItem("savedLoginData")) {
+            document.documentElement.style.setProperty("--login-display", "none");
+            document.addEventListener("DOMContentLoaded", function() {
+                // Cegah loader digambar jika proses checkLogin() dari Firebase ternyata selesai duluan
+                if (window.loginSelesai) return; 
+                
+                let loader = document.createElement("div");
+                loader.id = "fast-loader";
+                loader.style.cssText = "position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); color:#38bdf8; font-size:16px; font-weight:bold; z-index:9999; text-align:center;";
+                loader.innerHTML = "<div style='font-size:45px; margin-bottom:15px; animation: floatLogin 2s infinite;'>🤖</div>Menghubungkan Sesi...";
+                document.body.appendChild(loader);
+            });
+        } else {
+            document.documentElement.style.setProperty("--login-display", "flex");
+        }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily Report Produksi - PT. Tirta Teknosys</title>
@@ -45,7 +68,7 @@
         /* --- LOGIN SCREEN & ROBOT --- */
         #login-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
+            background: #000; display: var(--login-display, flex); flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
         }
         .login-box {
             background: #111827; padding: 40px; border-radius: 12px; border: 1px solid var(--blue-glow);
@@ -1154,9 +1177,20 @@
         // Listener Sinkronisasi Password dari Firebase
         db.ref('updatedPasswords').on('value', snap => {
             window.dynamicPasswords = snap.val() || {};
+            
+            // --- FIX: FITUR AUTO-LOGIN SAAT HALAMAN DI-REFRESH ---
+            if (window.currentUserRole === "Guest") {
+                let savedPass = localStorage.getItem('savedLoginData');
+                if (savedPass) {
+                    // Isi form password secara gaib lalu tekan tombol login
+                    document.getElementById('login-password').value = savedPass;
+                    window.checkLogin(true); // Parameter 'true' digunakan agar tidak memunculkan popup welcome lagi saat refresh
+                }
+            }
+            // ------------------------------------------------------
         });
 
-        db.ref('masterSPP').on('value', snap => {
+        db.ref('masterSPP').on('value', snap => {            
             window.databaseMasterSPP = [];
             snap.forEach(child => { let val = child.val(); val.firebaseKey = child.key; window.databaseMasterSPP.push(val); });
             window.databaseMasterSPP.sort((a,b) => b.rawTimestampMs - a.rawTimestampMs);
@@ -1299,9 +1333,76 @@
     window.dbPushChat = (data) => db.ref('messages').push(data);
     window.dbRemoveChat = (key) => db.ref('messages/' + key).remove();
     window.dbClearAllChat = () => db.ref('messages').remove();
-</script>
 
-<script>
+    window.checkLogin = function(bypassWelcome = false) {
+        const inputPass = document.getElementById('login-password').value.trim();
+        const err = document.getElementById('login-error');
+        
+        let userFound = null;
+        
+        // 1. Cari kecocokan di loginData dengan override dynamicPasswords
+        for (const [defaultPass, data] of Object.entries(loginData)) {
+            // Jika ada sandi baru tersimpan di database, gunakan itu, jika tidak pakai sandi default
+            let expectedPass = window.dynamicPasswords[data.role] || defaultPass;
+            
+            if (inputPass === expectedPass) {
+                userFound = data;
+                break;
+            }
+        }
+
+        if(userFound) {
+            window.loginSelesai = true; 
+            let loader = document.getElementById('fast-loader');
+            if (loader) loader.remove();
+
+            window.currentUserRole = userFound.role;
+            window.currentUserAccess = userFound.panel;
+            window.currentActivePassword = inputPass; 
+            localStorage.setItem('savedLoginData', inputPass); 
+            
+            document.getElementById('current-user-role').innerText = window.currentUserRole;
+            document.getElementById('welcome-role-text').innerText = (window.currentUserRole.toUpperCase() === "RANDI") ? "TN RANDI" : window.currentUserRole;
+            
+            const opSelect = document.getElementById('prod-operator');
+            if (userFound.panel === "produksi") {
+                if (opSelect) {
+                    opSelect.value = window.currentUserRole;
+                    opSelect.style.pointerEvents = 'none';
+                    opSelect.style.background = '#1e293b';
+                }
+            } else {
+                if (opSelect) {
+                    opSelect.style.pointerEvents = 'auto';
+                    opSelect.style.background = 'var(--input-bg)';
+                }
+            }
+
+            document.getElementById('login-screen').style.display = 'none';
+            
+            window.applyRoleAccess();
+            window.applyGlobalFilter();
+
+            if (window.isMaintenanceActive && window.currentUserRole.toUpperCase() !== "RANDI") {
+                window.evaluateMaintenance();
+            } else {
+                document.getElementById('chat-fab').style.display = 'flex';
+                if (bypassWelcome) window.closeWelcome(); 
+                else document.getElementById('welcome-popup').style.display = 'flex';
+            }
+
+            if (window.currentUserRole === "TV Mode") window.startAutoScroll();
+        } else { 
+            err.style.display = 'block'; 
+            window.loginSelesai = true; 
+            document.getElementById('login-screen').style.display = 'flex';
+            let loader = document.getElementById('fast-loader');
+            if (loader) loader.remove();
+            document.documentElement.style.setProperty('--login-display', 'flex');
+            localStorage.removeItem('savedLoginData'); 
+        }
+    }
+
     // --- FITUR REAL-TIME CLOCK COMMAND CENTER ---
     setInterval(() => {
         const now = new Date();
@@ -1658,66 +1759,6 @@
         } else { conditionSelect.value = "Normal"; }
     };
 
-    // --- REVISI LOGIKA CHECK LOGIN MENDUKUNG SANDI DINAMIS ---
-    window.checkLogin = function(bypassWelcome = false) {
-        const inputPass = document.getElementById('login-password').value.trim();
-        const err = document.getElementById('login-error');
-        
-        let userFound = null;
-        
-        // 1. Cari kecocokan di loginData dengan override dynamicPasswords
-        for (const [defaultPass, data] of Object.entries(loginData)) {
-            // Jika ada sandi baru tersimpan di database, gunakan itu, jika tidak pakai sandi default
-            let expectedPass = window.dynamicPasswords[data.role] || defaultPass;
-            
-            if (inputPass === expectedPass) {
-                userFound = data;
-                break;
-            }
-        }
-
-        if(userFound) {
-            window.currentUserRole = userFound.role;
-            window.currentUserAccess = userFound.panel;
-            window.currentActivePassword = inputPass; // Simpan untuk memverifikasi sandi lama
-            localStorage.setItem('savedLoginData', inputPass); 
-            
-            document.getElementById('current-user-role').innerText = window.currentUserRole;
-            document.getElementById('welcome-role-text').innerText = (window.currentUserRole.toUpperCase() === "RANDI") ? "TN RANDI" : window.currentUserRole;
-            
-            const opSelect = document.getElementById('prod-operator');
-            if (userFound.panel === "produksi") {
-                if (opSelect) {
-                    opSelect.value = window.currentUserRole;
-                    opSelect.style.pointerEvents = 'none';
-                    opSelect.style.background = '#1e293b';
-                }
-            } else {
-                if (opSelect) {
-                    opSelect.style.pointerEvents = 'auto';
-                    opSelect.style.background = 'var(--input-bg)';
-                }
-            }
-
-            document.getElementById('login-screen').style.display = 'none';
-            
-            window.applyRoleAccess();
-            window.applyGlobalFilter();
-
-            if (window.isMaintenanceActive && window.currentUserRole.toUpperCase() !== "RANDI") {
-                window.evaluateMaintenance();
-            } else {
-                document.getElementById('chat-fab').style.display = 'flex';
-                if (bypassWelcome) window.closeWelcome(); 
-                else document.getElementById('welcome-popup').style.display = 'flex';
-            }
-
-            if (window.currentUserRole === "TV Mode") window.startAutoScroll();
-        } else { 
-            err.style.display = 'block'; 
-        }
-    }
-
     window.closeWelcome = function() {
         document.getElementById('welcome-popup').style.display = 'none';
         document.getElementById('main-app').style.display = 'block';
@@ -1741,6 +1782,7 @@
 
     window.logout = function() {
         localStorage.removeItem('savedLoginData');
+        document.documentElement.style.setProperty('--login-display', 'flex');
         document.getElementById('login-password').value = "";
         document.getElementById('login-error').style.display = 'none';
         document.getElementById('main-app').style.display = 'none';
@@ -2947,9 +2989,6 @@
         alert("Terimakasih data yang sudah anda berikan akan terekam di log history gudang");
     });
 
-    // ==========================================================
-    // PENAMBAHAN 1: FUNGSI SUBMIT UNTUK DEV INJECT (YANG SEBELUMNYA MATI)
-    // ==========================================================
     const devInjectForm = document.getElementById('dev-inject-form');
     if(devInjectForm) {
         devInjectForm.addEventListener('submit', function(e) {
@@ -3013,11 +3052,7 @@
         });
     }
 
-    // ==========================================================
-    // PENAMBAHAN 2: FUNGSI SUBMIT FORM PRODUKSI (YANG SEBELUMNYA HILANG)
-    // ==========================================================
-    
-    // Fungsi auto-fill saat SPP dipilih
+    // 1. Fungsi Saat Operator Memilih No SPP (Auto-fill Data)
     window.handleSppSelection = function() {
         const sppNo = document.getElementById('prod-spp-select').value;
         const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
@@ -3031,12 +3066,14 @@
             return;
         }
 
+        // Auto-fill target durasi & operator berdasarkan kamus produk
         if (PRODUCT_DICTIONARY[matchedSPP.product]) {
             document.getElementById('prod-target-ops').value = PRODUCT_DICTIONARY[matchedSPP.product].ops + " Orang";
             document.getElementById('prod-deadline-val').value = PRODUCT_DICTIONARY[matchedSPP.product].hours;
             document.getElementById('prod-deadline-unit').value = "jam";
         }
 
+        // Kalkulasi sisa waktu (Deadline) secara Real-time
         if (matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
             const timeDiff = matchedSPP.deadlineRawObjectMs - Date.now();
             if (timeDiff > 0) {
@@ -3053,11 +3090,14 @@
             deadlineDisplay.style.color = "var(--emerald-glow)";
         }
 
+        // Perbarui pilihan status (Selesai Tepat, Telat, dll) sesuai sisa waktu
         window.updateConditionDropdown(matchedSPP);
     };
 
+    // 2. Handler untuk input durasi manual (agar tidak error)
     window.liveCalculationHandler = function() { };
 
+    // 3. Fungsi Eksekusi & Simpan Laporan Produksi ke Firebase
     document.getElementById('prod-form').addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -3083,6 +3123,7 @@
         const dateNow = new Date();
         const formattedTimeStr = window.formatDateToString(dateNow);
         
+        // Logika penentuan status akhir
         let statusKirim = "Proses";
         let isSelesai = false;
 
@@ -3093,15 +3134,17 @@
             statusKirim = condition;
         }
 
-        let processPoints = 10; 
-        if (isSelesai) processPoints = 50;
+        // Kalkulasi Poin Performa Operator untuk Ranking
+        let processPoints = 10; // Poin standar setiap kali update log
+        if (isSelesai) processPoints = 50; // Bonus poin jika selesai
 
-        // Hitung Keterlambatan untuk kebutuhan ranking operator (Perbaikan algoritma)
+        // Hitung Keterlambatan untuk kebutuhan ranking operator
         let delayMs = 0;
         if (matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
             delayMs = timeMs - matchedSPP.deadlineRawObjectMs; // (+) Telat, (-) Lebih Awal
         }
 
+        // 3A. Susun data riwayat log operator
         const logData = {
             noSPP: sppNo,
             noProd: noProd,
@@ -3118,14 +3161,17 @@
             msTerlambat: delayMs
         };
 
+        // Kirim data riwayat log ke database
         window.dbPushLog(logData);
 
+        // 3B. Update status dokumen Master SPP yang bersangkutan
         let sppUpdates = {
             lastInputTimeMs: timeMs,
             lastEventTimeFormatted: formattedTimeStr,
             status: statusKirim
         };
 
+        // Kunci timer SPP jika ini adalah laporan pertama kali
         if (!matchedSPP.isLocked && !matchedSPP.isSPL) {
             sppUpdates.isLocked = true;
             sppUpdates.startTimeObjectMs = timeMs;
@@ -3140,12 +3186,15 @@
             sppUpdates.formattedDeadline = window.formatDateToString(calcTarget);
         }
 
+        // Simpan update master SPP
         window.dbUpdateSPP(matchedSPP.firebaseKey, sppUpdates);
 
+        // 3C. Bersihkan formulir setelah terkirim
         this.reset();
         document.getElementById('prod-stage-manual').style.display = 'none';
         window.resetDateTimeInputs();
         
+        // Kembalikan nama operator (karena di-reset oleh form)
         if (window.currentUserAccess === "produksi") {
             document.getElementById('prod-operator').value = window.currentUserRole;
         }
@@ -3407,160 +3456,6 @@ window.renderShipmentTable = function() {
         
         if (Object.keys(updates).length > 0) { db.ref('logOperator/' + firebaseKey).update(updates); alert("Data log berhasil diperbarui!"); }
     }
-
-    // ==========================================================
-    // BLOK FUNGSI PRODUKSI YANG HILANG/TERPOTONG
-    // ==========================================================
-
-    // 1. Fungsi Saat Operator Memilih No SPP (Auto-fill Data)
-    window.handleSppSelection = function() {
-        const sppNo = document.getElementById('prod-spp-select').value;
-        const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
-        const deadlineDisplay = document.getElementById('live-deadline-display');
-        
-        if (!matchedSPP) {
-            deadlineDisplay.innerHTML = "⚙️ Menunggu penentuan nomor dokumen SPP...";
-            deadlineDisplay.style.color = "#e9d5ff";
-            document.getElementById('prod-target-ops').value = "";
-            window.updateConditionDropdown(null);
-            return;
-        }
-
-        // Auto-fill target durasi & operator berdasarkan kamus produk
-        if (PRODUCT_DICTIONARY[matchedSPP.product]) {
-            document.getElementById('prod-target-ops').value = PRODUCT_DICTIONARY[matchedSPP.product].ops + " Orang";
-            document.getElementById('prod-deadline-val').value = PRODUCT_DICTIONARY[matchedSPP.product].hours;
-            document.getElementById('prod-deadline-unit').value = "jam";
-        }
-
-        // Kalkulasi sisa waktu (Deadline) secara Real-time
-        if (matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
-            const timeDiff = matchedSPP.deadlineRawObjectMs - Date.now();
-            if (timeDiff > 0) {
-                const h = Math.floor(timeDiff / (1000 * 60 * 60));
-                const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-                deadlineDisplay.innerHTML = `⏳ Sisa Waktu Pekerjaan: ${h} Jam ${m} Menit (${matchedSPP.formattedDeadline})`;
-                deadlineDisplay.style.color = "var(--warning-glow)";
-            } else {
-                deadlineDisplay.innerHTML = `🚨 WAKTU HABIS! Target Awal: ${matchedSPP.formattedDeadline}`;
-                deadlineDisplay.style.color = "var(--danger-glow)";
-            }
-        } else {
-            deadlineDisplay.innerHTML = "🟢 SPP Belum dikerjakan (Waktu akan dikunci saat Anda submit pertama kali).";
-            deadlineDisplay.style.color = "var(--emerald-glow)";
-        }
-
-        // Perbarui pilihan status (Selesai Tepat, Telat, dll) sesuai sisa waktu
-        window.updateConditionDropdown(matchedSPP);
-    };
-
-    // 2. Handler untuk input durasi manual (agar tidak error)
-    window.liveCalculationHandler = function() { };
-
-    // 3. Fungsi Eksekusi & Simpan Laporan Produksi ke Firebase
-    document.getElementById('prod-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const sppNo = document.getElementById('prod-spp-select').value;
-        const noProd = document.getElementById('prod-number').value;
-        const operator = document.getElementById('prod-operator').value;
-        const condition = document.getElementById('prod-condition').value;
-        let stage = document.getElementById('prod-stage').value;
-        if (stage === 'other') stage = document.getElementById('prod-stage-manual').value;
-        const aktivitas = document.getElementById('prod-aktivitas').value;
-        const targetVal = document.getElementById('prod-deadline-val').value;
-        const targetUnit = document.getElementById('prod-deadline-unit').value;
-
-        if (!sppNo || !noProd || !operator || !condition) {
-            alert("Harap lengkapi semua data laporan yang wajib!");
-            return;
-        }
-
-        const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
-        if (!matchedSPP) return;
-
-        const timeMs = Date.now();
-        const dateNow = new Date();
-        const formattedTimeStr = window.formatDateToString(dateNow);
-        
-        // Logika penentuan status akhir
-        let statusKirim = "Proses";
-        let isSelesai = false;
-
-        if (condition.includes("Selesai") || stage.includes("7. Packing")) {
-            statusKirim = condition.includes("Selesai") ? condition : "Selesai";
-            isSelesai = true;
-        } else if (PENJEDAAN_STATUS_LIST.includes(condition)) {
-            statusKirim = condition;
-        }
-
-        // Kalkulasi Poin Performa Operator untuk Ranking
-        let processPoints = 10; // Poin standar setiap kali update log
-        if (isSelesai) processPoints = 50; // Bonus poin jika selesai
-
-        // Hitung Keterlambatan untuk kebutuhan ranking operator
-        let delayMs = 0;
-        if (matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
-            delayMs = timeMs - matchedSPP.deadlineRawObjectMs; // (+) Telat, (-) Lebih Awal
-        }
-
-        // 3A. Susun data riwayat log operator
-        const logData = {
-            noSPP: sppNo,
-            noProd: noProd,
-            operator: operator,
-            condition: condition,
-            stage: stage,
-            aktivitas: aktivitas,
-            time: formattedTimeStr,
-            timestampMs: timeMs,
-            deadline: `${targetVal} ${targetUnit}`,
-            status: statusKirim,
-            reason: "-",
-            processPoints: processPoints,
-            msTerlambat: delayMs
-        };
-
-        // Kirim data riwayat log ke database
-        window.dbPushLog(logData);
-
-        // 3B. Update status dokumen Master SPP yang bersangkutan
-        let sppUpdates = {
-            lastInputTimeMs: timeMs,
-            lastEventTimeFormatted: formattedTimeStr,
-            status: statusKirim
-        };
-
-        // Kunci timer SPP jika ini adalah laporan pertama kali
-        if (!matchedSPP.isLocked && !matchedSPP.isSPL) {
-            sppUpdates.isLocked = true;
-            sppUpdates.startTimeObjectMs = timeMs;
-            
-            let calcTarget = new Date(timeMs);
-            if (targetUnit === "jam") {
-                calcTarget.setHours(calcTarget.getHours() + parseInt(targetVal));
-            } else {
-                calcTarget.setDate(calcTarget.getDate() + parseInt(targetVal));
-            }
-            sppUpdates.deadlineRawObjectMs = calcTarget.getTime();
-            sppUpdates.formattedDeadline = window.formatDateToString(calcTarget);
-        }
-
-        // Simpan update master SPP
-        window.dbUpdateSPP(matchedSPP.firebaseKey, sppUpdates);
-
-        // 3C. Bersihkan formulir setelah terkirim
-        this.reset();
-        document.getElementById('prod-stage-manual').style.display = 'none';
-        window.resetDateTimeInputs();
-        
-        // Kembalikan nama operator (karena di-reset oleh form)
-        if (window.currentUserAccess === "produksi") {
-            document.getElementById('prod-operator').value = window.currentUserRole;
-        }
-        
-        alert("Pekerjaan berhasil diperbarui! Terimakasih telah melakukan pelaporan.");
-    });
 
     // Panggil sapaan Bee-Boot saat halaman pertama kali dibuka
     window.setLoginGreeting();
