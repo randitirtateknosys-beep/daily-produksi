@@ -919,7 +919,7 @@
             </div>
             <div class="table-container" id="table-spp-container">
                 <table id="spp-master-table">
-                    <thead><tr id="spp-master-head"><th>No. SPP</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Pembuat</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th></tr></thead>
+                    <thead><tr id="spp-master-head"><th>No. SPP & Tgl Rilis</th><th>No. Produksi</th><th>Nama Produk</th><th>Tim Operator</th><th>Target Waktu</th><th>Urgensi</th><th>Status Terkini</th></tr></thead>
                     <tbody id="spp-master-body"></tbody>
                 </table>
             </div>
@@ -938,9 +938,9 @@
                         <input type="text" id="internal-target-product" placeholder="Ketik produk tujuan akhir..." required>
                     </div>
                     <div class="form-group">
-                        <label>📅 Tanggal Pengambilan</label>
-                        <input type="text" id="internal-datetime" required>
-                    </div>
+    <label>📅 Tanggal Pengambilan</label>
+    <input type="datetime-local" id="internal-datetime" required>
+</div>
                 </div>
                 <button type="submit" class="action-btn" style="background: linear-gradient(135deg, #7c3aed, #a855f7); margin-top: 15px; box-shadow: 0 0 15px rgba(168,85,247,0.4);">Tarik Komponen Ke Produksi</button>
             </form>
@@ -990,7 +990,7 @@
                         </select>
                         <input type="text" id="shipment-carrier-manual" class="manual-input" placeholder="Ketik pengirim manual...">
                     </div>
-                    <div class="form-group"><label>📅 Waktu Keberangkatan Armada</label><input type="text" id="shipment-datetime" required></div>
+                   <div class="form-group"><label>📅 Waktu Keberangkatan Armada</label><input type="datetime-local" id="shipment-datetime" required></div>
                     <div class="form-group full-width-group"><label>Penerima (Customer / Tujuan)</label><input type="text" id="shipment-customer" placeholder="Masukkan tujuan" required></div>
                 </div>
                 <button type="submit" class="btn-shipment" style="margin-top: 20px;">Catat Keberangkatan Logistik</button>
@@ -1853,11 +1853,13 @@
 
         window.updateConditionDropdown(null);
 
-        document.getElementById('spp-master-head').innerHTML = `<th>No. SPP</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Pembuat</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${showDocCol ? '<th>Dokumen SPP</th>' : ''}${isDev ? '<th>Aksi</th>' : ''}`;
+        // PENYELARASAN HEADER TABEL 
         document.getElementById('spl-history-head').innerHTML = `<th>No. SPL</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Penanggung Jawab</th><th>Penerima Tugas</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('shipment-history-head').innerHTML = `<th>Keberangkatan</th><th>Produk</th><th>No. SPP Asal</th><th>Operator Logistik</th><th>Customer</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
-        document.getElementById('operator-history-head').innerHTML = `<th>No. Prod</th><th>No. SPP</th><th>Nama Operator</th><th>Aktivitas Kegiatan</th><th>Kondisi Progres</th><th>Tahap Produksi</th><th>Waktu Input</th><th>Target Deadline</th><th>Status Hasil</th><th>Keterangan / Poin Tambahan</th>${isDev ? '<th>Aksi</th>' : ''}`;
-        document.getElementById('internal-history-head').innerHTML = `<th>Waktu Pengambilan</th><th>Komponen</th><th>No. SPP Asal</th><th>Tujuan Produk</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
+        document.getElementById('operator-history-head').innerHTML = `<th>Nama Operator</th><th>Aktivitas Kegiatan</th><th>Kondisi Progres</th><th>Tahap Produksi</th><th>Waktu Input</th><th>Target Deadline</th><th>Status Hasil</th><th>Keterangan / Poin Tambahan</th>${isDev ? '<th>Aksi</th>' : ''}`;
+
+	document.getElementById('internal-history-head').innerHTML = `<th>Waktu Pengambilan</th><th>Komponen</th><th>No. SPP Asal</th><th>Tujuan Produk</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
+        document.getElementById('spp-master-head').innerHTML = `<th>No. SPP & Tgl Rilis</th><th>No. Produksi</th><th>Nama Produk</th><th>Tim Operator</th><th>Target Waktu</th><th>Urgensi</th><th>Status Terkini</th>${showDocCol ? '<th>Dokumen</th>' : ''}${isDev ? '<th>Aksi</th>' : ''}`;
 
         const acc = window.currentUserAccess;
         if(acc === "viewonly") { 
@@ -2954,41 +2956,69 @@
         alert("Surat Perintah Langsung telah masuk ke antrean operator Produksi!");
     });
 
-    document.getElementById('internal-out-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        let productSelection = document.getElementById('internal-product-select').value; 
-        if (!productSelection) { alert("Pilih komponen selesai dari list!"); return; }
-        
-        let sppAsal = "-"; 
-        const match = productSelection.match(/(.*?)\s\((.*?)\)$/); 
-        if (match) { productSelection = match[1]; sppAsal = match[2]; }
-        
-        let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal); 
-        if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: true }); 
-        
-        const targetProduct = document.getElementById('internal-target-product').value; 
-        const rawTime = new Date(document.getElementById('internal-datetime').value); 
-        const formattedTime = window.formatDateToString(rawTime);
-        
-        window.dbPushInternalOut({ time: formattedTime, rawTimestampMs: rawTime.getTime(), product: productSelection, spp: sppAsal, targetProduct: targetProduct });
-        
-        this.reset(); 
-        window.resetDateTimeInputs();
-        alert("Berhasil! Komponen telah ditarik ke area produksi perakitan.");
-    });
+   document.getElementById('internal-out-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    let productSelection = document.getElementById('internal-product-select').value; 
+    if (!productSelection) { alert("Pilih komponen selesai dari list!"); return; }
+    
+    let sppAsal = "-"; 
+    const match = productSelection.match(/(.*?)\s\((.*?)\)$/); 
+    if (match) { productSelection = match[1]; sppAsal = match[2]; }
+    
+    let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal); 
+    if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: true }); 
+    
+    const targetProduct = document.getElementById('internal-target-product').value; 
+    const rawTime = new Date(document.getElementById('internal-datetime').value); 
+    
+    // 💡 TAMBAHAN BARU: Mencegah Firebase crash akibat nilai waktu tidak valid (NaN)
+    if (isNaN(rawTime.getTime())) {
+        alert("Format waktu pengambilan tidak valid! Silakan pilih ulang tanggal dan jam.");
+        return;
+    }
 
-    document.getElementById('shipment-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        let productSelection = document.getElementById('shipment-product-select').value; if (!productSelection) { alert("Pilih produk selesai!"); return; }
-        let sppAsal = "-"; const match = productSelection.match(/(.*?)\s\((.*?)\)$/); if (match) { productSelection = match[1]; sppAsal = match[2]; }
-        let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal); if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: true });
-        const carrierElement = document.getElementById('shipment-carrier'); let carrier = carrierElement.value; if (carrier === 'other') carrier = document.getElementById('shipment-carrier-manual').value || "Logistik Manual";
-        const rawTime = new Date(document.getElementById('shipment-datetime').value); const formattedTime = window.formatDateToString(rawTime); const customer = document.getElementById('shipment-customer').value;
-        window.dbPushShipment({ time: formattedTime, rawTimestampMs: rawTime.getTime(), product: productSelection, spp: sppAsal, operatorReceiver: "-", carrier: carrier, customer: customer });
-        this.reset(); document.getElementById('shipment-carrier-manual').style.display = "none"; window.resetDateTimeInputs();
-        alert("Terimakasih data yang sudah anda berikan akan terekam di log history gudang");
-    });
-
+    const formattedTime = window.formatDateToString(rawTime);
+    
+    window.dbPushInternalOut({ time: formattedTime, rawTimestampMs: rawTime.getTime(), product: productSelection, spp: sppAsal, targetProduct: targetProduct });
+    
+    this.reset(); 
+    window.resetDateTimeInputs();
+    alert("Berhasil! Komponen telah ditarik ke area produksi perakitan.");
+});
+   document.getElementById('shipment-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    let productSelection = document.getElementById('shipment-product-select').value; 
+    if (!productSelection) { alert("Pilih produk selesai!"); return; }
+    
+    let sppAsal = "-"; 
+    const match = productSelection.match(/(.*?)\s\((.*?)\)$/); 
+    if (match) { productSelection = match[1]; sppAsal = match[2]; }
+    
+    let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal); 
+    if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: true });
+    
+    const carrierElement = document.getElementById('shipment-carrier'); 
+    let carrier = carrierElement.value; 
+    if (carrier === 'other') carrier = document.getElementById('shipment-carrier-manual').value || "Logistik Manual";
+    
+    const rawTime = new Date(document.getElementById('shipment-datetime').value); 
+    
+    // 💡 TAMBAHAN BARU: Mencegah Firebase crash akibat nilai waktu tidak valid (NaN)
+    if (isNaN(rawTime.getTime())) {
+        alert("Format waktu keberangkatan tidak valid! Silakan pilih ulang tanggal dan jam.");
+        return;
+    }
+    
+    const formattedTime = window.formatDateToString(rawTime); 
+    const customer = document.getElementById('shipment-customer').value;
+    
+    window.dbPushShipment({ time: formattedTime, rawTimestampMs: rawTime.getTime(), product: productSelection, spp: sppAsal, operatorReceiver: "-", carrier: carrier, customer: customer });
+    
+    this.reset(); 
+    document.getElementById('shipment-carrier-manual').style.display = "none"; 
+    window.resetDateTimeInputs();
+    alert("Terimakasih data yang sudah anda berikan akan terekam di log history gudang");
+});
     const devInjectForm = document.getElementById('dev-inject-form');
     if(devInjectForm) {
         devInjectForm.addEventListener('submit', function(e) {
@@ -3217,12 +3247,28 @@
     }
 
     window.updateWarehouseProductDropdown = function() {
-        const select = document.getElementById('shipment-product-select'); select.innerHTML = '<option value="">-- Pilih Produk di Gudang --</option>';
-        const filteredSPP = window.getFilteredNonSPLSPP(); 
-        const produkSelesaiEksternal = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped && !window.isInternalProduct(i.product));
-        produkSelesaiEksternal.forEach(item => { select.innerHTML += `<option value="${item.product} (${item.no})">${item.product} (${item.no})</option>`; });
-    }
-
+    const select = document.getElementById('shipment-product-select'); 
+    select.innerHTML = '<option value="">-- Pilih Produk di Gudang --</option>';
+    
+    const filteredSPP = window.getFilteredNonSPLSPP(); 
+    const produkSelesaiEksternal = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped && !window.isInternalProduct(i.product));
+    
+    produkSelesaiEksternal.forEach(item => { 
+        // 1. Cari data No Produksi di tabel logOperator yang cocok dengan No SPP ini
+        let noProdTambahan = "";
+        let logTerkait = window.databaseLogOperator.find(log => log.noSPP === item.no && log.noProd && log.noProd !== "-");
+        
+        // 2. Jika ditemukan, potong string berdasarkan '/' dan ambil bagian pertama (indeks 0)
+        if (logTerkait) {
+            let nomorDepan = logTerkait.noProd.split('/')[0].trim();
+            noProdTambahan = ` - [Prod: ${nomorDepan}]`;
+        }
+        
+        // 3. Tambahkan ke tampilan teks opsi. 
+        // PENTING: Atribut 'value' dibiarkan persis seperti aslinya agar logika tombol submit tidak error.
+        select.innerHTML += `<option value="${item.product} (${item.no})">${item.product} (${item.no})${noProdTambahan}</option>`; 
+    });
+}
     window.renderInternalStockTable = function() {
         const tbody = document.getElementById('internal-stock-body');
         if(!tbody) return;
@@ -3302,7 +3348,7 @@ window.renderShipmentTable = function() {
         });
     }
 
-    window.renderSPLTable = function() {
+  window.renderSPLTable = function() {
         const tbody = document.getElementById('spl-history-body'); tbody.innerHTML = ''; 
         let filteredSPP = window.getFilteredSPP(); 
         let onlySPL = filteredSPP.filter(i => i.isSPL);
@@ -3315,39 +3361,127 @@ window.renderShipmentTable = function() {
         });
     }
 
+    // =========================================================================
+    // PEMBARUAN: PENGELOMPOKAN DATA MASTER SPP BERDASARKAN NO SPP 
+    // Menyatukan Tim Operator & No Produksi ke dalam satu baris tabel laporan
+    // =========================================================================
     window.renderMasterTable = function() {
-        const tbody = document.getElementById('spp-master-body'); tbody.innerHTML = ''; 
+        const tbody = document.getElementById('spp-master-body'); 
+        tbody.innerHTML = ''; 
         let filteredSPP = window.getFilteredNonSPLSPP(); 
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
         const isAdmin = (window.currentUserRole === "Admin");
         const showDocCol = (isDev || isAdmin);
         let cols = 7 + (showDocCol ? 1 : 0) + (isDev ? 1 : 0);
         
-        if(filteredSPP.length === 0) { tbody.innerHTML = `<tr><td colspan="${cols}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada data dokumen SPP standar.</td></tr>`; return; }
+        if(filteredSPP.length === 0) { 
+            tbody.innerHTML = `<tr><td colspan="${cols}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada data dokumen SPP standar.</td></tr>`; 
+            return; 
+        }
+
+        // Ambil data log untuk pemetaan
+        let filteredLogs = window.getFilteredLogs();
+
         filteredSPP.forEach(item => {
+            // Filter semua log yang terkait dengan No SPP ini
+            let relatedLogs = filteredLogs.filter(log => log.noSPP === item.no);
+            
+            // 1. Ekstrak No Produksi Unik
+            let uniqueProdNos = [...new Set(relatedLogs.map(l => l.noProd))].filter(n => n && n !== "-");
+            let displayProdNo = uniqueProdNos.length > 0 ? uniqueProdNos.join("<br>") : `<span style="color:var(--text-muted); font-size:11px;">Belum Tersedia</span>`;
+            
+            // 2. Ekstrak Nama Operator Unik (Tim)
+            let uniqueOperators = [...new Set(relatedLogs.map(l => l.operator))].filter(o => o && !o.toLowerCase().includes('dev'));
+            let displayOperators = uniqueOperators.length > 0 ? "• " + uniqueOperators.join("<br>• ") : `<span style="color:var(--text-muted); font-size:11px;">Belum ada tim</span>`;
+
             let fileLinkHtml = item.fileUrl 
-                ? `<a href="${item.fileUrl}" target="_blank" style="background:var(--blue-glow); color:#000; padding:6px 12px; font-size:11px; font-weight:bold; border-radius:6px; text-decoration:none;">📄 Lihat Dokumen</a>` 
-                : `<span style="color:var(--text-muted); font-size:11px;">Tidak ada lampiran</span>`;
+                ? `<a href="${item.fileUrl}" target="_blank" style="background:var(--blue-glow); color:#000; padding:6px 12px; font-size:11px; font-weight:bold; border-radius:6px; text-decoration:none;">📄 Dokumen</a>` 
+                : `<span style="color:var(--text-muted); font-size:11px;">Tanpa Lampiran</span>`;
                 
             let displayStatus = item.isShipped ? '<span class="badge bg-urgent">Digunakan/Terkirim</span>' : window.getStatusBadge(item.status); 
             let docColHtml = showDocCol ? `<td>${fileLinkHtml}</td>` : '';
-            let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editMasterSPP('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button></td>` : '';
-            tbody.innerHTML += `<tr><td><strong>${item.no}</strong></td><td>${item.datetime}</td><td><span class="badge bg-reguler" style="font-size:12px; font-weight:700;">${item.product}</span></td><td>${item.maker}</td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${docColHtml}${actionBtns}</tr>`;
+            let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-bottom:5px; width:100%;" onclick="editMasterSPP('${item.firebaseKey}')">✏️ Edit</button><br><button class="btn-delete" style="width:100%;" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button></td>` : '';
+            
+            tbody.innerHTML += `<tr>
+                <td><strong>${item.no}</strong><br><span style="font-size: 11px; color: var(--text-muted);">${item.datetime}</span></td>
+                <td><code style="color:var(--blue-glow); font-weight:bold;">${displayProdNo}</code></td>
+                <td><span class="badge bg-reguler" style="font-size:12px; font-weight:700;">${item.product}</span></td>
+                <td style="font-size:12px; font-weight:600; line-height: 1.5;">${displayOperators}</td>
+                <td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td>
+                <td><span class="badge bg-reguler">${item.priority}</span></td>
+                <td>${displayStatus}</td>
+                ${docColHtml}
+                ${actionBtns}
+            </tr>`;
         });
     }
 
     window.renderOperatorTable = function() {
-        const tbody = document.getElementById('operator-history-body'); tbody.innerHTML = ''; 
+        const tbody = document.getElementById('operator-history-body'); 
+        tbody.innerHTML = ''; 
         let filteredLogs = window.getFilteredLogs();
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
-        if(filteredLogs.length === 0) { tbody.innerHTML = `<tr><td colspan="${isDev ? '11' : '10'}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat laporan pada rentang waktu ini.</td></tr>`; return; }
+        
+        if(filteredLogs.length === 0) { 
+            tbody.innerHTML = `<tr><td colspan="${isDev ? '9' : '8'}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat laporan pada rentang waktu ini.</td></tr>`; 
+            return; 
+        }
+
+        // 1. Kelompokkan Log berdasarkan No. SPP
+        let groupedLogs = new Map();
         filteredLogs.forEach((item) => {
-            let badgeHTML = window.getStatusBadge(item.status);
-            let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
-            tbody.innerHTML += `<tr><td><b>${item.noProd}</b></td><td>${item.noSPP}</td><td><b>${item.operator}</b></td><td><span style="color:var(--cyan-glow); font-weight:600;">${item.aktivitas || '-'}</span></td><td><u>${item.condition}</u></td><td><i>${item.stage}</i></td><td>${item.time}</td><td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td><td>${badgeHTML}</td><td><span style="font-weight:700; color:var(--blue-glow);">${item.reason}</span></td>${actionBtns}</tr>`;
+            if (!groupedLogs.has(item.noSPP)) {
+                groupedLogs.set(item.noSPP, []);
+            }
+            groupedLogs.get(item.noSPP).push(item);
+        });
+
+        // 2. Render Header Group & Detail Pekerjaan
+        groupedLogs.forEach((logs, sppNo) => {
+            // Ambil info dari Master SPP
+            let masterSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
+            let productName = masterSPP ? masterSPP.product : "Produk Tidak Diketahui";
+            let urgency = masterSPP ? masterSPP.priority : "Reguler";
+            let urgencyClass = urgency === 'Urgent' ? 'bg-urgent' : (urgency === 'Buffer Stok' ? 'bg-buffer' : 'bg-reguler');
+
+            // Ambil semua No. Produksi unik di SPP ini
+            let uniqueProds = [...new Set(logs.map(l => l.noProd))].filter(n => n && n !== "-").join(", ");
+            if (!uniqueProds) uniqueProds = "-";
+
+            // -> Render Baris Header SPP (Desain seperti gambar yang diminta)
+            tbody.innerHTML += `
+                <tr style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--blue-glow); border-top: 2px solid var(--panel-border);">
+                    <td colspan="${isDev ? '9' : '8'}" style="padding: 15px 20px;">
+                        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                            <span style="font-size: 14px; font-weight: 800; color: #f8fafc;">📁 NO. SPP: <span style="color: var(--blue-glow);">${sppNo}</span></span>
+                            <span style="font-size: 14px; font-weight: 700; color: #f8fafc;">🛒 Produk: <span style="color: var(--emerald-glow);">${productName}</span></span>
+                            <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">🏷️ No. Produksi: <span style="color: var(--warning-glow);">${uniqueProds}</span></span>
+                            <span class="badge ${urgencyClass}">${urgency}</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            // -> Render Detail Log Operator di bawah Header
+            logs.forEach((item) => {
+                let badgeHTML = window.getStatusBadge(item.status);
+                let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
+                
+                tbody.innerHTML += `
+                <tr style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                    <td><b>${item.operator}</b></td>
+                    <td><span style="color:var(--cyan-glow); font-weight:600;">${item.aktivitas || '-'}</span></td>
+                    <td><u>${item.condition}</u></td>
+                    <td><i>${item.stage}</i></td>
+                    <td>${item.time}</td>
+                    <td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td>
+                    <td>${badgeHTML}</td>
+                    <td><span style="font-weight:700; color:var(--blue-glow);">${item.reason}</span></td>
+                    ${actionBtns}
+                </tr>`;
+            });
         });
     }
-
     window.renderDevInjectTable = function() {
         const tbody = document.getElementById('dev-inject-body');
         if(!tbody) return;
