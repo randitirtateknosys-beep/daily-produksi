@@ -1161,16 +1161,35 @@
         "HANDLE AQUATECH M.B 2.O MS"
     ];
 
-    window.isInternalProduct = function(productName) {
+   window.isInternalProduct = function(productName) {
         if (!productName) return false;
         let name = productName.trim().toUpperCase();
+
+        // 1. Pengecualian: Daftar PANEL yang masuk ke Produk Eksternal
+        const EXTERNAL_PANELS = [
+            "PANEL CONDUCTIVITY",
+            "PANEL SISTEM IPAL",
+            "PANEL SISTEM WTP",
+            "PANEL LIFT PUMP",
+            "PANEL SBR",
+            "PANEL SBR PIK" // Ditambahkan karena di master data dropdown tertulis 'PANEL SBR PIK'
+        ];
+
+        // 2. Jika nama produk ada di daftar EXTERNAL_PANELS, status internal = false
+        if (EXTERNAL_PANELS.includes(name)) {
+            return false;
+        }
+
+        // 3. Pengecekan produk internal lainnya
         if (INTERNAL_PRODUCTS.some(internal => name === internal.trim().toUpperCase())) return true;
+        
+        // 4. Pengecekan awalan kata (kecuali panel yang sudah difilter di atas)
         if (name.startsWith("FRAME") || name.startsWith("SAPOT") || name.startsWith("HANDLE") || name.startsWith("PANEL") || name.includes("PRE FILTRATION")) {
             return true;
         }
+        
         return false;
     }
-
     // --- BUNGKUS SEMUA FUNGSI REAL-TIME KE DALAM FUNGSI INI ---
     function startRealtimeListeners() {
         
