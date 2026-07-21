@@ -4,25 +4,9 @@
     <script>
         // ==========================================
         // CEGAT RENDER: Eksekusi super cepat sebelum browser menggambar UI
-        // Mencegah munculnya layar login sekilas saat refresh
+        // Session akan dikelola otomatis oleh Firebase Auth
         // ==========================================
-        window.loginSelesai = false; // Flag penanda untuk mencegah race condition loader
-
-        if (localStorage.getItem("savedLoginData")) {
-            document.documentElement.style.setProperty("--login-display", "none");
-            document.addEventListener("DOMContentLoaded", function() {
-                // Cegah loader digambar jika proses checkLogin() dari Firebase ternyata selesai duluan
-                if (window.loginSelesai) return; 
-                
-                let loader = document.createElement("div");
-                loader.id = "fast-loader";
-                loader.style.cssText = "position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); color:#38bdf8; font-size:16px; font-weight:bold; z-index:9999; text-align:center;";
-                loader.innerHTML = "<div style='font-size:45px; margin-bottom:15px; animation: floatLogin 2s infinite;'>🤖</div>Menghubungkan Sesi...";
-                document.body.appendChild(loader);
-            });
-        } else {
-            document.documentElement.style.setProperty("--login-display", "flex");
-        }
+        window.loginSelesai = false;
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,6 +17,7 @@
     <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     
+    <!-- MENGGUNAKAN LINK CDN RESMI FIREBASE (BEBAS BLOKIR) -->
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -396,6 +381,8 @@
             </div>
         </div>
         
+        <!-- KOLOM INPUT LOGIN (SUDAH DIUBAH MENGGUNAKAN EMAIL) -->
+        <input type="email" id="login-email" placeholder="Masukkan email pengguna..." autocomplete="off">
         <input type="password" id="login-password" placeholder="Masukkan kata sandi..." autocomplete="off" onkeypress="if(event.key === 'Enter') { event.preventDefault(); checkLogin(); }">
         <button onclick="checkLogin()">Masuk Dashboard</button>
         <div id="login-error">Kata sandi salah. Silakan coba lagi!</div>
@@ -1196,17 +1183,6 @@
         // Listener Sinkronisasi Password dari Firebase
         db.ref('updatedPasswords').on('value', snap => {
             window.dynamicPasswords = snap.val() || {};
-            
-            // --- FIX: FITUR AUTO-LOGIN SAAT HALAMAN DI-REFRESH ---
-            if (window.currentUserRole === "Guest") {
-                let savedPass = localStorage.getItem('savedLoginData');
-                if (savedPass) {
-                    // Isi form password secara gaib lalu tekan tombol login
-                    document.getElementById('login-password').value = savedPass;
-                    window.checkLogin(true); // Parameter 'true' digunakan agar tidak memunculkan popup welcome lagi saat refresh
-                }
-            }
-            // ------------------------------------------------------
         });
 
         db.ref('masterSPP').on('value', snap => {            
@@ -1314,10 +1290,60 @@
         }
     };
 
+    // --- REVISI MAPPING DATA LOGIN SISTEM & OPERATOR BERDASARKAN EMAIL (PENGGANTI HARDCODE PASSWORD) ---
+    const userRoles = {
+        "randi@tirta.com": { role: "Randi", panel: "all" },
+        "manager@tirta.com": { role: "Manager Warehouse", panel: "mw" },
+        "admin@tirta.com": { role: "Admin", panel: "admin" },
+        "manajemen@tirta.com": { role: "Managemen", panel: "viewonly" },
+        "gudang@tirta.com": { role: "Gudang", panel: "gudang" },
+        "tv@tirta.com": { role: "TV Mode", panel: "viewonly" },
+        
+        "suhendra@tirta.com": { role: "Suhendra", panel: "produksi" },
+        "hario@tirta.com": { role: "Hario Rizki Ardhana", panel: "produksi" },
+        "dhema@tirta.com": { role: "Dhema Ferlandy Putra", panel: "produksi" },
+        "iqbal@tirta.com": { role: "Muhammad Iqbal", panel: "produksi" },
+        "khairuddin@tirta.com": { role: "Khairuddin", panel: "produksi" },
+        "ngatiyo@tirta.com": { role: "Ngatiyo", panel: "produksi" },
+        "budi@tirta.com": { role: "Budi Septiyanto", panel: "produksi" },
+        "ramadan@tirta.com": { role: "Mohammad Ramadan", panel: "produksi" },
+        "arliston@tirta.com": { role: "Arliston Sirait", panel: "produksi" }
+    };
+
     // 2. OTENTIKASI & MAINTENANCE LISTENER
     auth.onAuthStateChanged((user) => {
         if (user) {
             console.log("Akses Aman. Menyalakan Sistem Real-time...");
+            
+            // Restore UI jika ada sesi login aktif dari Firebase
+            if(user.email) {
+                let userFound = userRoles[user.email] || { role: "Guest", panel: "viewonly" };
+                window.currentUserRole = userFound.role;
+                window.currentUserAccess = userFound.panel;
+                document.getElementById('current-user-role').innerText = window.currentUserRole;
+                document.getElementById('welcome-role-text').innerText = (window.currentUserRole.toUpperCase() === "RANDI") ? "TN RANDI" : window.currentUserRole;
+                
+                const opSelect = document.getElementById('prod-operator');
+                if (userFound.panel === "produksi") {
+                    if (opSelect) {
+                        opSelect.value = window.currentUserRole;
+                        opSelect.style.pointerEvents = 'none';
+                        opSelect.style.background = '#1e293b';
+                    }
+                } else {
+                    if (opSelect) {
+                        opSelect.style.pointerEvents = 'auto';
+                        opSelect.style.background = 'var(--input-bg)';
+                    }
+                }
+                
+                window.applyRoleAccess();
+                document.getElementById('login-screen').style.display = 'none';
+                
+                let loader = document.getElementById('fast-loader');
+                if (loader) loader.remove();
+            }
+
             startRealtimeListeners();
             
             // LISTENER MAINTENANCE SYSTEM
@@ -1333,10 +1359,8 @@
             });
             
         } else {
-            auth.signInAnonymously().catch((error) => {
-                console.error("Gagal mendapatkan akses Firebase:", error);
-                alert("KONEKSI FIREBASE GAGAL DITOLAK!\n\nSepertinya Anda belum mengaktifkan fitur Anonymous Auth di Firebase Console (Menu Authentication > Sign-in Method).\n\nMohon aktifkan fitur tersebut agar data bisa dimuat kembali.");
-            });
+            // User logged out
+            document.getElementById('login-screen').style.display = 'flex';
         }
     });
 
@@ -1354,72 +1378,58 @@
     window.dbClearAllChat = () => db.ref('messages').remove();
 
     window.checkLogin = function(bypassWelcome = false) {
+        const inputEmail = document.getElementById('login-email').value.trim();
         const inputPass = document.getElementById('login-password').value.trim();
         const err = document.getElementById('login-error');
-        
-        let userFound = null;
-        
-        // 1. Cari kecocokan di loginData dengan override dynamicPasswords
-        for (const [defaultPass, data] of Object.entries(loginData)) {
-            // Jika ada sandi baru tersimpan di database, gunakan itu, jika tidak pakai sandi default
-            let expectedPass = window.dynamicPasswords[data.role] || defaultPass;
-            
-            if (inputPass === expectedPass) {
-                userFound = data;
-                break;
-            }
-        }
 
-        if(userFound) {
-            window.loginSelesai = true; 
-            let loader = document.getElementById('fast-loader');
-            if (loader) loader.remove();
+        auth.signInWithEmailAndPassword(inputEmail, inputPass)
+            .then((userCredential) => {
+                window.loginSelesai = true; 
+                let loader = document.getElementById('fast-loader');
+                if (loader) loader.remove();
 
-            window.currentUserRole = userFound.role;
-            window.currentUserAccess = userFound.panel;
-            window.currentActivePassword = inputPass; 
-            localStorage.setItem('savedLoginData', inputPass); 
-            
-            document.getElementById('current-user-role').innerText = window.currentUserRole;
-            document.getElementById('welcome-role-text').innerText = (window.currentUserRole.toUpperCase() === "RANDI") ? "TN RANDI" : window.currentUserRole;
-            
-            const opSelect = document.getElementById('prod-operator');
-            if (userFound.panel === "produksi") {
-                if (opSelect) {
-                    opSelect.value = window.currentUserRole;
-                    opSelect.style.pointerEvents = 'none';
-                    opSelect.style.background = '#1e293b';
+                let userFound = userRoles[inputEmail] || { role: "Guest", panel: "viewonly" };
+                window.currentUserRole = userFound.role;
+                window.currentUserAccess = userFound.panel;
+                
+                document.getElementById('current-user-role').innerText = window.currentUserRole;
+                document.getElementById('welcome-role-text').innerText = (window.currentUserRole.toUpperCase() === "RANDI") ? "TN RANDI" : window.currentUserRole;
+                
+                const opSelect = document.getElementById('prod-operator');
+                if (userFound.panel === "produksi") {
+                    if (opSelect) {
+                        opSelect.value = window.currentUserRole;
+                        opSelect.style.pointerEvents = 'none';
+                        opSelect.style.background = '#1e293b';
+                    }
+                } else {
+                    if (opSelect) {
+                        opSelect.style.pointerEvents = 'auto';
+                        opSelect.style.background = 'var(--input-bg)';
+                    }
                 }
-            } else {
-                if (opSelect) {
-                    opSelect.style.pointerEvents = 'auto';
-                    opSelect.style.background = 'var(--input-bg)';
+
+                document.getElementById('login-screen').style.display = 'none';
+                err.style.display = 'none';
+                
+                window.applyRoleAccess();
+                window.applyGlobalFilter();
+
+                if (window.isMaintenanceActive && window.currentUserRole.toUpperCase() !== "RANDI") {
+                    window.evaluateMaintenance();
+                } else {
+                    document.getElementById('chat-fab').style.display = 'flex';
+                    if (bypassWelcome) window.closeWelcome(); 
+                    else document.getElementById('welcome-popup').style.display = 'flex';
                 }
-            }
 
-            document.getElementById('login-screen').style.display = 'none';
-            
-            window.applyRoleAccess();
-            window.applyGlobalFilter();
-
-            if (window.isMaintenanceActive && window.currentUserRole.toUpperCase() !== "RANDI") {
-                window.evaluateMaintenance();
-            } else {
-                document.getElementById('chat-fab').style.display = 'flex';
-                if (bypassWelcome) window.closeWelcome(); 
-                else document.getElementById('welcome-popup').style.display = 'flex';
-            }
-
-            if (window.currentUserRole === "TV Mode") window.startAutoScroll();
-        } else { 
-            err.style.display = 'block'; 
-            window.loginSelesai = true; 
-            document.getElementById('login-screen').style.display = 'flex';
-            let loader = document.getElementById('fast-loader');
-            if (loader) loader.remove();
-            document.documentElement.style.setProperty('--login-display', 'flex');
-            localStorage.removeItem('savedLoginData'); 
-        }
+                if (window.currentUserRole === "TV Mode") window.startAutoScroll();
+            })
+            .catch((error) => {
+                err.innerText = "Email atau sandi salah. Silakan coba lagi!";
+                err.style.display = 'block'; 
+                document.documentElement.style.setProperty('--login-display', 'flex');
+            });
     }
 
     // --- FITUR REAL-TIME CLOCK COMMAND CENTER ---
@@ -1618,26 +1628,6 @@
         "PRE FILTRATION MX": { ops: 2, hours: 16 }
     };
 
-    // --- REVISI DATA LOGIN SISTEM & OPERATOR PRODUKSI BARU ---
-    const loginData = {
-        "DV123": { role: "Randi", panel: "all" },
-        "MW123": { role: "Manager Warehouse", panel: "mw" },
-        "AD123": { role: "Admin", panel: "admin" },
-        "MG123": { role: "Managemen", panel: "viewonly" },
-        "GD123": { role: "Gudang", panel: "gudang" },
-        "TV123": { role: "TV Mode", panel: "viewonly" },
-        
-        "450316157": { role: "Suhendra", panel: "produksi" },
-        "2511171107": { role: "Hario Rizki Ardhana", panel: "produksi" },
-        "251117106": { role: "Dhema Ferlandy Putra", panel: "produksi" },
-        "2511171254": { role: "Muhammad Iqbal", panel: "produksi" },
-        "450712103": { role: "Khairuddin", panel: "produksi" },
-        "45020337": { role: "Ngatiyo", panel: "produksi" },
-        "450316158": { role: "Budi Septiyanto", panel: "produksi" },
-        "2511171286": { role: "Mohammad Ramadan", panel: "produksi" },
-        "45040564": { role: "Arliston Sirait", panel: "produksi" }
-    };
-
     window.currentUserRole = "Guest";
     window.currentUserAccess = "all";
     let autoScrollInterval = null;
@@ -1795,34 +1785,36 @@
     window.setLoginGreeting = function() {
         if (window.isMaintenanceActive) return; // Cegah sapaan normal saat sedang dikunci
         let grt = window.getGreetingTime();
-        let text = `Hi selamat ${grt}, perkenalkan saya BEE-BOOT robot pintar yang di ciptakan oleh team produksi , silahkan masukan kata sandi sesuai divisi anda lalu tekan enter.`;
+        let text = `Hi selamat ${grt}, perkenalkan saya BEE-BOOT robot pintar yang di ciptakan oleh team produksi , silahkan masukan email dan kata sandi Anda.`;
         window.typeWriterHTML('login-robot-text', text, 25, null);
     };
 
     window.logout = function() {
-        localStorage.removeItem('savedLoginData');
-        document.documentElement.style.setProperty('--login-display', 'flex');
-        document.getElementById('login-password').value = "";
-        document.getElementById('login-error').style.display = 'none';
-        document.getElementById('main-app').style.display = 'none';
-        document.getElementById('bee-boot-container').style.display = 'none';
-        document.getElementById('welcome-popup').style.display = 'none';
-        document.getElementById('chat-fab').style.display = 'none';
-        document.getElementById('chat-window').style.display = 'none';
-        
-        const opSelect = document.getElementById('prod-operator');
-        if (opSelect) {
-            opSelect.style.pointerEvents = 'auto';
-            opSelect.style.background = 'var(--input-bg)';
-            opSelect.value = "";
-        }
+        auth.signOut().then(() => {
+            document.documentElement.style.setProperty('--login-display', 'flex');
+            document.getElementById('login-email').value = "";
+            document.getElementById('login-password').value = "";
+            document.getElementById('login-error').style.display = 'none';
+            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('bee-boot-container').style.display = 'none';
+            document.getElementById('welcome-popup').style.display = 'none';
+            document.getElementById('chat-fab').style.display = 'none';
+            document.getElementById('chat-window').style.display = 'none';
+            
+            const opSelect = document.getElementById('prod-operator');
+            if (opSelect) {
+                opSelect.style.pointerEvents = 'auto';
+                opSelect.style.background = 'var(--input-bg)';
+                opSelect.value = "";
+            }
 
-        window.stopAutoScroll(); 
-        window.currentUserRole = "Guest";
-        window.currentActivePassword = "";
-        
-        window.evaluateMaintenance();
-        window.setLoginGreeting();
+            window.stopAutoScroll(); 
+            window.currentUserRole = "Guest";
+            window.currentActivePassword = "";
+            
+            window.evaluateMaintenance();
+            window.setLoginGreeting();
+        });
     }
 
     window.startAutoScroll = function() {
@@ -3384,7 +3376,7 @@ window.renderShipmentTable = function() {
     // PEMBARUAN: PENGELOMPOKAN DATA MASTER SPP BERDASARKAN NO SPP 
     // Menyatukan Tim Operator & No Produksi ke dalam satu baris tabel laporan
     // =========================================================================
-    window.renderMasterTable = function() {
+   window.renderMasterTable = function() {
         const tbody = document.getElementById('spp-master-body'); 
         tbody.innerHTML = ''; 
         let filteredSPP = window.getFilteredNonSPLSPP(); 
@@ -3467,7 +3459,7 @@ window.renderShipmentTable = function() {
             let uniqueProds = [...new Set(logs.map(l => l.noProd))].filter(n => n && n !== "-").join(", ");
             if (!uniqueProds) uniqueProds = "-";
 
-            // -> Render Baris Header SPP (Desain seperti gambar yang diminta)
+            // -> Render Baris Header SPP
             tbody.innerHTML += `
                 <tr style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--blue-glow); border-top: 2px solid var(--panel-border);">
                     <td colspan="${isDev ? '9' : '8'}" style="padding: 15px 20px;">
@@ -3501,6 +3493,7 @@ window.renderShipmentTable = function() {
             });
         });
     }
+
     window.renderDevInjectTable = function() {
         const tbody = document.getElementById('dev-inject-body');
         if(!tbody) return;
