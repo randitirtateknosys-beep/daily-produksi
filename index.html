@@ -23,6 +23,8 @@
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <!-- [PERBAIKAN 1]: Tambahkan Firebase Storage untuk fitur upload dokumen -->
+    <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
     <style>
         :root {
@@ -890,7 +892,7 @@
                     <div class="form-group full-width-group">
                         <label>Upload Dokumen SPP (Opsional - PDF/Image)</label>
                         <input type="file" id="spp-file" accept=".pdf, image/png, image/jpeg">
-                        <small style="color:var(--blue-glow); margin-top:5px; font-weight:bold;">File akan diunggah ke Google Drive secara otomatis.</small>
+                        <small style="color:var(--blue-glow); margin-top:5px; font-weight:bold;">File akan diunggah ke Firebase Storage secara otomatis.</small>
                     </div>
                 </div>
                 <button type="submit" class="btn-spp">Submit & Rilis Master SPP</button>
@@ -1051,7 +1053,7 @@
         </div>
         <div class="form-group" style="text-align:left; margin-top:10px;">
             <label>Kata Sandi Baru</label>
-            <input type="password" id="new-pass-input" placeholder="Buat sandi baru (min 5 karakter)...">
+            <input type="password" id="new-pass-input" placeholder="Buat sandi baru (min 6 karakter)...">
         </div>
         <div class="form-group" style="text-align:left; margin-top:10px;">
             <label>Konfirmasi Sandi Baru</label>
@@ -1079,16 +1081,6 @@
     // URL WEB APP GOOGLE APPS SCRIPT ANDA
     // ==========================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxzoVSP2zkZ-I5ikMvJq5oDGjg83EmIy2a2jNSLsAyHGFLcu2xpPbbeJ9hSgh8bNsyxkQ/exec"; 
-
-    // Helper Fungsi Konversi File ke Base64
-    function getBase64(file) {
-       return new Promise((resolve, reject) => {
-         const reader = new FileReader();
-         reader.readAsDataURL(file);
-         reader.onload = () => resolve(reader.result.split(',')[1]);
-         reader.onerror = error => reject(error);
-       });
-    }
 
     // ==========================================
     // FIREBASE INITIALIZATION & REALTIME SYNC
@@ -1154,68 +1146,61 @@
         if (!productName) return false;
         let name = productName.trim().toUpperCase();
 
-        // 1. Pengecualian: Daftar PANEL yang masuk ke Produk Eksternal
         const EXTERNAL_PANELS = [
             "PANEL CONDUCTIVITY",
             "PANEL SISTEM IPAL",
             "PANEL SISTEM WTP",
             "PANEL LIFT PUMP",
             "PANEL SBR",
-            "PANEL SBR PIK" // Ditambahkan karena di master data dropdown tertulis 'PANEL SBR PIK'
+            "PANEL SBR PIK"
         ];
 
-        // 2. Jika nama produk ada di daftar EXTERNAL_PANELS, status internal = false
         if (EXTERNAL_PANELS.includes(name)) {
             return false;
         }
 
-        // 3. Pengecekan produk internal lainnya
         if (INTERNAL_PRODUCTS.some(internal => name === internal.trim().toUpperCase())) return true;
         
-        // 4. Pengecekan awalan kata (kecuali panel yang sudah difilter di atas)
         if (name.startsWith("FRAME") || name.startsWith("SAPOT") || name.startsWith("HANDLE") || name.startsWith("PANEL") || name.includes("PRE FILTRATION")) {
             return true;
         }
         
         return false;
     }
+
     // --- BUNGKUS SEMUA FUNGSI REAL-TIME KE DALAM FUNGSI INI ---
     function startRealtimeListeners() {
         
-        // Listener Sinkronisasi Password dari Firebase
-        db.ref('updatedPasswords').on('value', snap => {
-            window.dynamicPasswords = snap.val() || {};
-        });
-
-        db.ref('masterSPP').on('value', snap => {            
+        // [PERBAIKAN 3]: Gunakan limitToLast(500) agar memori browser tidak membengkak
+        db.ref('masterSPP').orderByChild('rawTimestampMs').limitToLast(500).on('value', snap => {            
             window.databaseMasterSPP = [];
             snap.forEach(child => { let val = child.val(); val.firebaseKey = child.key; window.databaseMasterSPP.push(val); });
             window.databaseMasterSPP.sort((a,b) => b.rawTimestampMs - a.rawTimestampMs);
             if(window.currentUserRole !== "Guest") window.applyGlobalFilter();
         });
 
-        db.ref('logOperator').on('value', snap => {
+        db.ref('logOperator').orderByChild('timestampMs').limitToLast(500).on('value', snap => {
             window.databaseLogOperator = [];
             snap.forEach(child => { let val = child.val(); val.firebaseKey = child.key; window.databaseLogOperator.push(val); });
             window.databaseLogOperator.sort((a,b) => b.timestampMs - a.timestampMs);
             if(window.currentUserRole !== "Guest") window.applyGlobalFilter();
         });
 
-        db.ref('shipments').on('value', snap => {
+        db.ref('shipments').orderByChild('rawTimestampMs').limitToLast(500).on('value', snap => {
             window.databaseShipment = [];
             snap.forEach(child => { let val = child.val(); val.firebaseKey = child.key; window.databaseShipment.push(val); });
             window.databaseShipment.sort((a,b) => b.rawTimestampMs - a.rawTimestampMs);
             if(window.currentUserRole !== "Guest") window.applyGlobalFilter();
         });
 
-        db.ref('internalOuts').on('value', snap => {
+        db.ref('internalOuts').orderByChild('rawTimestampMs').limitToLast(500).on('value', snap => {
             window.databaseInternalOut = [];
             snap.forEach(child => { let val = child.val(); val.firebaseKey = child.key; window.databaseInternalOut.push(val); });
             window.databaseInternalOut.sort((a,b) => b.rawTimestampMs - a.rawTimestampMs);
             if(window.currentUserRole !== "Guest") window.applyGlobalFilter();
         });
 
-        db.ref('messages').on('value', snap => {
+        db.ref('messages').limitToLast(50).on('value', snap => {
             window.chatMessages = [];
             snap.forEach(child => { 
                 let data = child.val();
@@ -1226,7 +1211,6 @@
             window.triggerChatNotification();
         });
 
-        // TV Mode Real-time Alerts
         db.ref('masterSPP').on('child_added', snap => {
             if(!window.isTVModeReady || window.currentUserRole !== "TV Mode" || window.isBeeBootTyping) return;
             let val = snap.val();
@@ -1244,7 +1228,6 @@
         });
     }
 
-    // --- FUNGSI EVALUASI LAYAR MAINTENANCE ---
     window.evaluateMaintenance = function() {
         const mtScreen = document.getElementById('maintenance-screen');
         const mtMsg = document.getElementById('maintenance-msg-text');
@@ -1258,7 +1241,6 @@
             mtScreen.style.display = 'none';
             loginScreen.style.display = 'flex';
             
-            // --- FITUR BARU: EFEK MERAH DI LAYAR LOGIN SAAT TERKUNCI ---
             if (window.isMaintenanceActive) {
                 document.getElementById('login-robot-text').innerHTML = "<span style='color:#f43f5e; font-size:16px; font-weight:900;'>🚧 SISTEM TERKUNCI (MAINTENANCE) 🚧</span><br><br>Operator tidak bisa masuk. Hanya <b>Developer</b> yang diizinkan login saat ini.";
                 document.querySelector('.login-box').style.borderColor = "#f43f5e";
@@ -1271,7 +1253,6 @@
                 document.querySelector('.login-robot-bubble').style.borderColor = "var(--blue-glow)";
                 document.querySelector('.login-robot-bubble').style.boxShadow = "0 0 20px rgba(56, 189, 248, 0.4)";
                 
-                // --- PERBAIKAN 2: Jika dilepas dari mode terkunci, kembali sapa normal ---
                 if (document.getElementById('login-robot-text').innerHTML === "" || document.getElementById('login-robot-text').innerHTML.includes("SISTEM TERKUNCI")) {
                     window.setLoginGreeting();
                 }
@@ -1284,7 +1265,8 @@
                 document.getElementById('chat-fab').style.display = 'none';
             } else {
                 mtScreen.style.display = 'none';
-                if(mainApp.style.display === 'none' && welcomePopup.style.display === 'none') {
+                if ((mainApp.style.display === 'none' || mainApp.style.display === '') && 
+                    (welcomePopup.style.display === 'none' || welcomePopup.style.display === '')) {
                     mainApp.style.display = 'block';
                     document.getElementById('chat-fab').style.display = 'flex';
                 }
@@ -1292,7 +1274,7 @@
         }
     };
 
-    // --- REVISI MAPPING DATA LOGIN SISTEM & OPERATOR BERDASARKAN EMAIL (PENGGANTI HARDCODE PASSWORD) ---
+    // --- Catatan: Untuk implementasi RBAC sejati, lindungi data di Firebase Console Rules ---
     const userRoles = {
         "randi@tirta.com": { role: "Randi", panel: "all" },
         "manager@tirta.com": { role: "Manager Warehouse", panel: "mw" },
@@ -1312,12 +1294,10 @@
         "arliston@tirta.com": { role: "Arliston Sirait", panel: "produksi" }
     };
 
-    // 2. OTENTIKASI & MAINTENANCE LISTENER
     auth.onAuthStateChanged((user) => {
         if (user) {
             console.log("Akses Aman. Menyalakan Sistem Real-time...");
             
-            // Restore UI jika ada sesi login aktif dari Firebase
             if(user.email) {
                 let userFound = userRoles[user.email] || { role: "Guest", panel: "viewonly" };
                 window.currentUserRole = userFound.role;
@@ -1342,13 +1322,15 @@
                 window.applyRoleAccess();
                 document.getElementById('login-screen').style.display = 'none';
                 
+                document.getElementById('main-app').style.display = 'block'; 
+                document.getElementById('chat-fab').style.display = 'flex';
+                
                 let loader = document.getElementById('fast-loader');
                 if (loader) loader.remove();
             }
 
             startRealtimeListeners();
             
-            // LISTENER MAINTENANCE SYSTEM
             db.ref('appSettings/maintenance').on('value', snap => {
                 let data = snap.val();
                 if (data) {
@@ -1361,7 +1343,6 @@
             });
             
         } else {
-            // User logged out
             document.getElementById('login-screen').style.display = 'flex';
         }
     });
@@ -1421,8 +1402,12 @@
                     window.evaluateMaintenance();
                 } else {
                     document.getElementById('chat-fab').style.display = 'flex';
-                    if (bypassWelcome) window.closeWelcome(); 
-                    else document.getElementById('welcome-popup').style.display = 'flex';
+                    if (bypassWelcome) {
+                        window.closeWelcome(); 
+                    } else { 
+                        document.getElementById('main-app').style.display = 'none'; 
+                        document.getElementById('welcome-popup').style.display = 'flex';
+                    }
                 }
 
                 if (window.currentUserRole === "TV Mode") window.startAutoScroll();
@@ -1434,7 +1419,6 @@
             });
     }
 
-    // --- FITUR REAL-TIME CLOCK COMMAND CENTER ---
     setInterval(() => {
         const now = new Date();
         const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second:'2-digit' });
@@ -1443,7 +1427,6 @@
         if(clockEl) clockEl.innerText = `${dateStr} | ${timeStr}`;
     }, 1000);
 
-    // --- FUNGSI HELPER UNTUK DESAIN BADGE STATUS SERAGAM ---
     window.getStatusBadge = function(status) {
         let badgeClass = "status-proses"; // default
         if (status === 'Pending') badgeClass = "status-pending";
@@ -1458,7 +1441,6 @@
         return `<span class="badge ${badgeClass}">${status}</span>`;
     }
 
-    // --- FITUR PENCARIAN CEPAT GLOBAL (CENTRALIZED SEARCH KHUSUS) ---
     window.performCentralizedSearch = function() {
         const query = document.getElementById('global-search-input').value.toLowerCase().trim();
         const resultPanel = document.getElementById('panel-search-result');
@@ -1526,7 +1508,6 @@
         document.getElementById('panel-search-result').style.display = "none";
     }
 
-    // --- PENCARIAN LOKAL (HANYA MENCARI DI MASING-MASING TABEL TERTENTU) ---
     window.performGlobalSearch = function() {
         const configs = [
             { tbody: 'spp-master-body', localInput: 'search-spp' },
@@ -1556,7 +1537,6 @@
         });
     }
 
-    // --- FITUR MINIMIZE/MAXIMIZE PANEL TABEL ---
     window.togglePanel = function(containerId, btnElement) {
         const container = document.getElementById(containerId);
         if (container.style.display === 'none' || container.classList.contains('hidden')) {
@@ -1570,7 +1550,6 @@
         }
     }
 
-    // --- KAMUS PRODUK: AUTO FILL TARGET DURASI & JUMLAH OPERATOR ---
     const PRODUCT_DICTIONARY = {
         "AQUATECH TRO 250 GPD/R": { ops: 2, hours: 23 },
         "AQUATECH TRO 450 GPD/R": { ops: 2, hours: 23 },
@@ -1634,7 +1613,7 @@
     window.currentUserAccess = "all";
     let autoScrollInterval = null;
 
-    // --- LOGIKA GANTI SANDI BARU ---
+    // --- [PERBAIKAN 2]: GANTI PASSWORD FIREBASE AUTH ---
     window.openChangePassword = function() {
         document.getElementById('old-pass-input').value = "";
         document.getElementById('new-pass-input').value = "";
@@ -1647,16 +1626,11 @@
     }
 
     window.submitChangePassword = function() {
-        let oldP = document.getElementById('old-pass-input').value;
         let newP = document.getElementById('new-pass-input').value;
         let confP = document.getElementById('confirm-pass-input').value;
         
-        if(oldP !== window.currentActivePassword) {
-            alert("Kata sandi lama yang Anda masukkan salah!"); 
-            return;
-        }
-        if(newP.length < 5) {
-            alert("Kata sandi baru terlalu pendek! Minimal 5 karakter."); 
+        if(newP.length < 6) {
+            alert("Kata sandi baru terlalu pendek! Minimal 6 karakter sesuai sistem keamanan."); 
             return;
         }
         if(newP !== confP) {
@@ -1664,15 +1638,21 @@
             return;
         }
         
-        // Simpan ke Firebase Database di path `updatedPasswords`
-        db.ref('updatedPasswords/' + window.currentUserRole).set(newP).then(() => {
-            alert("Kata Sandi berhasil diperbarui!\n\nSilakan gunakan kata sandi baru Anda untuk login selanjutnya.");
-            window.currentActivePassword = newP;
-            localStorage.setItem('savedLoginData', newP); // Update local storage agar tidak logout
-            window.closeChangePassword();
-        }).catch(err => {
-            alert("Gagal mengupdate sandi: " + err.message);
-        });
+        const user = firebase.auth().currentUser;
+        if (user) {
+            user.updatePassword(newP).then(() => {
+                alert("Kata Sandi berhasil diperbarui!\nSilakan gunakan kata sandi baru Anda untuk login selanjutnya.");
+                window.closeChangePassword();
+            }).catch(err => {
+                if(err.code === 'auth/requires-recent-login') {
+                    alert("Demi keamanan, Anda harus Log Out dan Log In kembali sebelum dapat mengubah kata sandi.");
+                } else {
+                    alert("Gagal mengupdate sandi: " + err.message);
+                }
+            });
+        } else {
+            alert("Anda belum login!");
+        }
     }
 
     window.fillFormFromMessage = function(sppNo) {
@@ -1785,7 +1765,7 @@
     };
 
     window.setLoginGreeting = function() {
-        if (window.isMaintenanceActive) return; // Cegah sapaan normal saat sedang dikunci
+        if (window.isMaintenanceActive) return; 
         let grt = window.getGreetingTime();
         let text = `Hi selamat ${grt}, perkenalkan saya BEE-BOOT robot pintar yang di ciptakan oleh team produksi , silahkan masukan email dan kata sandi Anda.`;
         window.typeWriterHTML('login-robot-text', text, 25, null);
@@ -1866,7 +1846,6 @@
 
         window.updateConditionDropdown(null);
 
-        // PENYELARASAN HEADER TABEL 
         document.getElementById('spl-history-head').innerHTML = `<th>No. SPL</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Penanggung Jawab</th><th>Penerima Tugas</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('shipment-history-head').innerHTML = `<th>Keberangkatan</th><th>Produk</th><th>No. SPP Asal</th><th>Operator Logistik</th><th>Customer</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('operator-history-head').innerHTML = `<th>Nama Operator</th><th>Aktivitas Kegiatan</th><th>Kondisi Progres</th><th>Tahap Produksi</th><th>Waktu Input</th><th>Target Deadline</th><th>Status Hasil</th><th>Keterangan / Poin Tambahan</th>${isDev ? '<th>Aksi</th>' : ''}`;
@@ -1916,6 +1895,13 @@
         if(confirm("PERINGATAN! Anda akan menghapus seluruh riwayat chat grup secara permanen. Lanjutkan?")) window.dbClearAllChat();
     }
 
+    // --- [PERBAIKAN 4]: XSS Protection di Global Chat ---
+    function sanitizeHTML(str) {
+        let div = document.createElement('div');
+        div.innerText = str;
+        return div.innerHTML;
+    }
+
     window.renderChat = function() {
         const container = document.getElementById('chat-messages'); container.innerHTML = '';
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
@@ -1925,10 +1911,12 @@
         window.chatMessages.forEach(msg => {
             const isSelf = msg.sender === window.currentUserRole; 
             const timeStr = new Date(msg.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            
             let deleteIconHTML = (isSelf || isDev) ? `<span onclick="deleteChatMessage('${msg.key}')" style="cursor:pointer; color:#f43f5e; float:right; font-size:12px; margin-left:10px;" title="Hapus pesan ini">🗑️</span>` : '';
             
-            container.innerHTML += `<div class="chat-msg ${isSelf?'self':''}"><strong style="${isSelf?'color:#a7f3d0;':'color:#38bdf8;'}">${msg.sender} <span style="color:#94a3b8; font-weight:normal; font-size:9px;">${timeStr}</span> ${deleteIconHTML}</strong>${msg.text}</div>`;
+            // XSS fix:
+            let cleanText = sanitizeHTML(msg.text);
+            
+            container.innerHTML += `<div class="chat-msg ${isSelf?'self':''}"><strong style="${isSelf?'color:#a7f3d0;':'color:#38bdf8;'}">${msg.sender} <span style="color:#94a3b8; font-weight:normal; font-size:9px;">${timeStr}</span> ${deleteIconHTML}</strong>${cleanText}</div>`;
         });
         if(chatOpen) scrollToBottomChat();
     }
@@ -2173,7 +2161,6 @@
         }
     }, 180000); 
 
-    // ==================== FUNGSI DEMO PENGISIAN FORM ====================
     window.demoFillProduction = function() {
         const noProd = document.getElementById('prod-number');
         const sppSelect = document.getElementById('prod-spp-select');
@@ -2283,10 +2270,6 @@
         alert("✅ Form Laporan Pengiriman telah diisi otomatis. Coba klik 'Catat Keberangkatan Logistik' untuk melihat hasilnya!");
     };
 
-    // ==========================================
-    // LOGIKA PERCABANGAN ROOM TOUR BEE-BOOT
-    // ==========================================
-    
     const tourData = {
         full: [
             { id: "main-header", title: "1. Header Utama", text: "Tabel paling atas: Menampilkan nama dashboard, jam realtime, dan tanggal aktual." },
@@ -2367,7 +2350,6 @@
         window.runTourStep(); 
     }
 
-    // Fungsi untuk menghapus semua indikator Tour yang aktif
     window.clearAllHighlights = function() {
         document.querySelectorAll('.highlight-tour').forEach(el => {
             el.classList.remove('highlight-tour');
@@ -2379,7 +2361,6 @@
         const actions = document.getElementById('bee-boot-actions'); 
         actions.innerHTML = '';
         
-        // Hapus sorotan dari elemen sebelumnya agar tidak menumpuk
         window.clearAllHighlights(); 
 
         if (currentTourStep >= windowActiveTourSteps.length) {
@@ -2393,16 +2374,13 @@
         const targetEl = document.getElementById(step.id);
         
         if (targetEl) {
-            // Jika elemen target berada di dalam tabel yang di-minimize, buka (maximize) otomatis
             if (targetEl.closest('.table-container') && targetEl.closest('.table-container').classList.contains('hidden')) {
                 targetEl.closest('.table-container').classList.remove('hidden');
                 targetEl.closest('.table-container').style.display = 'block';
             }
             
-            // Gulir layar ke arah target elemen
             targetEl.scrollIntoView({behavior: 'smooth', block: 'center'});
             
-            // Berikan jeda sedikit agar layar selesai menggulir baru efek penunjuk muncul
             setTimeout(() => {
                 targetEl.classList.add('highlight-tour');
             }, 300);
@@ -2429,7 +2407,7 @@
     }
 
     window.demoSearchFromTour = function() {
-        document.getElementById('global-search-input').value = "AQUATECH"; // Menggunakan kata umum agar muncul di simulasi
+        document.getElementById('global-search-input').value = "AQUATECH"; 
         performCentralizedSearch();
     }
 
@@ -2447,7 +2425,7 @@
 
     window.endBeeTour = function() {
         if(window.isBeeBootTyping) return; 
-        window.clearAllHighlights(); // Bersihkan efek highlight
+        window.clearAllHighlights(); 
         document.getElementById('bee-boot-actions').innerHTML = '';
         document.getElementById('bee-boot-container').style.bottom = '30px'; 
         window.beeOfferJoke(); 
@@ -2455,13 +2433,12 @@
 
     window.beeExplainNo = function() {
         if(window.isBeeBootTyping) return; 
-        window.clearAllHighlights(); // Bersihkan efek highlight
+        window.clearAllHighlights(); 
         document.getElementById('bee-boot-actions').innerHTML = '';
         document.getElementById('bee-boot-container').style.bottom = '30px'; 
         window.beeOfferJoke();
     }
 
-    // --- FITUR MENCARI JOKES DINAMIS ---
     window.beeOfferJoke = function() {
         if(window.isBeeBootTyping) return; document.getElementById('bee-boot-actions').innerHTML = '';
         window.typeWriterHTML('bee-boot-text', "Apakah anda ingin saya carikan cerita singkat atau lelucon lucu di internet?", 15, () => {
@@ -2521,7 +2498,6 @@
 
     const PENJEDAAN_STATUS_LIST = ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'];
 
-    // ========== FILTER WAKTU ==========
     window.toggleCustomDate = function() {
         const val = document.getElementById('global-time-filter').value;
         document.getElementById('custom-date-container').style.display = val === 'custom' ? 'flex' : 'none'; window.applyGlobalFilter();
@@ -2572,7 +2548,6 @@
         return window.databaseMasterSPP.filter(spp => !spp.isSPL && window.isWithinTimeframe(spp.rawTimestampMs, f));
     };
 
-    // ========== HELPER TANGGAL & WAKTU ==========
     window.resetDateTimeInputs = function() {
         const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); const timeString = now.toISOString().slice(0, 16); 
         const els = ['spp-date','spl-date','prod-datetime','shipment-datetime', 'internal-datetime'];
@@ -2591,7 +2566,19 @@
         return `${day}.${month}.${year} Jam ${hours}:${minutes}`;
     }
 
-    // ========== RENDER UI & TABEL ==========
+    // --- [PERBAIKAN 5]: Notifikasi WhatsApp Dinamis berdasarkan operator ---
+    const operatorPhones = {
+        "Suhendra": "6287732761073",
+        "Hario Rizki Ardhana": "6289631842047",
+        "Dhema Ferlandy Putra": "62895335666150",
+        "Muhammad Iqbal": "6289663069293",
+        "Khairuddin": "6281219674177",
+        "Ngatiyo": "6281316221800",
+        "Budi Septiyanto": "6285881395540",
+        "Mohammad Ramadan": "6285810076403",
+        "Arliston Sirait": "6281288073259"
+    };
+
     window.renderRealtimeWAMonitor = function() {
         const tbody = document.getElementById('wa-monitor-body'); if (!tbody) return;
         let monitoredSPP = window.databaseMasterSPP.filter(i => !['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && i.isLocked);
@@ -2615,7 +2602,12 @@
     }
 
     window.sendWhatsAppReminder = function(sppNo, countdownText) {
-        const item = window.databaseMasterSPP.find(i => i.no === sppNo); if (!item) return; const noWhatsApp = "6281234567890";
+        const item = window.databaseMasterSPP.find(i => i.no === sppNo); if (!item) return; 
+        
+        let activeLog = window.databaseLogOperator.find(log => log.noSPP === sppNo);
+        let targetOperator = (activeLog && activeLog.operator) ? activeLog.operator : "Suhendra";
+        let noWhatsApp = operatorPhones[targetOperator] || "6280000000000";
+
         let pesanText = `*PENGINGAT DEADLINE PRODUKSI - INTERNAL SYSTEM V7.9*\n\nMohon perhatian untuk pengerjaan unit berikut:\n\n• *No. SPP:* ${item.no}\n• *Produk:* ${item.product}\n• *Status Terkini:* ${item.status}\n• *Batas Akhir:* ${item.formattedDeadline}\n\n⚠️ *SISA WAKTU pengerjaan:* _*${countdownText}*_\n\nSegera update aktual pengerjaan di sistem. Semangat! 💪`;
         window.open(`https://api.whatsapp.com/send?phone=${noWhatsApp}&text=${encodeURIComponent(pesanText)}`, '_blank');
     }
@@ -2780,7 +2772,6 @@
         window.calculateAndRenderRanking();
     }
 
-    // --- LOGIKA RANKING PROPORSI POOL UPDATE ---
     window.calculateAndRenderRanking = function() {
         let skorPeta = {}; 
         const filteredLogs = window.getFilteredLogs(); 
@@ -2873,6 +2864,7 @@
         if (value === 'YA') { yesBtn.classList.add('selected-yes'); noBtn.classList.remove('selected-no'); } else { yesBtn.classList.remove('selected-yes'); noBtn.classList.add('selected-no'); }
     }
 
+    // --- [PERBAIKAN 6]: Pindahkan unggahan dokumen dari GAS ke Firebase Storage ---
     document.getElementById('spp-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btnSubmit = document.querySelector('.btn-spp'); 
@@ -2892,31 +2884,26 @@
         let uploadedFileUrl = null;
 
         if (file) {
-            btnSubmit.innerHTML = "⏳ MENGUNGGAH DOKUMEN KE G-DRIVE...";
+            btnSubmit.innerHTML = "⏳ MENGUNGGAH DOKUMEN KE FIREBASE...";
             btnSubmit.disabled = true;
             btnSubmit.style.background = "var(--warning-glow)";
             
             try {
-                let base64Data = await getBase64(file);
+                // Inisialisasi referensi Firebase Storage
+                const storageRef = firebase.storage().ref();
+                const docRef = storageRef.child(`spp_documents/${noSPP}_${file.name}`);
                 
-                let response = await fetch(GAS_WEB_APP_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        filename: `${noSPP}_${file.name}`,
-                        mimeType: file.type,
-                        base64: base64Data
-                    })
-                });
-
-                let result = await response.json();
-                if (result.success) {
-                    uploadedFileUrl = result.url;
-                } else {
-                    alert("Gagal mengunggah file ke Google Drive: " + result.error);
-                }
+                // Mulai proses upload
+                const uploadTask = await docRef.put(file);
+                
+                // Ambil link url untuk di download nanti
+                uploadedFileUrl = await uploadTask.ref.getDownloadURL();
             } catch (error) {
-                alert("Terjadi kesalahan sistem saat menghubungi Google Drive API.");
-                console.error(error);
+                alert("Gagal mengunggah file ke Firebase Storage: " + error.message);
+                btnSubmit.innerHTML = "Submit & Rilis Master SPP";
+                btnSubmit.disabled = false;
+                btnSubmit.style.background = "linear-gradient(135deg, #7c3aed, #a855f7)";
+                return;
             }
         }
 
@@ -2984,7 +2971,6 @@
     const targetProduct = document.getElementById('internal-target-product').value; 
     const rawTime = new Date(document.getElementById('internal-datetime').value); 
     
-    // 💡 TAMBAHAN BARU: Mencegah Firebase crash akibat nilai waktu tidak valid (NaN)
     if (isNaN(rawTime.getTime())) {
         alert("Format waktu pengambilan tidak valid! Silakan pilih ulang tanggal dan jam.");
         return;
@@ -3016,7 +3002,6 @@
     
     const rawTime = new Date(document.getElementById('shipment-datetime').value); 
     
-    // 💡 TAMBAHAN BARU: Mencegah Firebase crash akibat nilai waktu tidak valid (NaN)
     if (isNaN(rawTime.getTime())) {
         alert("Format waktu keberangkatan tidak valid! Silakan pilih ulang tanggal dan jam.");
         return;
@@ -3137,7 +3122,6 @@
         window.updateConditionDropdown(matchedSPP);
     };
 
-    // 2. Handler untuk input durasi manual (agar tidak error)
     window.liveCalculationHandler = function() { };
 
     // 3. Fungsi Eksekusi & Simpan Laporan Produksi ke Firebase
@@ -3237,7 +3221,6 @@
         document.getElementById('prod-stage-manual').style.display = 'none';
         window.resetDateTimeInputs();
         
-        // Kembalikan nama operator (karena di-reset oleh form)
         if (window.currentUserAccess === "produksi") {
             document.getElementById('prod-operator').value = window.currentUserRole;
         }
@@ -3267,18 +3250,14 @@
     const produkSelesaiEksternal = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped && !window.isInternalProduct(i.product));
     
     produkSelesaiEksternal.forEach(item => { 
-        // 1. Cari data No Produksi di tabel logOperator yang cocok dengan No SPP ini
         let noProdTambahan = "";
         let logTerkait = window.databaseLogOperator.find(log => log.noSPP === item.no && log.noProd && log.noProd !== "-");
         
-        // 2. Jika ditemukan, potong string berdasarkan '/' dan ambil bagian pertama (indeks 0)
         if (logTerkait) {
             let nomorDepan = logTerkait.noProd.split('/')[0].trim();
             noProdTambahan = ` - [Prod: ${nomorDepan}]`;
         }
         
-        // 3. Tambahkan ke tampilan teks opsi. 
-        // PENTING: Atribut 'value' dibiarkan persis seperti aslinya agar logika tombol submit tidak error.
         select.innerHTML += `<option value="${item.product} (${item.no})">${item.product} (${item.no})${noProdTambahan}</option>`; 
     });
 }
@@ -3356,7 +3335,7 @@ window.renderShipmentTable = function() {
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
         if (filteredShips.length === 0) { tbody.innerHTML = `<tr><td colspan="${isDev ? '7' : '6'}" style="text-align:center; color:var(--text-muted); padding: 30px;">Belum ada riwayat keberangkatan.</td></tr>`; return; }
         filteredShips.forEach(item => {
-            let delBtn = isDev ? `<td><button class="btn-delete" onclick="deleteShipment('${item.firebaseKey}', '${item.spp}')">Hapus</button></td>` : '';
+            let delBtn = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editShipment('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteShipment('${item.firebaseKey}', '${item.spp}')">Hapus</button></td>` : '';
             tbody.innerHTML += `<tr style="border-left: 4px solid var(--blue-glow);"><td>${item.time}</td><td><strong>${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>🚚 ${item.carrier}</b></td><td><span style="color: var(--blue-glow); font-weight:700;">🏢 ${item.customer}</span></td><td><span class="badge bg-reguler" style="background:#ccfbf1; color:var(--emerald-glow); border-color:#5eead4;">Dalam Perjalanan</span></td>${delBtn}</tr>`;
         });
     }
@@ -3374,10 +3353,6 @@ window.renderShipmentTable = function() {
         });
     }
 
-    // =========================================================================
-    // PEMBARUAN: PENGELOMPOKAN DATA MASTER SPP BERDASARKAN NO SPP 
-    // Menyatukan Tim Operator & No Produksi ke dalam satu baris tabel laporan
-    // =========================================================================
    window.renderMasterTable = function() {
         const tbody = document.getElementById('spp-master-body'); 
         tbody.innerHTML = ''; 
@@ -3392,18 +3367,14 @@ window.renderShipmentTable = function() {
             return; 
         }
 
-        // Ambil data log untuk pemetaan
         let filteredLogs = window.getFilteredLogs();
 
         filteredSPP.forEach(item => {
-            // Filter semua log yang terkait dengan No SPP ini
             let relatedLogs = filteredLogs.filter(log => log.noSPP === item.no);
             
-            // 1. Ekstrak No Produksi Unik
             let uniqueProdNos = [...new Set(relatedLogs.map(l => l.noProd))].filter(n => n && n !== "-");
             let displayProdNo = uniqueProdNos.length > 0 ? uniqueProdNos.join("<br>") : `<span style="color:var(--text-muted); font-size:11px;">Belum Tersedia</span>`;
             
-            // 2. Ekstrak Nama Operator Unik (Tim)
             let uniqueOperators = [...new Set(relatedLogs.map(l => l.operator))].filter(o => o && !o.toLowerCase().includes('dev'));
             let displayOperators = uniqueOperators.length > 0 ? "• " + uniqueOperators.join("<br>• ") : `<span style="color:var(--text-muted); font-size:11px;">Belum ada tim</span>`;
 
@@ -3603,6 +3574,47 @@ window.renderShipmentTable = function() {
         else if (choice === '5') { let val = prompt("Format YYYY-MM-DD HH:MM"); if(val) { let d = new Date(val); updates.time = window.formatDateToString(d); updates.timestampMs = d.getTime(); } }
         
         if (Object.keys(updates).length > 0) { db.ref('logOperator/' + firebaseKey).update(updates); alert("Data log berhasil diperbarui!"); }
+    }
+
+    window.editShipment = function(firebaseKey) {
+        let choice = prompt("Pilih data Pengiriman yang ingin diedit:\n1. Operator Logistik (Kurir)\n2. Customer (Tujuan)\n3. Waktu Keberangkatan");
+        if (!choice) return;
+        let updates = {};
+        if (choice === '1') { let val = prompt("Nama Operator Logistik/Kurir Baru:"); if(val) updates.carrier = val.trim(); }
+        else if (choice === '2') { let val = prompt("Nama Customer (Tujuan) Baru:"); if(val) updates.customer = val.trim(); }
+        else if (choice === '3') { 
+            let val = prompt("Format Waktu (YYYY-MM-DD HH:MM):"); 
+            if(val) { 
+                let d = new Date(val); 
+                if (!isNaN(d.getTime())) {
+                    updates.time = window.formatDateToString(d); 
+                    updates.rawTimestampMs = d.getTime(); 
+                } else {
+                    alert("Format tanggal tidak valid!"); return;
+                }
+            } 
+        }
+        if (Object.keys(updates).length > 0) { db.ref('shipments/' + firebaseKey).update(updates); alert("Data pengiriman berhasil diperbarui!"); }
+    }
+
+    window.editInternalOut = function(firebaseKey) {
+        let choice = prompt("Pilih data Penarikan Internal yang ingin diedit:\n1. Tujuan Produk Final\n2. Waktu Pengambilan");
+        if (!choice) return;
+        let updates = {};
+        if (choice === '1') { let val = prompt("Tujuan Produk Baru:"); if(val) updates.targetProduct = val.trim(); }
+        else if (choice === '2') { 
+            let val = prompt("Format Waktu (YYYY-MM-DD HH:MM):"); 
+            if(val) { 
+                let d = new Date(val); 
+                if (!isNaN(d.getTime())) {
+                    updates.time = window.formatDateToString(d); 
+                    updates.rawTimestampMs = d.getTime(); 
+                } else {
+                    alert("Format tanggal tidak valid!"); return;
+                }
+            } 
+        }
+        if (Object.keys(updates).length > 0) { db.ref('internalOuts/' + firebaseKey).update(updates); alert("Data penarikan internal berhasil diperbarui!"); }
     }
 
     // Panggil sapaan Bee-Boot saat halaman pertama kali dibuka
