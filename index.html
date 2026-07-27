@@ -2,10 +2,6 @@
 <html lang="id">
 <head>
     <script>
-        // ==========================================
-        // CEGAT RENDER: Eksekusi super cepat sebelum browser menggambar UI
-        // Session akan dikelola otomatis oleh Firebase Auth
-        // ==========================================
         window.loginSelesai = false;
     </script>
     <meta charset="UTF-8">
@@ -23,7 +19,6 @@
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <!-- [PERBAIKAN 1]: Tambahkan Firebase Storage untuk fitur upload dokumen -->
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
     <style>
@@ -581,6 +576,32 @@
                                 <div id="overall-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--blue-glow), var(--emerald-glow)); transition: width 0.8s ease-in-out; box-shadow: 0 0 10px var(--emerald-glow);"></div>
                             </div>
                         </div>
+
+                        <!-- TABEL TAMBAHAN UNTUK READY & TERKIRIM -->
+                        <div style="margin-top: 25px; border-top: 1px dashed rgba(56, 189, 248, 0.3); padding-top: 15px;">
+                            <h4 style="color: var(--blue-glow); margin: 0 0 10px 0; font-size: 13px; text-transform: uppercase;">📦 Status Inventaris Akhir</h4>
+                            <div class="table-container">
+                                <table style="background: rgba(15, 23, 42, 0.6); margin: 0;">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align: left;">Kategori</th>
+                                            <th style="text-align: center; width: 150px;">Total Unit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong style="color: var(--emerald-glow);">Total Barang Ready (Di Gudang)</strong></td>
+                                            <td style="text-align: center;"><span id="stat-ready-gudang" class="badge bg-reguler" style="font-size:13px;">0 Unit</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong style="color: var(--cyan-glow);">Total Barang Pengiriman (Terkirim)</strong></td>
+                                            <td style="text-align: center;"><span id="stat-terkirim" class="badge bg-urgent" style="background:rgba(14,213,192,0.1); color:var(--cyan-glow); border-color:#5eead4; font-size:13px;">0 Unit</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -1119,8 +1140,26 @@
     window.dynamicPasswords = {};
     window.currentActivePassword = "";
 
+    window.activeOperators = {}; // Tambahkan variabel ini di sini
+
     // Aktifkan TV Mode setelah 5 detik agar pesan Bee-boot tidak spam saat muat awal
     setTimeout(() => { window.isTVModeReady = true; }, 5000); 
+
+    // --- FUNGSI AKTIVASI STATUS ONLINE/OFFLINE REALTIME ---
+    window.setupUserPresence = function(roleName) {
+        if (!roleName || roleName === "Guest" || roleName === "TV Mode") return;
+
+        const userStatusRef = firebase.database().ref('/operatorStatus/' + roleName);
+        const isOffline = { status: 'offline', last_changed: firebase.database.ServerValue.TIMESTAMP };
+        const isOnline = { status: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP };
+
+        firebase.database().ref('.info/connected').on('value', function(snapshot) {
+            if (snapshot.val() == false) { return; }
+            userStatusRef.onDisconnect().set(isOffline).then(function() {
+                userStatusRef.set(isOnline);
+            });
+        });
+    };
 
     // --- ARRAY FILTER PRODUK INTERNAL ---
     const INTERNAL_PRODUCTS = [
@@ -1170,8 +1209,7 @@
 
     // --- BUNGKUS SEMUA FUNGSI REAL-TIME KE DALAM FUNGSI INI ---
     function startRealtimeListeners() {
-        
-        // [PERBAIKAN 3]: Gunakan limitToLast(500) agar memori browser tidak membengkak
+       
         db.ref('masterSPP').orderByChild('rawTimestampMs').limitToLast(500).on('value', snap => {            
             window.databaseMasterSPP = [];
             snap.forEach(child => { let val = child.val(); val.firebaseKey = child.key; window.databaseMasterSPP.push(val); });
@@ -1274,7 +1312,6 @@
         }
     };
 
-    // --- Catatan: Untuk implementasi RBAC sejati, lindungi data di Firebase Console Rules ---
     const userRoles = {
         "randi@tirta.com": { role: "Randi", panel: "all" },
         "manager@tirta.com": { role: "Manager Warehouse", panel: "mw" },
@@ -1302,6 +1339,9 @@
                 let userFound = userRoles[user.email] || { role: "Guest", panel: "viewonly" };
                 window.currentUserRole = userFound.role;
                 window.currentUserAccess = userFound.panel;
+                
+                window.setupUserPresence(window.currentUserRole);
+
                 document.getElementById('current-user-role').innerText = window.currentUserRole;
                 document.getElementById('welcome-role-text').innerText = (window.currentUserRole.toUpperCase() === "RANDI") ? "TN RANDI" : window.currentUserRole;
                 
@@ -1613,7 +1653,14 @@
     window.currentUserAccess = "all";
     let autoScrollInterval = null;
 
-    // --- [PERBAIKAN 2]: GANTI PASSWORD FIREBASE AUTH ---
+    // --- [PERBAIKAN 4]: XSS Protection Global ---
+    window.sanitizeHTML = function(str) {
+        if (!str) return "-";
+        let div = document.createElement('div');
+        div.innerText = str;
+        return div.innerHTML;
+    };
+
     window.openChangePassword = function() {
         document.getElementById('old-pass-input').value = "";
         document.getElementById('new-pass-input').value = "";
@@ -1772,6 +1819,13 @@
     };
 
     window.logout = function() {
+        if (window.currentUserRole !== "Guest" && window.currentUserRole !== "TV Mode") {
+            firebase.database().ref('/operatorStatus/' + window.currentUserRole).set({
+                status: 'offline',
+                last_changed: firebase.database.ServerValue.TIMESTAMP,
+            });
+        }
+
         auth.signOut().then(() => {
             document.documentElement.style.setProperty('--login-display', 'flex');
             document.getElementById('login-email').value = "";
@@ -1829,19 +1883,27 @@
             if(el) el.style.display = 'none';
         }
 
+        let prodDateEl = document.getElementById('prod-datetime');
+
         if(window.currentUserAccess === "produksi") { 
             ['panel-analytics','panel-aktual','panel-ranking','panel-surat-perintah','panel-input-spp','panel-history-spp','panel-input-shipment','panel-history-shipment'].forEach(id=> {
                 let el = document.getElementById(id);
                 if(el) el.style.display='none';
             });
             
-            document.getElementById('prod-datetime').style.pointerEvents = 'none';
-            document.getElementById('prod-datetime').style.background = '#1e293b';
-            document.getElementById('prod-datetime').setAttribute('readonly', 'true');
+            if (prodDateEl) {
+                prodDateEl.style.pointerEvents = 'none';
+                prodDateEl.style.background = '#1e293b';
+                prodDateEl.setAttribute('readonly', 'true');
+                if (prodDateEl._flatpickr) prodDateEl._flatpickr.set("clickOpens", false);
+            }
         } else {
-            document.getElementById('prod-datetime').style.pointerEvents = 'auto';
-            document.getElementById('prod-datetime').style.background = 'var(--input-bg)';
-            document.getElementById('prod-datetime').removeAttribute('readonly');
+            if (prodDateEl) {
+                prodDateEl.style.pointerEvents = 'auto';
+                prodDateEl.style.background = 'var(--input-bg)';
+                prodDateEl.removeAttribute('readonly');
+                if (prodDateEl._flatpickr) prodDateEl._flatpickr.set("clickOpens", true);
+            }
         }
 
         window.updateConditionDropdown(null);
@@ -1895,13 +1957,6 @@
         if(confirm("PERINGATAN! Anda akan menghapus seluruh riwayat chat grup secara permanen. Lanjutkan?")) window.dbClearAllChat();
     }
 
-    // --- [PERBAIKAN 4]: XSS Protection di Global Chat ---
-    function sanitizeHTML(str) {
-        let div = document.createElement('div');
-        div.innerText = str;
-        return div.innerHTML;
-    }
-
     window.renderChat = function() {
         const container = document.getElementById('chat-messages'); container.innerHTML = '';
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
@@ -1913,8 +1968,7 @@
             const timeStr = new Date(msg.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             let deleteIconHTML = (isSelf || isDev) ? `<span onclick="deleteChatMessage('${msg.key}')" style="cursor:pointer; color:#f43f5e; float:right; font-size:12px; margin-left:10px;" title="Hapus pesan ini">🗑️</span>` : '';
             
-            // XSS fix:
-            let cleanText = sanitizeHTML(msg.text);
+            let cleanText = window.sanitizeHTML(msg.text);
             
             container.innerHTML += `<div class="chat-msg ${isSelf?'self':''}"><strong style="${isSelf?'color:#a7f3d0;':'color:#38bdf8;'}">${msg.sender} <span style="color:#94a3b8; font-weight:normal; font-size:9px;">${timeStr}</span> ${deleteIconHTML}</strong>${cleanText}</div>`;
         });
@@ -2252,10 +2306,10 @@
             productSelect.selectedIndex = 1;
         } else {
             let opt = document.createElement('option');
-            opt.value = "Contoh Produk (SPP-DEMO)";
+            opt.value = "SPP-DEMO::Contoh Produk";
             opt.text = "Contoh Produk (SPP-DEMO)";
             productSelect.add(opt);
-            productSelect.value = "Contoh Produk (SPP-DEMO)";
+            productSelect.value = "SPP-DEMO::Contoh Produk";
         }
         
         if (carrier) carrier.value = "Oki";
@@ -2523,6 +2577,7 @@
         window.calculateAndRenderRanking();
         window.renderDevInjectTable(); 
         window.renderOperatorTable();
+    
         setTimeout(() => { window.performGlobalSearch(); }, 150);
     }
 
@@ -2645,6 +2700,14 @@
         let progressPct = filteredSPP.length === 0 ? 0 : Math.round((selesaiSPP / filteredSPP.length) * 100);
         document.getElementById('overall-progress-text').innerText = progressPct + '%';
         document.getElementById('overall-progress-bar').style.width = progressPct + '%';
+
+        // Update Tabel Tambahan (Inventaris Akhir)
+        const readyItems = filteredSPP.filter(i => ['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status) && !i.isShipped).length;
+        const shippedItems = filteredSPP.filter(i => i.isShipped).length;
+        const statReadyGudang = document.getElementById('stat-ready-gudang');
+        const statTerkirim = document.getElementById('stat-terkirim');
+        if(statReadyGudang) statReadyGudang.innerText = readyItems + " Unit";
+        if(statTerkirim) statTerkirim.innerText = shippedItems + " Unit";
 
         const chartType = window.currentChartType;
 
@@ -2864,7 +2927,6 @@
         if (value === 'YA') { yesBtn.classList.add('selected-yes'); noBtn.classList.remove('selected-no'); } else { yesBtn.classList.remove('selected-yes'); noBtn.classList.add('selected-no'); }
     }
 
-    // --- [PERBAIKAN 6]: Pindahkan unggahan dokumen dari GAS ke Firebase Storage ---
     document.getElementById('spp-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btnSubmit = document.querySelector('.btn-spp'); 
@@ -2961,9 +3023,8 @@
     let productSelection = document.getElementById('internal-product-select').value; 
     if (!productSelection) { alert("Pilih komponen selesai dari list!"); return; }
     
-    let sppAsal = "-"; 
-    const match = productSelection.match(/(.*?)\s\((.*?)\)$/); 
-    if (match) { productSelection = match[1]; sppAsal = match[2]; }
+    let [sppAsal, productClean] = productSelection.split('::');
+    productSelection = productClean;
     
     let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal); 
     if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: true }); 
@@ -2989,9 +3050,8 @@
     let productSelection = document.getElementById('shipment-product-select').value; 
     if (!productSelection) { alert("Pilih produk selesai!"); return; }
     
-    let sppAsal = "-"; 
-    const match = productSelection.match(/(.*?)\s\((.*?)\)$/); 
-    if (match) { productSelection = match[1]; sppAsal = match[2]; }
+    let [sppAsal, productClean] = productSelection.split('::');
+    productSelection = productClean;
     
     let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal); 
     if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: true });
@@ -3036,7 +3096,6 @@
             const timeMs = now.getTime();
             const formattedTime = window.formatDateToString(now);
 
-            // 1. Inject ke Master SPP langsung selesai
             window.dbPushSPP({
                 no: sppNo,
                 datetime: formattedTime,
@@ -3058,7 +3117,6 @@
                 fileUrl: null
             });
 
-            // 2. Inject ke Log Operator langsung selesai
             window.dbPushLog({
                 noSPP: sppNo,
                 noProd: prodNo,
@@ -3080,7 +3138,6 @@
         });
     }
 
-    // 1. Fungsi Saat Operator Memilih No SPP (Auto-fill Data)
     window.handleSppSelection = function() {
         const sppNo = document.getElementById('prod-spp-select').value;
         const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
@@ -3094,14 +3151,12 @@
             return;
         }
 
-        // Auto-fill target durasi & operator berdasarkan kamus produk
         if (PRODUCT_DICTIONARY[matchedSPP.product]) {
             document.getElementById('prod-target-ops').value = PRODUCT_DICTIONARY[matchedSPP.product].ops + " Orang";
             document.getElementById('prod-deadline-val').value = PRODUCT_DICTIONARY[matchedSPP.product].hours;
             document.getElementById('prod-deadline-unit').value = "jam";
         }
 
-        // Kalkulasi sisa waktu (Deadline) secara Real-time
         if (matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
             const timeDiff = matchedSPP.deadlineRawObjectMs - Date.now();
             if (timeDiff > 0) {
@@ -3118,13 +3173,32 @@
             deadlineDisplay.style.color = "var(--emerald-glow)";
         }
 
-        // Perbarui pilihan status (Selesai Tepat, Telat, dll) sesuai sisa waktu
         window.updateConditionDropdown(matchedSPP);
     };
 
-    window.liveCalculationHandler = function() { };
+    window.liveCalculationHandler = function() { 
+        const valInput = document.getElementById('prod-deadline-val').value;
+        const unitInput = document.getElementById('prod-deadline-unit').value;
+        const sppNo = document.getElementById('prod-spp-select').value;
+        const deadlineDisplay = document.getElementById('live-deadline-display');
 
-    // 3. Fungsi Eksekusi & Simpan Laporan Produksi ke Firebase
+        if(!sppNo || !valInput) return;
+
+        const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
+        if(matchedSPP && !matchedSPP.isLocked) {
+            let targetDate = new Date();
+            if(unitInput === 'jam') {
+                targetDate.setHours(targetDate.getHours() + parseInt(valInput));
+            } else {
+                targetDate.setDate(targetDate.getDate() + parseInt(valInput));
+            }
+            
+            const formatted = window.formatDateToString(targetDate);
+            deadlineDisplay.innerHTML = `🔮 Preview Estimasi Selesai: ${formatted}`;
+            deadlineDisplay.style.color = "var(--cyan-glow)";
+        }
+    };
+
     document.getElementById('prod-form').addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -3150,7 +3224,6 @@
         const dateNow = new Date();
         const formattedTimeStr = window.formatDateToString(dateNow);
         
-        // Logika penentuan status akhir
         let statusKirim = "Proses";
         let isSelesai = false;
 
@@ -3161,17 +3234,14 @@
             statusKirim = condition;
         }
 
-        // Kalkulasi Poin Performa Operator untuk Ranking
-        let processPoints = 10; // Poin standar setiap kali update log
-        if (isSelesai) processPoints = 50; // Bonus poin jika selesai
+        let processPoints = 10; 
+        if (isSelesai) processPoints = 50; 
 
-        // Hitung Keterlambatan untuk kebutuhan ranking operator
         let delayMs = 0;
         if (matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
-            delayMs = timeMs - matchedSPP.deadlineRawObjectMs; // (+) Telat, (-) Lebih Awal
+            delayMs = timeMs - matchedSPP.deadlineRawObjectMs; 
         }
 
-        // 3A. Susun data riwayat log operator
         const logData = {
             noSPP: sppNo,
             noProd: noProd,
@@ -3188,17 +3258,14 @@
             msTerlambat: delayMs
         };
 
-        // Kirim data riwayat log ke database
         window.dbPushLog(logData);
 
-        // 3B. Update status dokumen Master SPP yang bersangkutan
         let sppUpdates = {
             lastInputTimeMs: timeMs,
             lastEventTimeFormatted: formattedTimeStr,
             status: statusKirim
         };
 
-        // Kunci timer SPP jika ini adalah laporan pertama kali
         if (!matchedSPP.isLocked && !matchedSPP.isSPL) {
             sppUpdates.isLocked = true;
             sppUpdates.startTimeObjectMs = timeMs;
@@ -3213,10 +3280,8 @@
             sppUpdates.formattedDeadline = window.formatDateToString(calcTarget);
         }
 
-        // Simpan update master SPP
         window.dbUpdateSPP(matchedSPP.firebaseKey, sppUpdates);
 
-        // 3C. Bersihkan formulir setelah terkirim
         this.reset();
         document.getElementById('prod-stage-manual').style.display = 'none';
         window.resetDateTimeInputs();
@@ -3239,7 +3304,7 @@
         const select = document.getElementById('internal-product-select'); select.innerHTML = '<option value="">-- Pilih Komponen --</option>';
         const filteredSPP = window.getFilteredNonSPLSPP(); 
         const produkSelesaiInternal = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped && window.isInternalProduct(i.product));
-        produkSelesaiInternal.forEach(item => { select.innerHTML += `<option value="${item.product} (${item.no})">${item.product} (${item.no})</option>`; });
+        produkSelesaiInternal.forEach(item => { select.innerHTML += `<option value="${item.no}::${item.product}">${item.product} (${item.no})</option>`; });
     }
 
     window.updateWarehouseProductDropdown = function() {
@@ -3258,7 +3323,7 @@
             noProdTambahan = ` - [Prod: ${nomorDepan}]`;
         }
         
-        select.innerHTML += `<option value="${item.product} (${item.no})">${item.product} (${item.no})${noProdTambahan}</option>`; 
+        select.innerHTML += `<option value="${item.no}::${item.product}">${item.product} (${item.no})${noProdTambahan}</option>`; 
     });
 }
     window.renderInternalStockTable = function() {
@@ -3293,13 +3358,15 @@
         tbody.innerHTML = ""; 
         let filteredInternals = window.databaseInternalOut.filter(io => window.isWithinTimeframe(io.rawTimestampMs, document.getElementById('global-time-filter').value));
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
+
         
         if (filteredInternals.length === 0) { 
             tbody.innerHTML = `<tr><td colspan="${isDev ? '6' : '5'}" style="text-align:center; color:var(--text-muted); padding: 30px;">Belum ada riwayat pengambilan barang internal.</td></tr>`; return; 
         }
         filteredInternals.forEach(item => {
-            let delBtn = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editInternalOut('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteInternalOut('${item.firebaseKey}', '${item.spp}')">Batal/Hapus</button></td>` : '';
-            tbody.innerHTML += `<tr style="border-left: 4px solid var(--purple-glow);"><td>${item.time}</td><td><strong>${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>📦 ${item.targetProduct}</b></td><td><span class="badge bg-reguler" style="background:rgba(168,85,247,0.1); color:var(--purple-glow); border-color:#d8b4fe;">Digunakan Produksi</span></td>${delBtn}</tr>`;
+            let amanTarget = window.sanitizeHTML(item.targetProduct);
+            let delBtn = isDev? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editInternalOut('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteInternalOut('${item.firebaseKey}', '${item.spp}')">Batal/Hapus</button></td>` : '';
+            tbody.innerHTML += `<tr style="border-left: 4px solid var(--purple-glow);"><td>${item.time}</td><td><strong>${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>📦 ${amanTarget}</b></td><td><span class="badge bg-reguler" style="background:rgba(168,85,247,0.1); color:var(--purple-glow); border-color:#d8b4fe;">Digunakan Produksi</span></td>${delBtn}</tr>`;
         });
     }
 
@@ -3329,18 +3396,22 @@
         });
     };
 
-window.renderShipmentTable = function() {
+    window.renderShipmentTable = function() {
         const tbody = document.getElementById('shipment-history-body'); tbody.innerHTML = ""; 
         let filteredShips = window.databaseShipment.filter(ship => window.isWithinTimeframe(ship.rawTimestampMs, document.getElementById('global-time-filter').value));
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
         if (filteredShips.length === 0) { tbody.innerHTML = `<tr><td colspan="${isDev ? '7' : '6'}" style="text-align:center; color:var(--text-muted); padding: 30px;">Belum ada riwayat keberangkatan.</td></tr>`; return; }
         filteredShips.forEach(item => {
+            // FIX XSS untuk form pengiriman
+            let amanCarrier = window.sanitizeHTML(item.carrier);
+            let amanCustomer = window.sanitizeHTML(item.customer);
+
             let delBtn = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editShipment('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteShipment('${item.firebaseKey}', '${item.spp}')">Hapus</button></td>` : '';
-            tbody.innerHTML += `<tr style="border-left: 4px solid var(--blue-glow);"><td>${item.time}</td><td><strong>${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>🚚 ${item.carrier}</b></td><td><span style="color: var(--blue-glow); font-weight:700;">🏢 ${item.customer}</span></td><td><span class="badge bg-reguler" style="background:#ccfbf1; color:var(--emerald-glow); border-color:#5eead4;">Dalam Perjalanan</span></td>${delBtn}</tr>`;
+            tbody.innerHTML += `<tr style="border-left: 4px solid var(--blue-glow);"><td>${item.time}</td><td><strong>${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>🚚 ${amanCarrier}</b></td><td><span style="color: var(--blue-glow); font-weight:700;">🏢 ${amanCustomer}</span></td><td><span class="badge bg-reguler" style="background:#ccfbf1; color:var(--emerald-glow); border-color:#5eead4;">Dalam Perjalanan</span></td>${delBtn}</tr>`;
         });
     }
 
-  window.renderSPLTable = function() {
+    window.renderSPLTable = function() {
         const tbody = document.getElementById('spl-history-body'); tbody.innerHTML = ''; 
         let filteredSPP = window.getFilteredSPP(); 
         let onlySPL = filteredSPP.filter(i => i.isSPL);
@@ -3353,7 +3424,7 @@ window.renderShipmentTable = function() {
         });
     }
 
-   window.renderMasterTable = function() {
+    window.renderMasterTable = function() {
         const tbody = document.getElementById('spp-master-body'); 
         tbody.innerHTML = ''; 
         let filteredSPP = window.getFilteredNonSPLSPP(); 
@@ -3448,19 +3519,23 @@ window.renderShipmentTable = function() {
 
             // -> Render Detail Log Operator di bawah Header
             logs.forEach((item) => {
+                // FIX XSS untuk input log operator
+                let amanAktivitas = window.sanitizeHTML(item.aktivitas);
+                let amanReason = window.sanitizeHTML(item.reason);
+
                 let badgeHTML = window.getStatusBadge(item.status);
                 let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
                 
                 tbody.innerHTML += `
                 <tr style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
                     <td><b>${item.operator}</b></td>
-                    <td><span style="color:var(--cyan-glow); font-weight:600;">${item.aktivitas || '-'}</span></td>
+                    <td><span style="color:var(--cyan-glow); font-weight:600;">${amanAktivitas}</span></td>
                     <td><u>${item.condition}</u></td>
                     <td><i>${item.stage}</i></td>
                     <td>${item.time}</td>
                     <td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td>
                     <td>${badgeHTML}</td>
-                    <td><span style="font-weight:700; color:var(--blue-glow);">${item.reason}</span></td>
+                    <td><span style="font-weight:700; color:var(--blue-glow);">${amanReason}</span></td>
                     ${actionBtns}
                 </tr>`;
             });
@@ -3548,7 +3623,18 @@ window.renderShipmentTable = function() {
         else if (choice === '2') { let val = prompt("Nama Produk Baru:"); if(val) updates.product = val.trim(); }
         else if (choice === '3') { let val = prompt("Urgensi Baru:"); if(val) updates.priority = val.trim(); }
         else if (choice === '4') { updates.isLocked = false; updates.deadlineRawObjectMs = null; updates.formattedDeadline = "Belum dimulai"; }
-        else if (choice === '5') { let val = prompt("Format YYYY-MM-DD HH:MM"); if(val) { let d = new Date(val); updates.datetime = window.formatDateToString(d); updates.rawTimestampMs = d.getTime(); } }
+        else if (choice === '5') { 
+            let val = prompt("Format YYYY-MM-DD HH:MM"); 
+            if(val) { 
+                let d = new Date(val); 
+                if (!isNaN(d.getTime())) { // FIX Validasi NaN Master SPP
+                    updates.datetime = window.formatDateToString(d); 
+                    updates.rawTimestampMs = d.getTime(); 
+                } else {
+                    alert("Format tanggal tidak valid!"); return;
+                }
+            } 
+        }
         
         if (Object.keys(updates).length > 0) { window.dbUpdateSPP(firebaseKey, updates); alert("Data berhasil diperbarui!"); }
     }
@@ -3571,7 +3657,18 @@ window.renderShipmentTable = function() {
         else if (choice === '2') { let val = prompt("Kondisi Progres Baru:"); if(val) updates.condition = val.trim(); }
         else if (choice === '3') { let val = prompt("Tahap Produksi Baru:"); if(val) updates.stage = val.trim(); }
         else if (choice === '4') { let val = prompt("No. Produksi Baru:"); if(val) updates.noProd = val.trim(); }
-        else if (choice === '5') { let val = prompt("Format YYYY-MM-DD HH:MM"); if(val) { let d = new Date(val); updates.time = window.formatDateToString(d); updates.timestampMs = d.getTime(); } }
+        else if (choice === '5') { 
+            let val = prompt("Format YYYY-MM-DD HH:MM"); 
+            if(val) { 
+                let d = new Date(val); 
+                if (!isNaN(d.getTime())) { // FIX Validasi NaN Log Operator
+                    updates.time = window.formatDateToString(d); 
+                    updates.timestampMs = d.getTime(); 
+                } else {
+                    alert("Format tanggal tidak valid!"); return;
+                }
+            } 
+        }
         
         if (Object.keys(updates).length > 0) { db.ref('logOperator/' + firebaseKey).update(updates); alert("Data log berhasil diperbarui!"); }
     }
@@ -3619,6 +3716,19 @@ window.renderShipmentTable = function() {
 
     // Panggil sapaan Bee-Boot saat halaman pertama kali dibuka
     window.setLoginGreeting();
+    
+    // Inisialisasi Flatpickr ke semua input tipe datetime agar UI modern berfungsi
+    window.initFlatpickrPlugins = function() {
+        if (typeof flatpickr !== 'undefined') {
+            flatpickr("#spp-date, #spl-date, #prod-datetime, #internal-datetime, #shipment-datetime", {
+                enableTime: true,
+                dateFormat: "Y-m-d\\TH:i",
+                time_24hr: true,
+                theme: "dark"
+            });
+        }
+    };
+    window.initFlatpickrPlugins();
     
 </script>
 </body>
