@@ -56,7 +56,9 @@
         /* --- LOGIN SCREEN & ROBOT --- */
         #login-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; display: var(--login-display, flex); flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
+            background: #000; display: none; /* UBAH KE NONE DEFAULT-NYA */
+            opacity: 0; transition: opacity 0.6s ease-in-out; /* Tambahkan efek transisi */
+            flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
         }
         .login-box {
             background: #111827; padding: 40px; border-radius: 12px; border: 1px solid var(--blue-glow);
@@ -159,7 +161,7 @@
         .stats-card-full { grid-column: span 2; }
         .stat-box { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--panel-border); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; }
         .stat-box::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; opacity: 0.8; }
-        .stat-box.total::after { background: var(--blue-glow); } .stat-box.selesai::after { background: var(--emerald-glow); } .stat-box.proses::after { background: var(--cyan-glow); } .stat-box.pending::after { background: var(--text-muted); } .stat-box.idle::after { background: var(--warning-glow); } .stat-box.stoppage::after { background: var(--danger-glow); }
+        .stat-box.total::after { background: var(--blue-glow); } .stat-box.selesai::after { background: var(--emerald-glow); } .stat-box.proses::after { background: var(--cyan-glow); } .stat-box.pending::after { background: var(--text-muted); } .stat-box.idle::after { background: var(--warning-glow); } .stat-box.stoppage::after { background: var(--danger-glow); } .stat-box.takeover::after { background: var(--purple-glow); }
         .stat-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
         .stat-value { font-size: 28px; font-weight: 800; color: #fff; margin-top: 6px; }
         .chart-panel-box { width: 100%; height: 250px; padding: 5px; }
@@ -226,6 +228,8 @@
         .radio-container { display: flex; gap: 20px; align-items: center; height: 45px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; padding: 0 16px; }
         .radio-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
         .radio-label input[type="radio"] { accent-color: var(--blue-glow); }
+
+        .input-readonly { background: rgba(15,23,42,0.8); cursor: not-allowed; color: var(--text-muted); }
 
         .live-deadline-box { background: rgba(15, 23, 42, 0.6); border: 1px dashed var(--purple-glow); padding: 12px 20px; border-radius: 8px; font-size: 14px; color: #e9d5ff; font-weight: 700; display: flex; align-items: center; gap: 10px; height: 45px; }
         .status-alert-bar { display: none; padding: 14px; border-radius: 8px; font-weight: 700; margin-bottom: 20px; text-align: center; font-size: 14px; }
@@ -553,6 +557,9 @@
                     </tbody>
                 </table>
             </div>
+            <div class="toggle-matrix-container">
+                <button type="button" id="btn-toggle-dev-inject" class="btn-toggle-matrix" onclick="toggleDevInjectView()">🔍 Tampilkan Semua Riwayat</button>
+            </div>
         </div>
         
         <div class="analytics-grid" id="panel-analytics">
@@ -563,7 +570,8 @@
                     <div class="stat-box proses"><span class="stat-label">🔄 Sedang Proses</span><div id="stat-proses" class="stat-value">0</div></div>
                     <div class="stat-box pending"><span class="stat-label">📥 Pending (Antrean)</span><div id="stat-pending" class="stat-value">0</div></div>
                     <div class="stat-box idle"><span class="stat-label">⏳ Terjeda / Lanjut</span><div id="stat-idle" class="stat-value">0</div></div>
-                    <div class="stat-box stoppage" style="grid-column: span 2;"><span class="stat-label">🚨 Stoppage / Takeover</span><div id="stat-stoppage" class="stat-value">0</div></div>
+                    <div class="stat-box stoppage"><span class="stat-label">🚨 Stoppage</span><div id="stat-stoppage" class="stat-value">0</div></div>
+                    <div class="stat-box takeover"><span class="stat-label">⚠️ Takeover</span><div id="stat-takeover" class="stat-value">0</div></div>
                     
                     <div class="stats-card-full">
                         <div class="stat-box total">
@@ -626,7 +634,7 @@
             <div class="header-flex">
                 <h3>📊 Aktual Produk Terbanyak Selesai <span id="matrix-status-badge" class="badge bg-reguler" style="margin-left: 15px; font-size: 10px;">Mode: Top 5</span></h3>
                 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                    <input type="text" id="search-aktual" class="local-search" placeholder="Cari di tabel Aktual Produk..." onkeyup="renderProductActualMatrix()">
+                    <input type="text" id="search-aktual" class="local-search" placeholder="Cari di tabel Aktual Produk..." onkeyup="window.performGlobalSearch()">
                     <button class="btn-minimize" onclick="togglePanel('table-aktual-container', this)">➖ Minimize</button>
                     <button class="btn-export" onclick="exportTableToCSV('product-actual-table', 'Aktual_Produk.csv')">📥 Export Excel</button>
                 </div>
@@ -715,6 +723,11 @@
                         <input type="text" id="prod-aktivitas" placeholder="Ketik detail aktivitas kegiatan saat ini (misal: memotong besi frame, instalasi pompa, running test QC)..." required style="border-color: var(--blue-glow);">
                     </div>
                     
+                    <div class="form-group full-width-group" id="prod-reason-group" style="display: none; border-left: 3px solid var(--danger-glow); padding-left: 10px; margin-top: 10px;">
+                        <label style="color: var(--danger-glow);">🚨 Keterangan Kendala (Wajib diisi karena proses terjeda)</label>
+                        <input type="text" id="prod-reason-input" placeholder="Ketik rincian alasan kenapa idle time, stoppage, atau take over di sini..." style="border-color: var(--danger-glow); background: rgba(244, 63, 94, 0.05);">
+                    </div>
+                    
                     <div class="form-group"><label>📅 Tanggal & Jam Update Lapangan</label><input type="text" id="prod-datetime" required title="Hanya Admin/Dev yang bisa mengubah secara manual"></div>
                     
                     <div class="form-group">
@@ -738,7 +751,7 @@
             <div class="header-flex">
                 <h3>⚡ History 2: Log Aktivitas Operator</h3>
                 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                    <input type="text" id="search-log" class="local-search" placeholder="Cari di tabel Log (misal: nama)..." onkeyup="renderOperatorTable()">
+                    <input type="text" id="search-log" class="local-search" placeholder="Cari di tabel Log (misal: nama)..." onkeyup="window.performGlobalSearch()">
                     <button class="btn-minimize" onclick="togglePanel('table-log-container', this)">➖ Minimize</button>
                     <button class="btn-export" onclick="exportTableToCSV('operator-history-table', 'Log_Operator.csv')">📥 Export Excel</button>
                 </div>
@@ -811,7 +824,7 @@
             <div class="header-flex" style="margin-top: 40px; margin-bottom: 20px; border-bottom-color: rgba(234, 88, 12, 0.2);">
                 <h3 style="color: #f97316 !important;">📋 History Surat Perintah Langsung</h3>
                 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                    <input type="text" id="search-spl" class="local-search" placeholder="Cari khusus di tabel SPL..." onkeyup="renderSPLTable()">
+                    <input type="text" id="search-spl" class="local-search" placeholder="Cari khusus di tabel SPL..." onkeyup="window.performGlobalSearch()">
                     <button class="btn-minimize" onclick="togglePanel('table-spl-container', this)">➖ Minimize</button>
                     <button class="btn-export" style="background: rgba(234, 88, 12, 0.15); color: #f97316; border-color: #fb923c;" onclick="exportTableToCSV('spl-history-table', 'History_SPL.csv')">📥 Export Excel</button>
                 </div>
@@ -820,6 +833,69 @@
                 <table id="spl-history-table">
                     <thead><tr id="spl-history-head"><th>No. SPL</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Penanggung Jawab</th><th>Penerima Tugas</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th></tr></thead>
                     <tbody id="spl-history-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PANEL KHUSUS ADMIN: REKAP DOKUMEN BPMP & LPBHP -->
+        <div class="panel" id="panel-admin-bpmp" style="border-color: var(--blue-glow); display: none;">
+            <h3 style="color: var(--blue-glow) !important; border-bottom: 1px solid rgba(56, 189, 248, 0.2); padding-bottom: 12px;">
+                📑 Rekap Dokumen BPMP & LPBHP (Khusus Admin)
+            </h3>
+            <form id="form-admin-dokumen">
+                <div class="form-group full-width-group" style="margin-bottom: 15px;">
+                    <label style="color: var(--emerald-glow);">Pilih Pekerjaan Produksi yang Sudah Selesai (Otomatis Mengisi Data)</label>
+                    <select id="admin-select-selesai" onchange="window.autoFillAdminDokumen()" required style="border-color: var(--emerald-glow);">
+                        <option value="">-- Klik untuk menampilkan daftar pekerjaan selesai --</option>
+                    </select>
+                </div>
+                <div class="unified-grid">
+                    <div class="form-group"><label>Bulan (Auto)</label><input type="text" id="admin-bulan" readonly class="input-readonly"></div>
+                    <div class="form-group"><label>SPP (Auto)</label><input type="text" id="admin-spp" readonly class="input-readonly"></div>
+                    <div class="form-group"><label>Nomer Produksi (Auto)</label><input type="text" id="admin-noprod" readonly class="input-readonly"></div>
+                    <div class="form-group"><label>Jenis Pekerjaan (Auto)</label><input type="text" id="admin-jenispek" readonly class="input-readonly"></div>
+                    <div class="form-group full-width-group"><label>Jenis Produksi (Auto)</label><input type="text" id="admin-jenisprod" readonly class="input-readonly"></div>
+
+                    <div class="form-group"><label>Tanggal BPMP (Manual)</label><input type="date" id="admin-tglbpmp" required></div>
+                    <div class="form-group"><label>Nomor BPMP (Manual)</label><input type="text" id="admin-nobpmp" placeholder="Ketik No BPMP..." required></div>
+                    <div class="form-group"><label>Tanggal LPBHP (Manual)</label><input type="date" id="admin-tgllpbhp" required></div>
+                    <div class="form-group"><label>Nomor LPBHP (Manual)</label><input type="text" id="admin-nolpbhp" placeholder="Ketik No LPBHP..." required></div>
+                    <div class="form-group full-width-group"><label>QTY</label><input type="number" id="admin-qty" placeholder="Masukkan QTY..." required></div>
+                </div>
+                <button type="submit" class="action-btn" style="background: linear-gradient(135deg, #0284c7, #38bdf8); margin-top: 15px; box-shadow: 0 0 15px rgba(56,189,248,0.4);">
+                    Simpan Ke Rekap Dokumen
+                </button>
+            </form>
+
+            <div class="header-flex" style="margin-top: 40px; margin-bottom: 15px; border-bottom: none; padding-bottom: 0;">
+                <h4 style="color: var(--blue-glow); margin: 0; font-size: 14px; text-transform: uppercase;">📋 Tabel Riwayat Rekap Dokumen</h4>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <select id="export-dokumen-filter" class="local-search" style="min-width: 120px;" onchange="toggleCustomExportDokumen()">
+                        <option value="all" selected>Semua Waktu</option>
+                        <option value="today">Hari Ini</option>
+                        <option value="week">Minggu Ini</option>
+                        <option value="month">Bulan Ini</option>
+                        <option value="year">Tahun Ini</option>
+                        <option value="custom">Pilih Tanggal...</option>
+                    </select>
+                    <div id="custom-export-dokumen-container" style="display:none; align-items:center; gap:5px;">
+                        <input type="date" id="custom-export-start" class="local-search" style="min-width: 110px;"> 
+                        <span style="color:#fff; font-size:12px;">s/d</span> 
+                        <input type="date" id="custom-export-end" class="local-search" style="min-width: 110px;">
+                    </div>
+                    <button class="btn-export" onclick="exportDokumenAdminCSV()">📥 Export Data (CSV)</button>
+                    <button class="btn-export" style="background: linear-gradient(135deg, #f43f5e, #e11d48); color: white; border: none; margin-left: 5px;" onclick="printPDF('admin-dokumen-table', 'Riwayat Dokumen BPMP & LPBHP')">🖨️ Cetak PDF</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table id="admin-dokumen-table">
+                    <thead>
+                        <tr>
+                            <th>Bulan</th><th>SPP</th><th>Tgl BPMP</th><th>No BPMP</th><th>Tgl LPBHP</th><th>No LPBHP</th>
+                            <th>No Produksi</th><th>Jenis Pekerjaan</th><th>Jenis Produksi</th><th>QTY</th><th>Aksi Edit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-dokumen-body"></tbody>
                 </table>
             </div>
         </div>
@@ -915,9 +991,9 @@
                     </div>
 
                     <div class="form-group full-width-group">
-                        <label>Upload Dokumen SPP (Opsional - PDF/Image)</label>
-                        <input type="file" id="spp-file" accept=".pdf, image/png, image/jpeg">
-                        <small style="color:var(--blue-glow); margin-top:5px; font-weight:bold;">File akan diunggah ke Firebase Storage secara otomatis.</small>
+                        <label>Upload Dokumen SPP (Opsional - Khusus PDF)</label>
+                        <input type="file" id="spp-file" accept=".pdf">
+                        <small style="color:var(--blue-glow); margin-top:5px; font-weight:bold;">Hanya menerima file berformat PDF untuk mempercepat proses upload ke server.</small>
                     </div>
                 </div>
                 <button type="submit" class="btn-spp">Submit & Rilis Master SPP</button>
@@ -928,7 +1004,7 @@
             <div class="header-flex">
                 <h3>📋 History 1: Status Master SPP Terbaru</h3>
                 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                    <input type="text" id="search-spp" class="local-search" placeholder="Cari khusus di tabel SPP..." onkeyup="renderMasterTable()">
+                    <input type="text" id="search-spp" class="local-search" placeholder="Cari khusus di tabel SPP..." onkeyup="window.performGlobalSearch()">
                     <button class="btn-minimize" onclick="togglePanel('table-spp-container', this)">➖ Minimize</button>
                     <button class="btn-export" onclick="exportTableToCSV('spp-master-table', 'Master_SPP.csv')">📥 Export Excel</button>
                 </div>
@@ -1029,6 +1105,9 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="toggle-matrix-container">
+                    <button type="button" id="btn-toggle-ready-stock" class="btn-toggle-matrix" onclick="toggleReadyStockView()">🔍 Tampilkan Semua Barang Ready</button>
+                </div>
             </div>
         </div>
 
@@ -1036,7 +1115,7 @@
             <div class="header-flex">
                 <h3>📋 Riwayat Pengiriman & Pengeluaran Barang</h3>
                 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                    <input type="text" id="search-ship" class="local-search" placeholder="Cari di tabel pengiriman..." onkeyup="renderShipmentTable()">
+                    <input type="text" id="search-ship" class="local-search" placeholder="Cari di tabel pengiriman..." onkeyup="window.performGlobalSearch()">
                     <button class="btn-minimize" onclick="togglePanel('table-ship-container', this)">➖ Minimize</button>
                     <button class="btn-export" onclick="exportTableToCSV('shipment-history-table', 'Pengiriman_Barang.csv')">📥 Export Excel</button>
                 </div>
@@ -1046,6 +1125,9 @@
                     <thead><tr id="shipment-history-head"><th>Keberangkatan</th><th>Produk</th><th>No. SPP Asal</th><th>Operator Logistik</th><th>Customer</th><th>Status</th></tr></thead>
                     <tbody id="shipment-history-body"></tbody>
                 </table>
+            </div>
+            <div class="toggle-matrix-container">
+                <button type="button" id="btn-toggle-shipment" class="btn-toggle-matrix" onclick="toggleShipmentView()">🔍 Tampilkan Semua Pengiriman</button>
             </div>
         </div>
     </div>
@@ -1130,12 +1212,16 @@
     window.databaseLogOperator = [];
     window.databaseShipment = [];
     window.databaseInternalOut = []; 
+    window.databaseRekapAdmin = [];
     window.chatMessages = [];
     window.activeTempData = null;
     window.currentSelectedCommitment = "";
     window.globalLineChartInstance = null; 
     window.isMatrixMinimized = true; 
     window.isRankingMinimized = true; 
+    window.isShipmentMinimized = true; 
+    window.isDevInjectMinimized = true;
+    window.isReadyStockMinimized = true;
     window.isTVModeReady = false; 
     window.isMaintenanceActive = false;
     window.maintenanceMessage = "Sistem sedang diperbaiki.";
@@ -1144,7 +1230,95 @@
     window.dynamicPasswords = {};
     window.currentActivePassword = "";
 
-    window.activeOperators = {}; // Tambahkan variabel ini di sini
+    window.activeOperators = {}; 
+
+    // ================================================================
+    // FITUR TEMA HITAM & PUTIH (LIGHT/DARK MODE)
+    // ================================================================
+    const lightThemeStyle = document.createElement('style');
+    lightThemeStyle.innerHTML = `
+        body.light-theme {
+            --bg-main: #f1f5f9;
+            --panel-bg: #ffffff;
+            --panel-border: #cbd5e1;
+            --input-bg: #f8fafc;
+            --input-border: #94a3b8;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --blue-glow: #0284c7;
+            --emerald-glow: #059669;
+            --purple-glow: #7c3aed;
+            --warning-glow: #d97706;
+            --danger-glow: #e11d48;
+            --cyan-glow: #0d9488;
+        }
+        
+        /* Memaksa elemen teks umum berubah warna */
+        body.light-theme .welcome-box h3,
+        body.light-theme .maintenance-box p,
+        body.light-theme .stat-value,
+        body.light-theme .chat-msg,
+        body.light-theme .bee-boot-bubble,
+        body.light-theme .bee-boot-bubble p,
+        body.light-theme .global-search-container input,
+        body.light-theme .local-search,
+        body.light-theme .form-group input, 
+        body.light-theme .form-group select,
+        body.light-theme .radio-label,
+        body.light-theme .user-identity span { 
+            color: var(--text-main) !important; 
+        }
+
+        /* Memaksa inline style putih menjadi teks gelap pada mode terang */
+        body.light-theme [style*="color: #fff"], 
+        body.light-theme [style*="color:#fff"], 
+        body.light-theme [style*="color: white"] {
+            color: var(--text-main) !important;
+        }
+
+        body.light-theme .input-readonly { background: #e2e8f0 !important; color: #0f172a !important; border-color: #cbd5e1 !important; }
+        body.light-theme table th { background: #e2e8f0 !important; color: #0f172a !important; }
+        body.light-theme table td { border-bottom: 1px solid #cbd5e1 !important; color: #0f172a !important; }
+        body.light-theme table { background: #f8fafc !important; color: #0f172a !important; }
+        body.light-theme .stat-box { background: #f8fafc !important; }
+        
+        body.light-theme #main-header { background: linear-gradient(135deg, #ffffff, #f1f5f9) !important; border-color: #cbd5e1 !important; }
+        body.light-theme #main-header h2 { color: #0f172a !important; text-shadow: none !important; }
+        body.light-theme .panel h3 { color: var(--blue-glow) !important; text-shadow: none !important; }
+    `;
+    document.head.appendChild(lightThemeStyle);
+
+    function setupThemeToggle() {
+        if(!document.getElementById('theme-toggle-btn')) {
+            const userIdentityDiv = document.querySelector('.user-identity');
+            if(userIdentityDiv) {
+                const themeBtn = document.createElement('button');
+                themeBtn.id = 'theme-toggle-btn';
+                themeBtn.className = 'btn-action-trigger';
+                themeBtn.style.background = '#e2e8f0';
+                themeBtn.style.color = '#000';
+                themeBtn.style.fontWeight = 'bold';
+                themeBtn.innerHTML = '☀️ Mode Terang';
+                themeBtn.onclick = function() {
+                    document.body.classList.toggle('light-theme');
+                    if(document.body.classList.contains('light-theme')) {
+                        themeBtn.innerHTML = '🌙 Mode Gelap';
+                        themeBtn.style.background = '#1e293b';
+                        themeBtn.style.color = '#fff';
+                    } else {
+                        themeBtn.innerHTML = '☀️ Mode Terang';
+                        themeBtn.style.background = '#e2e8f0';
+                        themeBtn.style.color = '#000';
+                    }
+                    if(window.globalLineChartInstance) {
+                        window.refreshAnalyticsAndChart();
+                    }
+                };
+                userIdentityDiv.appendChild(themeBtn);
+            }
+        }
+    }
+    setTimeout(setupThemeToggle, 2000);
 
     // Aktifkan TV Mode setelah 5 detik agar pesan Bee-boot tidak spam saat muat awal
     setTimeout(() => { window.isTVModeReady = true; }, 5000); 
@@ -1166,48 +1340,16 @@
     };
 
     // --- ARRAY FILTER PRODUK INTERNAL ---
-    const INTERNAL_PRODUCTS = [
-        "FRAME TRO 1500 - 6000 GPD",
-        "FRAME TRO 3000 - 6000 GPD BRX",
-        "FRAME TRO 250 - 800 GPD / E",
-        "FRAME TRO 250 - 800 GPD / R",
-        "FRAME UF 4.0 & 8.0 AD",
-        "FRAME UF 2.0 AD",
-        "FRAME UF 24.0 AD",
-        "FRAME WTP ZOOMBA",
-        "FRAME FLOOR STANDING",
-        "FRAME EF",
-        "FRAME TRO MOBILE MH3",
-        "SAPOT POMPA TANKI",
-        "FRAME UPWS",
-        "HANDLE AQUATECH S.O AD 2.O AD",
-        "HANDLE AQUATECH O.R 2.O AD",
-        "HANDLE AQUATECH M.B 2.O MS"
-    ];
-
-   window.isInternalProduct = function(productName) {
+    window.isInternalProduct = function(productName) {
         if (!productName) return false;
         let name = productName.trim().toUpperCase();
-
-        const EXTERNAL_PANELS = [
-            "PANEL CONDUCTIVITY",
-            "PANEL SISTEM IPAL",
-            "PANEL SISTEM WTP",
-            "PANEL LIFT PUMP",
-            "PANEL SBR",
-            "PANEL SBR PIK"
-        ];
-
-        if (EXTERNAL_PANELS.includes(name)) {
-            return false;
-        }
-
-        if (INTERNAL_PRODUCTS.some(internal => name === internal.trim().toUpperCase())) return true;
         
-        if (name.startsWith("FRAME") || name.startsWith("SAPOT") || name.startsWith("HANDLE") || name.startsWith("PANEL") || name.includes("PRE FILTRATION")) {
+        // Memasukkan semua yang berawalan FRAME atau PART ke dalam stok komponen internal
+        if (name.startsWith("FRAME") || name.startsWith("PART")) {
             return true;
         }
         
+        // Selain kondisi di atas, otomatis masuk ke Stok Produk Eksternal (Ready Kirim)
         return false;
     }
 
@@ -1242,13 +1384,28 @@
             if(window.currentUserRole !== "Guest") window.applyGlobalFilter();
         });
 
+        db.ref('rekapDokumen').on('value', snap => {
+            window.databaseRekapAdmin = [];
+            snap.forEach(child => {
+                let val = child.val();
+                val.firebaseKey = child.key;
+                window.databaseRekapAdmin.push(val);
+            });
+            if(window.currentUserRole === "Admin" || window.currentUserRole.toUpperCase() === "RANDI") {
+                window.renderAdminDokumenTable();
+                window.populateAdminSelectSelesai();
+            }
+        });
+
         db.ref('messages').limitToLast(50).on('value', snap => {
             window.chatMessages = [];
-            snap.forEach(child => { 
-                let data = child.val();
-                data.key = child.key; 
-                window.chatMessages.push(data); 
-            });
+            if(snap.exists()) {
+                snap.forEach(child => { 
+                    let data = child.val();
+                    data.key = child.key; 
+                    window.chatMessages.push(data); 
+                });
+            }
             window.renderChat();
             window.triggerChatNotification();
         });
@@ -1311,6 +1468,7 @@
                     (welcomePopup.style.display === 'none' || welcomePopup.style.display === '')) {
                     mainApp.style.display = 'block';
                     document.getElementById('chat-fab').style.display = 'flex';
+document.getElementById('bee-boot-container').style.display = 'flex';
                 }
             }
         }
@@ -1322,6 +1480,8 @@
         "admin@tirta.com": { role: "Admin", panel: "admin" },
         "manajemen@tirta.com": { role: "Managemen", panel: "viewonly" },
         "gudang@tirta.com": { role: "Gudang", panel: "gudang" },
+        "anto@tirta.com": { role: "Anto", panel: "gudang" },
+        "rizal@tirta.com": { role: "Rizal", panel: "gudang" },
         "tv@tirta.com": { role: "TV Mode", panel: "viewonly" },
         
         "suhendra@tirta.com": { role: "Suhendra", panel: "produksi" },
@@ -1368,6 +1528,8 @@
                 
                 document.getElementById('main-app').style.display = 'block'; 
                 document.getElementById('chat-fab').style.display = 'flex';
+
+		document.getElementById('bee-boot-container').style.display = 'flex';
                 
                 let loader = document.getElementById('fast-loader');
                 if (loader) loader.remove();
@@ -1387,7 +1549,9 @@
             });
             
         } else {
-            document.getElementById('login-screen').style.display = 'flex';
+            const loginScreen = document.getElementById('login-screen');
+            loginScreen.style.display = 'flex';
+            setTimeout(() => { loginScreen.style.opacity = '1'; }, 50);
         }
     });
 
@@ -1415,7 +1579,7 @@
                 let loader = document.getElementById('fast-loader');
                 if (loader) loader.remove();
 
-                let userFound = userRoles[inputEmail] || { role: "Guest", panel: "viewonly" };
+                let userFound = userRoles[inputEmail.toLowerCase()] || { role: "Guest", panel: "viewonly" };
                 window.currentUserRole = userFound.role;
                 window.currentUserAccess = userFound.panel;
                 
@@ -1563,18 +1727,23 @@
 
         configs.forEach(conf => {
             const tbody = document.getElementById(conf.tbody);
-            if(tbody) {
-                const lq = document.getElementById(conf.localInput) ? document.getElementById(conf.localInput).value.toLowerCase() : "";
+            const inputEl = document.getElementById(conf.localInput);
+            if(tbody && inputEl) {
+                const lq = inputEl.value.toLowerCase().trim();
                 const rows = tbody.getElementsByTagName('tr');
                 
                 for(let i=0; i < rows.length; i++) {
-                    if(rows[i].cells.length <= 1 || rows[i].id === 'empty-inbox-row' || rows[i].textContent.toLowerCase().includes("data kosong")) continue;
+                    if(rows[i].cells.length <= 1 || rows[i].id === 'empty-inbox-row' || rows[i].textContent.toLowerCase().includes("belum ada")) continue;
                     
-                    const textContent = rows[i].textContent.toLowerCase();
-                    if(textContent.includes(lq)) {
-                        rows[i].style.display = '';
+                    if (lq === "") {
+                        rows[i].style.display = ''; 
                     } else {
-                        rows[i].style.display = 'none';
+                        const textContent = rows[i].textContent.toLowerCase();
+                        if(textContent.includes(lq)) {
+                            rows[i].style.display = '';
+                        } else {
+                            rows[i].style.display = 'none';
+                        }
                     }
                 }
             }
@@ -1657,7 +1826,6 @@
     window.currentUserAccess = "all";
     let autoScrollInterval = null;
 
-    // --- [PERBAIKAN 4]: XSS Protection Global ---
     window.sanitizeHTML = function(str) {
         if (!str) return "-";
         let div = document.createElement('div');
@@ -1800,6 +1968,21 @@
             conditionSelect.value = currentVal;
         } else { conditionSelect.value = "Normal"; }
     };
+    
+    document.getElementById('prod-condition').addEventListener('change', function() {
+        const val = this.value;
+        const reasonGroup = document.getElementById('prod-reason-group');
+        const reasonInput = document.getElementById('prod-reason-input');
+        
+        if (['Idle Time', 'Stoppage', 'Takeover'].includes(val)) {
+            reasonGroup.style.display = 'block';
+            reasonInput.setAttribute('required', 'true');
+        } else {
+            reasonGroup.style.display = 'none';
+            reasonInput.removeAttribute('required');
+            reasonInput.value = '';
+        }
+    });
 
     window.closeWelcome = function() {
         document.getElementById('welcome-popup').style.display = 'none';
@@ -1876,7 +2059,7 @@
         });
         document.getElementById('panel-monitoring').style.display = 'flex'; 
         document.getElementById('panel-analytics').style.display = 'grid';
-
+    
         const isGudang = (window.currentUserAccess === "gudang");
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
         const isAdmin = (window.currentUserRole === "Admin");
@@ -1886,9 +2069,9 @@
             let el = document.getElementById('panel-internal-produksi');
             if(el) el.style.display = 'none';
         }
-
+    
         let prodDateEl = document.getElementById('prod-datetime');
-
+    
         if(window.currentUserAccess === "produksi") { 
             ['panel-analytics','panel-aktual','panel-ranking','panel-surat-perintah','panel-input-spp','panel-history-spp','panel-input-shipment','panel-history-shipment'].forEach(id=> {
                 let el = document.getElementById(id);
@@ -1898,8 +2081,11 @@
             if (prodDateEl) {
                 prodDateEl.style.pointerEvents = 'none';
                 prodDateEl.style.background = '#1e293b';
+                prodDateEl.value = "Otomatis Mengikuti Sistem Waktu Aktual";
                 prodDateEl.setAttribute('readonly', 'true');
-                if (prodDateEl._flatpickr) prodDateEl._flatpickr.set("clickOpens", false);
+                if (prodDateEl._flatpickr) {
+                    prodDateEl._flatpickr.destroy(); 
+                }
             }
         } else {
             if (prodDateEl) {
@@ -1909,23 +2095,27 @@
                 if (prodDateEl._flatpickr) prodDateEl._flatpickr.set("clickOpens", true);
             }
         }
-
+    
+        const adminBpmpPanel = document.getElementById('panel-admin-bpmp');
+        if (adminBpmpPanel) {
+            adminBpmpPanel.style.display = (isAdmin || isDev) ? 'block' : 'none';
+        }
+    
         window.updateConditionDropdown(null);
-
+    
         document.getElementById('spl-history-head').innerHTML = `<th>No. SPL</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Penanggung Jawab</th><th>Penerima Tugas</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('shipment-history-head').innerHTML = `<th>Keberangkatan</th><th>Produk</th><th>No. SPP Asal</th><th>Operator Logistik</th><th>Customer</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('operator-history-head').innerHTML = `<th>Nama Operator</th><th>Aktivitas Kegiatan</th><th>Kondisi Progres</th><th>Tahap Produksi</th><th>Waktu Input</th><th>Target Deadline</th><th>Status Hasil</th><th>Keterangan / Poin Tambahan</th>${isDev ? '<th>Aksi</th>' : ''}`;
-
-	document.getElementById('internal-history-head').innerHTML = `<th>Waktu Pengambilan</th><th>Komponen</th><th>No. SPP Asal</th><th>Tujuan Produk</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
+        document.getElementById('internal-history-head').innerHTML = `<th>Waktu Pengambilan</th><th>Komponen</th><th>No. SPP Asal</th><th>Tujuan Produk</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('spp-master-head').innerHTML = `<th>No. SPP & Tgl Rilis</th><th>No. Produksi</th><th>Nama Produk</th><th>Tim Operator</th><th>Target Waktu</th><th>Urgensi</th><th>Status Terkini</th>${showDocCol ? '<th>Dokumen</th>' : ''}${isDev ? '<th>Aksi</th>' : ''}`;
-
+    
         const acc = window.currentUserAccess;
         if(acc === "viewonly") { 
             ['panel-surat-perintah','panel-input-spp','panel-internal-produksi','panel-input-shipment','panel-input-prod'].forEach(id=>document.getElementById(id).style.display='none');
         } else if(acc === "mw") { 
             ['panel-input-spp','panel-internal-produksi','panel-input-shipment','panel-input-prod'].forEach(id=>document.getElementById(id).style.display='none');
         } else if(acc === "gudang") { 
-            ['panel-analytics','panel-aktual','panel-inbox','panel-monitoring','panel-input-prod','panel-history-prod','panel-ranking','panel-surat-perintah'].forEach(id=>document.getElementById(id).style.display='none');
+            ['panel-analytics','panel-aktual','panel-inbox','panel-monitoring','panel-input-prod','panel-history-prod','panel-ranking'].forEach(id=>document.getElementById(id).style.display='none');
         } else if(acc === "admin") { 
             ['panel-surat-perintah','panel-input-spp','panel-internal-produksi','panel-input-shipment','panel-input-prod'].forEach(id=>document.getElementById(id).style.display='none');
         }
@@ -2089,54 +2279,61 @@
         if(window.isBeeBootTyping) return; document.getElementById('bee-boot-actions').innerHTML = '';
         
         const filteredSPP = window.getFilteredNonSPLSPP();
-        const filteredShipments = window.databaseShipment.filter(ship => window.isWithinTimeframe(ship.rawTimestampMs, document.getElementById('global-time-filter').value));
 
         const totalSPP = filteredSPP.length; 
         const completedItems = filteredSPP.filter(i => ['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status));
         const selesai = completedItems.length;
         const persentase = totalSPP === 0 ? 0 : Math.round((selesai / totalSPP) * 100);
         
-        let selesaiMap = {};
-        completedItems.forEach(i => { selesaiMap[i.product] = (selesaiMap[i.product] || 0) + 1; });
-        let selesaiTextHTML = "";
-        if (selesai > 0) {
-            selesaiTextHTML = Object.entries(selesaiMap).map(([prod, count]) => `• ${prod} : <b style="color:var(--emerald-glow)">${count} Unit</b>`).join("<br>");
-        } else {
-            selesaiTextHTML = "<i style='color:var(--text-muted)'>Belum ada produk selesai.</i>";
-        }
+        const proses = filteredSPP.filter(i => i.status === 'Proses').length;
+        const pending = filteredSPP.filter(i => i.status === 'Pending').length;
+        const terjeda = filteredSPP.filter(i => ['Idle Time', 'Lanjutkan Besok'].includes(i.status)).length;
+        const stoppage = filteredSPP.filter(i => i.status === 'Stoppage').length;
+        const takeover = filteredSPP.filter(i => i.status === 'Takeover').length;
+        
+        const readyItems = filteredSPP.filter(i => ['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status) && !i.isShipped);
+        const ready = readyItems.length;
+        
+        const terkirimItems = filteredSPP.filter(i => i.isShipped);
+        const terkirim = terkirimItems.length;
+        
+        // Hitung Barang Ready (Gudang)
+        let readyMap = {};
+        readyItems.forEach(i => { readyMap[i.product] = (readyMap[i.product] || 0) + 1; });
+        let readyTextHTML = ready > 0 ? Object.entries(readyMap).map(([prod, count]) => `• ${prod} : <b style="color:var(--emerald-glow)">${count} Unit</b>`).join("<br>") : "<i style='color:var(--text-muted)'>Belum ada barang tersedia di Gudang.</i>";
 
+        // Hitung Barang Terkirim
+        let terkirimMap = {};
+        terkirimItems.forEach(i => { terkirimMap[i.product] = (terkirimMap[i.product] || 0) + 1; });
+        let terkirimTextHTML = terkirim > 0 ? Object.entries(terkirimMap).map(([prod, count]) => `• ${prod} : <b style="color:var(--cyan-glow)">${count} Unit</b>`).join("<br>") : "<i style='color:var(--text-muted)'>Belum ada barang terkirim.</i>";
+
+        // Hitung Pending/Menggantung
         const activeSPPList = filteredSPP.filter(i => !['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status));
         let pendingTextHTML = "<span style='color:var(--emerald-glow)'>Semua SPP telah berhasil diselesaikan! Gudang aman.</span>";
         if(activeSPPList.length > 0) {
             pendingTextHTML = activeSPPList.map(s => `• <b>${s.no}</b>: ${s.product} <i style="color:var(--warning-glow)">(${s.status})</i>`).join("<br>");
         }
 
-        let shippedCount = filteredShipments.length;
-        let shippedTextHTML = "";
-        if (shippedCount > 0) {
-            shippedTextHTML = filteredShipments.map(s => `• ${s.product} ➔ <b style="color:var(--cyan-glow)">${s.customer}</b> (Kurir: ${s.carrier})`).join("<br><br>");
-        } else {
-            shippedTextHTML = "<i style='color:var(--text-muted)'>Belum ada riwayat pengiriman barang.</i>";
-        }
-
-        const text = `<div style="text-align:left; font-size:12px; max-height:220px; overflow-y:auto; color:#fff; padding-right:5px;">
+        const text = `<div style="text-align:left; font-size:12px; max-height:220px; overflow-y:auto; color:var(--text-main); padding-right:5px;">
             <b style="color:var(--blue-glow); font-size:14px;">📊 ANALISA DATA MENYELURUH:</b><hr style="border-color:#38bdf8;">
-            <b>1. Efisiensi Produksi:</b><br>Tingkat penyelesaian SPP adalah <b style="color:var(--emerald-glow); font-size:14px;">${persentase}%</b> (${selesai} dari ${totalSPP} SPP selesai).<br><br>
+            <b>1. Efisiensi Produksi:</b><br>
+            Tingkat penyelesaian SPP adalah <b style="color:var(--emerald-glow); font-size:14px;">${persentase}%</b> (${selesai} dari ${totalSPP} SPP selesai).<br>
+            Sedang proses: <b>${proses}</b>, Pending: <b>${pending}</b>, Terjeda: <b>${terjeda}</b>, Stoppage: <b>${stoppage}</b>, Takeover: <b>${takeover}</b>.<br>
+            Total barang ready: <b style="color:var(--emerald-glow);">${ready}</b>, Total barang terkirim: <b style="color:var(--cyan-glow);">${terkirim}</b>.<br><br>
             
-            <b>2. Total Produk Selesai:</b><br>
+            <b>2. Laporan Barang Tersedia di Gudang:</b><br>
             <div style="background: rgba(16,185,129,0.1); padding:8px; border-radius:6px; border:1px solid rgba(16,185,129,0.3); margin-top:5px; margin-bottom:10px;">
-                ${selesaiTextHTML}
+                ${readyTextHTML}
             </div>
             
-            <b>3. Pekerjaan Menggantung (Belum Selesai):</b><br>
+            <b>3. Laporan Barang Terkirim:</b><br>
+            <div style="background: rgba(14,213,192,0.1); padding:8px; border-radius:6px; border:1px solid rgba(14,213,192,0.3); margin-top:5px; margin-bottom:10px;">
+                ${terkirimTextHTML}
+            </div>
+
+            <b>4. Pekerjaan Menggantung (Belum Selesai):</b><br>
             <div style="background: rgba(244,63,94,0.1); padding:8px; border-radius:6px; border:1px solid rgba(244,63,94,0.3); margin-top:5px; margin-bottom:10px;">
                 ${pendingTextHTML}
-            </div>
-            
-            <b>4. Status Logistik & Pengiriman:</b><br>
-            Terdapat <b>${shippedCount}</b> unit yang telah dikirim keluar.<br>
-            <div style="background: rgba(56,189,248,0.1); padding:8px; border-radius:6px; border:1px solid rgba(56,189,248,0.3); margin-top:5px; margin-bottom:10px;">
-                ${shippedTextHTML}
             </div>
             
             <i style="color:var(--text-muted); font-size:11px;">Analitik ini bersifat real-time berdasarkan filter waktu di atas.</i>
@@ -2147,21 +2344,31 @@
 
     window.beeShowDynamicStatsTV = function() {
         const filteredSPP = window.getFilteredNonSPLSPP();
-        const filteredShipments = window.databaseShipment.filter(ship => window.isWithinTimeframe(ship.rawTimestampMs, document.getElementById('global-time-filter').value));
 
         const totalSPP = filteredSPP.length; 
         const completedItems = filteredSPP.filter(i => ['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status));
         const selesai = completedItems.length;
         const persentase = totalSPP === 0 ? 0 : Math.round((selesai / totalSPP) * 100);
         
-        let selesaiMap = {};
-        completedItems.forEach(i => { selesaiMap[i.product] = (selesaiMap[i.product] || 0) + 1; });
-        let selesaiTextHTML = "";
-        if (selesai > 0) {
-            selesaiTextHTML = Object.entries(selesaiMap).map(([prod, count]) => `• ${prod} : <b style="color:var(--emerald-glow)">${count} Unit</b>`).join("<br>");
-        } else {
-            selesaiTextHTML = "<i style='color:var(--text-muted)'>Belum ada produk selesai.</i>";
-        }
+        const proses = filteredSPP.filter(i => i.status === 'Proses').length;
+        const pending = filteredSPP.filter(i => i.status === 'Pending').length;
+        const terjeda = filteredSPP.filter(i => ['Idle Time', 'Lanjutkan Besok'].includes(i.status)).length;
+        const stoppage = filteredSPP.filter(i => i.status === 'Stoppage').length;
+        const takeover = filteredSPP.filter(i => i.status === 'Takeover').length;
+        
+        const readyItems = filteredSPP.filter(i => ['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status) && !i.isShipped);
+        const ready = readyItems.length;
+        
+        const terkirimItems = filteredSPP.filter(i => i.isShipped);
+        const terkirim = terkirimItems.length;
+        
+        let readyMap = {};
+        readyItems.forEach(i => { readyMap[i.product] = (readyMap[i.product] || 0) + 1; });
+        let readyTextHTML = ready > 0 ? Object.entries(readyMap).map(([prod, count]) => `• ${prod} : <b style="color:var(--emerald-glow)">${count} Unit</b>`).join("<br>") : "<i style='color:var(--text-muted)'>Belum ada barang tersedia di Gudang.</i>";
+
+        let terkirimMap = {};
+        terkirimItems.forEach(i => { terkirimMap[i.product] = (terkirimMap[i.product] || 0) + 1; });
+        let terkirimTextHTML = terkirim > 0 ? Object.entries(terkirimMap).map(([prod, count]) => `• ${prod} : <b style="color:var(--cyan-glow)">${count} Unit</b>`).join("<br>") : "<i style='color:var(--text-muted)'>Belum ada barang terkirim.</i>";
 
         const activeSPPList = filteredSPP.filter(i => !['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status));
         let pendingTextHTML = "<span style='color:var(--emerald-glow)'>Semua SPP telah berhasil diselesaikan! Gudang aman.</span>";
@@ -2169,31 +2376,25 @@
             pendingTextHTML = activeSPPList.map(s => `• <b>${s.no}</b>: ${s.product} <i style="color:var(--warning-glow)">(${s.status})</i>`).join("<br>");
         }
 
-        let shippedCount = filteredShipments.length;
-        let shippedTextHTML = "";
-        if (shippedCount > 0) {
-            shippedTextHTML = filteredShipments.map(s => `• ${s.product} ➔ <b style="color:var(--cyan-glow)">${s.customer}</b>`).join("<br><br>");
-        } else {
-            shippedTextHTML = "<i style='color:var(--text-muted)'>Belum ada riwayat pengiriman barang.</i>";
-        }
-
-        const text = `<div style="text-align:left; font-size:12px; max-height:220px; overflow-y:auto; color:#fff; padding-right:5px;">
+        const text = `<div style="text-align:left; font-size:12px; max-height:220px; overflow-y:auto; color:var(--text-main); padding-right:5px;">
             <b style="color:var(--blue-glow); font-size:14px;">📊 REKAPITULASI REAL-TIME:</b><hr style="border-color:#38bdf8;">
-            <b>1. Efisiensi Produksi:</b> <b style="color:var(--emerald-glow); font-size:14px;">${persentase}%</b> (${selesai} dari ${totalSPP} selesai).<br><br>
+            <b>1. Efisiensi Produksi:</b> <b style="color:var(--emerald-glow); font-size:14px;">${persentase}%</b> (${selesai} dari ${totalSPP} selesai).<br>
+            Sedang proses: <b>${proses}</b>, Pending: <b>${pending}</b>, Terjeda: <b>${terjeda}</b>, Stoppage: <b>${stoppage}</b>, Takeover: <b>${takeover}</b>.<br>
+            Total barang ready: <b style="color:var(--emerald-glow);">${ready}</b>, Total barang terkirim: <b style="color:var(--cyan-glow);">${terkirim}</b>.<br><br>
             
-            <b>2. Total Selesai:</b><br>
+            <b>2. Laporan Barang Tersedia:</b><br>
             <div style="background: rgba(16,185,129,0.1); padding:8px; border-radius:6px; border:1px solid rgba(16,185,129,0.3); margin-top:5px; margin-bottom:10px;">
-                ${selesaiTextHTML}
+                ${readyTextHTML}
             </div>
             
-            <b>3. Masih Proses/Pending:</b><br>
+            <b>3. Laporan Barang Terkirim:</b><br>
+            <div style="background: rgba(14,213,192,0.1); padding:8px; border-radius:6px; border:1px solid rgba(14,213,192,0.3); margin-top:5px; margin-bottom:10px;">
+                ${terkirimTextHTML}
+            </div>
+
+            <b>4. Masih Proses/Pending:</b><br>
             <div style="background: rgba(244,63,94,0.1); padding:8px; border-radius:6px; border:1px solid rgba(244,63,94,0.3); margin-top:5px; margin-bottom:10px;">
                 ${pendingTextHTML}
-            </div>
-            
-            <b>4. Logistik Ekspedisi Keluar:</b><br>
-            <div style="background: rgba(56,189,248,0.1); padding:8px; border-radius:6px; border:1px solid rgba(56,189,248,0.3); margin-top:5px; margin-bottom:10px;">
-                ${shippedTextHTML}
             </div>
             </div>`;
             
@@ -2561,6 +2762,12 @@
         document.getElementById('custom-date-container').style.display = val === 'custom' ? 'flex' : 'none'; window.applyGlobalFilter();
     }
 
+    window.toggleCustomExportDokumen = function() {
+        const val = document.getElementById('export-dokumen-filter').value;
+        document.getElementById('custom-export-dokumen-container').style.display = val === 'custom' ? 'flex' : 'none';
+        window.renderAdminDokumenTable();
+    }
+
     window.applyGlobalFilter = function() {
         window.refreshAnalyticsAndChart(); 
         window.renderProductActualMatrix(); 
@@ -2581,7 +2788,14 @@
         window.calculateAndRenderRanking();
         window.renderDevInjectTable(); 
         window.renderOperatorTable();
-    
+        
+        if (typeof window.populateAdminSelectSelesai === "function") {
+            window.populateAdminSelectSelesai();
+        }
+        if (typeof window.renderAdminDokumenTable === "function") {
+            window.renderAdminDokumenTable();
+        }
+  	
         setTimeout(() => { window.performGlobalSearch(); }, 150);
     }
 
@@ -2591,6 +2805,7 @@
         if (filter === 'today') return d.toDateString() === now.toDateString();
         else if (filter === 'week') { const start = new Date(now.setDate(now.getDate() - now.getDay())); start.setHours(0,0,0,0); return d >= start; } 
         else if (filter === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        else if (filter === 'year') return d.getFullYear() === now.getFullYear();
         else if (filter === 'custom') {
             const startD = document.getElementById('custom-start-date').value; const endD = document.getElementById('custom-end-date').value;
             if(!startD || !endD) return true; const st = new Date(startD).setHours(0,0,0,0); const en = new Date(endD).setHours(23,59,59,999);
@@ -2625,7 +2840,6 @@
         return `${day}.${month}.${year} Jam ${hours}:${minutes}`;
     }
 
-    // --- [PERBAIKAN 5]: Notifikasi WhatsApp Dinamis berdasarkan operator ---
     const operatorPhones = {
         "Suhendra": "6287732761073",
         "Hario Rizki Ardhana": "6289631842047",
@@ -2675,7 +2889,7 @@
         const canvas = document.getElementById('sppTrendLineChart');
         if(!canvas) return;
         const ctx = canvas.getContext('2d');
-        window.globalLineChartInstance = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: {weight: 'bold'} } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', stepSize: 1, font: {weight: 'bold'} }, beginAtZero: true } }, plugins: { legend: { labels: { color: '#f8fafc', font: { size: 12, weight: 'bold' } } } } } });
+        window.globalLineChartInstance = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: {weight: 'bold'} } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', stepSize: 1, font: {weight: 'bold'} }, beginAtZero: true } }, plugins: { legend: { labels: { color: document.body.classList.contains('light-theme') ? '#0f172a' : '#f8fafc', font: { size: 12, weight: 'bold' } } } } } });
     }
 
     window.currentChartType = 'line';
@@ -2697,7 +2911,11 @@
         document.getElementById('stat-selesai').innerText = selesaiSPP;
         
         document.getElementById('stat-idle').innerText = filteredSPP.filter(i => ['Idle Time', 'Lanjutkan Besok'].includes(i.status)).length;
-        document.getElementById('stat-stoppage').innerText = filteredSPP.filter(i => ['Stoppage', 'Takeover'].includes(i.status)).length;
+        
+        // PISAHAN STOPPAGE & TAKEOVER
+        document.getElementById('stat-stoppage').innerText = filteredSPP.filter(i => i.status === 'Stoppage').length;
+        document.getElementById('stat-takeover').innerText = filteredSPP.filter(i => i.status === 'Takeover').length;
+        
         document.getElementById('stat-pending').innerText = filteredSPP.filter(i => i.status === 'Pending').length;
         document.getElementById('stat-proses').innerText = filteredSPP.filter(i => i.status === 'Proses').length;
         
@@ -2714,6 +2932,7 @@
         if(statTerkirim) statTerkirim.innerText = shippedItems + " Unit";
 
         const chartType = window.currentChartType;
+        const legendColor = document.body.classList.contains('light-theme') ? '#0f172a' : '#f8fafc';
 
         if (chartType === 'pie') {
             const productCount = {};
@@ -2736,7 +2955,7 @@
                     labels: labels,
                     datasets: [{ data: data, backgroundColor: ['#10b981','#38bdf8','#fbbf24','#a855f7','#f43f5e','#0ed5c0','#84cc16','#f97316'] }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#f8fafc' } } } }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: legendColor, font: { size: 12, weight: 'bold' } } } } }
             });
         } else {
             let dailyDataMap = {};
@@ -2781,7 +3000,7 @@
                         x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
                         y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', stepSize: 1 } }
                     },
-                    plugins: { legend: { labels: { color: '#f8fafc' } } }
+                    plugins: { legend: { labels: { color: legendColor, font: { size: 12, weight: 'bold' } } } }
                 }
             });
         }
@@ -2795,7 +3014,7 @@
         produkUnik.forEach(namaProduk => {
             let listSppProduk = filteredSPP.filter(s => s.product === namaProduk); let totalUnit = listSppProduk.length; let noProductionList = [];
             filteredLogs.forEach(log => { let sMatched = listSppProduk.find(s => s.no === log.noSPP); if (sMatched && log.noProd && log.noProd !== "-" && !noProductionList.includes(log.noProd)) noProductionList.push(log.noProd); });
-            let stringNoProd = noProductionList.length > 0 ? noProductionList.join(", ") : "-";
+            let stringNoProd = noProductionList.length > 0 ? `<details><summary style="cursor:pointer; color:var(--blue-glow); font-size:11px;">Lihat No. Prod</summary><code style="color:var(--blue-glow); font-weight:bold; font-size:11px;">${noProductionList.join(", ")}</code></details>` : "-";
             let jmlSelesai = listSppProduk.filter(s => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(s.status) && !s.isShipped).length;
             let unitKeluar = listSppProduk.filter(s => s.isShipped).length; 
             dataMatriks.push({ namaProduk, totalUnit, stringNoProd, jmlSelesai, unitKeluar });
@@ -2805,7 +3024,7 @@
         if (window.isMatrixMinimized) dataJadi = dataJadi.slice(0, 5);
         const tbody = document.getElementById('product-actual-body'); tbody.innerHTML = "";
         if(dataJadi.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 25px; color: var(--text-muted);">Belum ada produk yang selesai diproduksi.</td></tr>`; return; }
-        dataJadi.forEach(item => { tbody.innerHTML += `<tr><td><strong>${item.namaProduk}</strong></td><td><span class="badge bg-reguler">${item.totalUnit} Unit Total</span></td><td><code style="color:var(--blue-glow); font-weight:bold;">${item.stringNoProd}</code></td><td><span style="color:var(--emerald-glow); font-weight:800;">${item.jmlSelesai} (Di Gudang)</span></td><td><b style="color:var(--cyan-glow); background:rgba(14,213,192,0.1); padding:4px 10px; border-radius:4px; border:1px solid rgba(14,213,192,0.3);">📦 ${item.unitKeluar} Digunakan/Dikirim</b></td></tr>`; });
+        dataJadi.forEach(item => { tbody.innerHTML += `<tr><td><strong>${item.namaProduk}</strong></td><td><span class="badge bg-reguler">${item.totalUnit} Unit Total</span></td><td>${item.stringNoProd}</td><td><span style="color:var(--emerald-glow); font-weight:800;">${item.jmlSelesai} (Di Gudang)</span></td><td><b style="color:var(--cyan-glow); background:rgba(14,213,192,0.1); padding:4px 10px; border-radius:4px; border:1px solid rgba(14,213,192,0.3);">📦 ${item.unitKeluar} Digunakan/Dikirim</b></td></tr>`; });
     };
 
     window.renderWarehouseInbox = function() {
@@ -2823,6 +3042,20 @@
         });
     };
 
+    window.toggleDevInjectView = function() {
+        window.isDevInjectMinimized = !window.isDevInjectMinimized;
+        const btn = document.getElementById('btn-toggle-dev-inject');
+        btn.innerHTML = window.isDevInjectMinimized ? "🔍 Tampilkan Semua Riwayat" : "🗜️ Sembunyikan Detail";
+        window.renderDevInjectTable();
+    }
+
+    window.toggleReadyStockView = function() {
+        window.isReadyStockMinimized = !window.isReadyStockMinimized;
+        const btn = document.getElementById('btn-toggle-ready-stock');
+        btn.innerHTML = window.isReadyStockMinimized ? "🔍 Tampilkan Semua Barang Ready" : "🗜️ Sembunyikan Detail";
+        window.renderReadyStockTable();
+    }
+
     window.toggleProductMatrixView = function() {
         window.isMatrixMinimized = !window.isMatrixMinimized;
         const btn = document.getElementById('btn-toggle-view'); const badge = document.getElementById('matrix-status-badge');
@@ -2837,6 +3070,14 @@
         if (window.isRankingMinimized) { btn.innerHTML = "🔍 Tampilkan Semua Operator Aktif"; badge.innerHTML = "Mode: Top 5 Operator Aktif"; badge.className = "badge bg-reguler"; } 
         else { btn.innerHTML = "🗜️ Sembunyikan Operator"; badge.innerHTML = "Mode: Semua Operator Aktif Tampil"; badge.className = "badge bg-buffer"; }
         window.calculateAndRenderRanking();
+    }
+
+    window.toggleShipmentView = function() {
+        window.isShipmentMinimized = !window.isShipmentMinimized;
+        const btn = document.getElementById('btn-toggle-shipment');
+        if (window.isShipmentMinimized) { btn.innerHTML = "🔍 Tampilkan Semua Pengiriman"; } 
+        else { btn.innerHTML = "🗜️ Sembunyikan Detail"; }
+        window.renderShipmentTable();
     }
 
     window.calculateAndRenderRanking = function() {
@@ -3047,40 +3288,41 @@
     
     this.reset(); 
     window.resetDateTimeInputs();
-    alert("Berhasil! Komponen telah ditarik ke area produksi perakitan.");
-});
-   document.getElementById('shipment-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    let productSelection = document.getElementById('shipment-product-select').value; 
-    if (!productSelection) { alert("Pilih produk selesai!"); return; }
-    
-    let [sppAsal, productClean] = productSelection.split('::');
-    productSelection = productClean;
-    
-    let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal); 
-    if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: true });
-    
-    const carrierElement = document.getElementById('shipment-carrier'); 
-    let carrier = carrierElement.value; 
-    if (carrier === 'other') carrier = document.getElementById('shipment-carrier-manual').value || "Logistik Manual";
-    
-    const rawTime = new Date(document.getElementById('shipment-datetime').value); 
-    
-    if (isNaN(rawTime.getTime())) {
-        alert("Format waktu keberangkatan tidak valid! Silakan pilih ulang tanggal dan jam.");
-        return;
-    }
-    
-    const formattedTime = window.formatDateToString(rawTime); 
-    const customer = document.getElementById('shipment-customer').value;
-    
-    window.dbPushShipment({ time: formattedTime, rawTimestampMs: rawTime.getTime(), product: productSelection, spp: sppAsal, operatorReceiver: "-", carrier: carrier, customer: customer });
-    
-    this.reset(); 
-    document.getElementById('shipment-carrier-manual').style.display = "none"; 
-    window.resetDateTimeInputs();
-    alert("Terimakasih data yang sudah anda berikan akan terekam di log history gudang");
-});
+        alert("Berhasil! Komponen telah ditarik ke area produksi perakitan.");
+    });
+
+    document.getElementById('shipment-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        let productSelection = document.getElementById('shipment-product-select').value; 
+        if (!productSelection) { alert("Pilih produk selesai!"); return; }
+        
+        let [sppAsal, productClean] = productSelection.split('::');
+        productSelection = productClean;
+        
+        let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal); 
+        if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: true });
+       const carrierElement = document.getElementById('shipment-carrier'); 
+        let carrier = carrierElement.value; 
+        if (carrier === 'other') carrier = document.getElementById('shipment-carrier-manual').value || "Logistik Manual";
+        
+        const rawTime = new Date(document.getElementById('shipment-datetime').value); 
+        
+        if (isNaN(rawTime.getTime())) {
+            alert("Format waktu keberangkatan tidak valid! Silakan pilih ulang tanggal dan jam.");
+            return;
+        }
+        
+        const formattedTime = window.formatDateToString(rawTime); 
+        const customer = document.getElementById('shipment-customer').value;
+        
+        window.dbPushShipment({ time: formattedTime, rawTimestampMs: rawTime.getTime(), product: productSelection, spp: sppAsal, operatorReceiver: "-", carrier: carrier, customer: customer });
+        
+        this.reset(); 
+        document.getElementById('shipment-carrier-manual').style.display = "none"; 
+        window.resetDateTimeInputs();
+        alert("Terimakasih data yang sudah anda berikan akan terekam di log history gudang");
+    });
+
     const devInjectForm = document.getElementById('dev-inject-form');
     if(devInjectForm) {
         devInjectForm.addEventListener('submit', function(e) {
@@ -3142,6 +3384,42 @@
         });
     }
 
+    // --- SUBMIT REKAP DOKUMEN ADMIN ---
+    document.getElementById('form-admin-dokumen').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const sppNo = document.getElementById('admin-spp').value;
+        if (!sppNo) {
+            alert("Silakan pilih pekerjaan produksi terlebih dahulu dari dropdown!");
+            return;
+        }
+
+        const rekapData = {
+            bulan: document.getElementById('admin-bulan').value,
+            spp: sppNo,
+            noProd: document.getElementById('admin-noprod').value,
+            jenisPekerjaan: document.getElementById('admin-jenispek').value,
+            jenisProduksi: document.getElementById('admin-jenisprod').value,
+            tglBPMP: document.getElementById('admin-tglbpmp').value,
+            noBPMP: document.getElementById('admin-nobpmp').value,
+            tglLPBHP: document.getElementById('admin-tgllpbhp').value,
+            noLPBHP: document.getElementById('admin-nolpbhp').value,
+            qty: parseInt(document.getElementById('admin-qty').value) || 1,
+            timestampMs: Date.now()
+        };
+
+        firebase.database().ref('rekapDokumen').push(rekapData)
+            .then(() => {
+                alert("Berhasil! Data Rekap Dokumen BPMP & LPBHP telah disimpan.");
+                this.reset();
+                document.getElementById('admin-select-selesai').value = ""; 
+                window.autoFillAdminDokumen(); 
+            })
+            .catch((error) => {
+                alert("Gagal menyimpan data: " + error.message);
+            });
+    });
+
     window.handleSppSelection = function() {
         const sppNo = document.getElementById('prod-spp-select').value;
         const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
@@ -3202,8 +3480,7 @@
             deadlineDisplay.style.color = "var(--cyan-glow)";
         }
     };
-
-    document.getElementById('prod-form').addEventListener('submit', function(e) {
+document.getElementById('prod-form').addEventListener('submit', function(e) {
         e.preventDefault();
         
         const sppNo = document.getElementById('prod-spp-select').value;
@@ -3246,6 +3523,9 @@
             delayMs = timeMs - matchedSPP.deadlineRawObjectMs; 
         }
 
+        const reasonInputEl = document.getElementById('prod-reason-input');
+        const reasonValue = (reasonInputEl && reasonInputEl.value.trim() !== "") ? reasonInputEl.value.trim() : "-";
+
         const logData = {
             noSPP: sppNo,
             noProd: noProd,
@@ -3257,7 +3537,7 @@
             timestampMs: timeMs,
             deadline: `${targetVal} ${targetUnit}`,
             status: statusKirim,
-            reason: "-",
+            reason: reasonValue,
             processPoints: processPoints,
             msTerlambat: delayMs
         };
@@ -3288,6 +3568,7 @@
 
         this.reset();
         document.getElementById('prod-stage-manual').style.display = 'none';
+        document.getElementById('prod-reason-group').style.display = 'none';
         window.resetDateTimeInputs();
         
         if (window.currentUserAccess === "produksi") {
@@ -3310,26 +3591,27 @@
         const produkSelesaiInternal = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped && window.isInternalProduct(i.product));
         produkSelesaiInternal.forEach(item => { select.innerHTML += `<option value="${item.no}::${item.product}">${item.product} (${item.no})</option>`; });
     }
-
+    
     window.updateWarehouseProductDropdown = function() {
-    const select = document.getElementById('shipment-product-select'); 
-    select.innerHTML = '<option value="">-- Pilih Produk di Gudang --</option>';
-    
-    const filteredSPP = window.getFilteredNonSPLSPP(); 
-    const produkSelesaiEksternal = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped && !window.isInternalProduct(i.product));
-    
-    produkSelesaiEksternal.forEach(item => { 
-        let noProdTambahan = "";
-        let logTerkait = window.databaseLogOperator.find(log => log.noSPP === item.no && log.noProd && log.noProd !== "-");
+        const select = document.getElementById('shipment-product-select'); 
+        select.innerHTML = '<option value="">-- Pilih Produk di Gudang --</option>';
         
-        if (logTerkait) {
-            let nomorDepan = logTerkait.noProd.split('/')[0].trim();
-            noProdTambahan = ` - [Prod: ${nomorDepan}]`;
-        }
+        const filteredSPP = window.getFilteredNonSPLSPP(); 
+        const produkSelesaiEksternal = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped && !window.isInternalProduct(i.product));
         
-        select.innerHTML += `<option value="${item.no}::${item.product}">${item.product} (${item.no})${noProdTambahan}</option>`; 
-    });
-}
+        produkSelesaiEksternal.forEach(item => { 
+            let noProdTambahan = "";
+            let logTerkait = window.databaseLogOperator.find(log => log.noSPP === item.no && log.noProd && log.noProd !== "-");
+            
+            if (logTerkait) {
+                let nomorDepan = logTerkait.noProd.split('/')[0].trim();
+                noProdTambahan = ` - [Prod: ${nomorDepan}]`;
+            }
+            
+            select.innerHTML += `<option value="${item.no}::${item.product}">${item.product} (${item.no})${noProdTambahan}</option>`; 
+        });
+    }
+
     window.renderInternalStockTable = function() {
         const tbody = document.getElementById('internal-stock-body');
         if(!tbody) return;
@@ -3350,7 +3632,7 @@
 
         stockArray.forEach(item => {
             tbody.innerHTML += `<tr>
-                <td><strong style="color: #fff;">${item.nama}</strong></td>
+                <td><strong style="color: var(--text-main);">${item.nama}</strong></td>
                 <td style="text-align: center;"><span style="color:var(--purple-glow); font-weight:800; font-size:13px; background:rgba(168,85,247,0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(168,85,247,0.3);">${item.jumlah} Unit Selesai</span></td>
             </tr>`;
         });
@@ -3363,14 +3645,13 @@
         let filteredInternals = window.databaseInternalOut.filter(io => window.isWithinTimeframe(io.rawTimestampMs, document.getElementById('global-time-filter').value));
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
 
-        
         if (filteredInternals.length === 0) { 
             tbody.innerHTML = `<tr><td colspan="${isDev ? '6' : '5'}" style="text-align:center; color:var(--text-muted); padding: 30px;">Belum ada riwayat pengambilan barang internal.</td></tr>`; return; 
         }
         filteredInternals.forEach(item => {
             let amanTarget = window.sanitizeHTML(item.targetProduct);
             let delBtn = isDev? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editInternalOut('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteInternalOut('${item.firebaseKey}', '${item.spp}')">Batal/Hapus</button></td>` : '';
-            tbody.innerHTML += `<tr style="border-left: 4px solid var(--purple-glow);"><td>${item.time}</td><td><strong>${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>📦 ${amanTarget}</b></td><td><span class="badge bg-reguler" style="background:rgba(168,85,247,0.1); color:var(--purple-glow); border-color:#d8b4fe;">Digunakan Produksi</span></td>${delBtn}</tr>`;
+            tbody.innerHTML += `<tr style="border-left: 4px solid var(--purple-glow);"><td>${item.time}</td><td><strong style="color: var(--text-main);">${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>📦 ${amanTarget}</b></td><td><span class="badge bg-reguler" style="background:rgba(168,85,247,0.1); color:var(--purple-glow); border-color:#d8b4fe;">Digunakan Produksi</span></td>${delBtn}</tr>`;
         });
     }
 
@@ -3392,9 +3673,12 @@
 
         let stockArray = Object.keys(stockMap).map(nama => { return { nama: nama, jumlah: stockMap[nama] }; }).sort((a, b) => b.jumlah - a.jumlah);
 
-        stockArray.forEach(item => {
+        // Batasi tampilan menggunakan isReadyStockMinimized
+        let displayStock = window.isReadyStockMinimized ? stockArray.slice(0, 5) : stockArray;
+
+        displayStock.forEach(item => {
             tbody.innerHTML += `<tr>
-                <td><strong style="color: #fff;">${item.nama}</strong></td>
+                <td><strong style="color: var(--text-main);">${item.nama}</strong></td>
                 <td style="text-align: center;"><span style="color:var(--emerald-glow); font-weight:800; font-size:13px; background:rgba(16,185,129,0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">${item.jumlah} Unit Selesai</span></td>
             </tr>`;
         });
@@ -3404,14 +3688,18 @@
         const tbody = document.getElementById('shipment-history-body'); tbody.innerHTML = ""; 
         let filteredShips = window.databaseShipment.filter(ship => window.isWithinTimeframe(ship.rawTimestampMs, document.getElementById('global-time-filter').value));
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
-        if (filteredShips.length === 0) { tbody.innerHTML = `<tr><td colspan="${isDev ? '7' : '6'}" style="text-align:center; color:var(--text-muted); padding: 30px;">Belum ada riwayat keberangkatan.</td></tr>`; return; }
-        filteredShips.forEach(item => {
-            // FIX XSS untuk form pengiriman
+        
+        filteredShips.sort((a,b) => b.rawTimestampMs - a.rawTimestampMs);
+        let displayShips = window.isShipmentMinimized ? filteredShips.slice(0, 5) : filteredShips;
+
+        if (displayShips.length === 0) { tbody.innerHTML = `<tr><td colspan="${isDev ? '7' : '6'}" style="text-align:center; color:var(--text-muted); padding: 30px;">Belum ada riwayat keberangkatan.</td></tr>`; return; }
+        
+        displayShips.forEach(item => {
             let amanCarrier = window.sanitizeHTML(item.carrier);
             let amanCustomer = window.sanitizeHTML(item.customer);
 
             let delBtn = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editShipment('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteShipment('${item.firebaseKey}', '${item.spp}')">Hapus</button></td>` : '';
-            tbody.innerHTML += `<tr style="border-left: 4px solid var(--blue-glow);"><td>${item.time}</td><td><strong>${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>🚚 ${amanCarrier}</b></td><td><span style="color: var(--blue-glow); font-weight:700;">🏢 ${amanCustomer}</span></td><td><span class="badge bg-reguler" style="background:#ccfbf1; color:var(--emerald-glow); border-color:#5eead4;">Dalam Perjalanan</span></td>${delBtn}</tr>`;
+            tbody.innerHTML += `<tr style="border-left: 4px solid var(--blue-glow);"><td>${item.time}</td><td><strong style="color: var(--text-main);">${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>🚚 ${amanCarrier}</b></td><td><span style="color: var(--blue-glow); font-weight:700;">🏢 ${amanCustomer}</span></td><td><span class="badge bg-reguler" style="background:#ccfbf1; color:var(--emerald-glow); border-color:#5eead4;">Dalam Perjalanan</span></td>${delBtn}</tr>`;
         });
     }
 
@@ -3486,7 +3774,6 @@
             return; 
         }
 
-        // 1. Kelompokkan Log berdasarkan No. SPP
         let groupedLogs = new Map();
         filteredLogs.forEach((item) => {
             if (!groupedLogs.has(item.noSPP)) {
@@ -3495,19 +3782,15 @@
             groupedLogs.get(item.noSPP).push(item);
         });
 
-        // 2. Render Header Group & Detail Pekerjaan
         groupedLogs.forEach((logs, sppNo) => {
-            // Ambil info dari Master SPP
             let masterSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
             let productName = masterSPP ? masterSPP.product : "Produk Tidak Diketahui";
             let urgency = masterSPP ? masterSPP.priority : "Reguler";
             let urgencyClass = urgency === 'Urgent' ? 'bg-urgent' : (urgency === 'Buffer Stok' ? 'bg-buffer' : 'bg-reguler');
 
-            // Ambil semua No. Produksi unik di SPP ini
             let uniqueProds = [...new Set(logs.map(l => l.noProd))].filter(n => n && n !== "-").join(", ");
             if (!uniqueProds) uniqueProds = "-";
 
-            // -> Render Baris Header SPP
             tbody.innerHTML += `
                 <tr style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--blue-glow); border-top: 2px solid var(--panel-border);">
                     <td colspan="${isDev ? '9' : '8'}" style="padding: 15px 20px;">
@@ -3521,9 +3804,7 @@
                 </tr>
             `;
 
-            // -> Render Detail Log Operator di bawah Header
             logs.forEach((item) => {
-                // FIX XSS untuk input log operator
                 let amanAktivitas = window.sanitizeHTML(item.aktivitas);
                 let amanReason = window.sanitizeHTML(item.reason);
 
@@ -3557,8 +3838,11 @@
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:15px;">Belum ada data yang di-inject melalui jalur Fast-Track.</td></tr>';
             return;
         }
+
+        // Batasi tampilan menggunakan isDevInjectMinimized
+        let displayLogs = window.isDevInjectMinimized ? injectedLogs.slice(0, 5) : injectedLogs;
         
-        injectedLogs.forEach(log => {
+        displayLogs.forEach(log => {
             let matchedSPP = window.databaseMasterSPP.find(s => s.no === log.noSPP);
             let prodName = matchedSPP ? matchedSPP.product : "-";
             let sppKey = matchedSPP ? matchedSPP.firebaseKey : null;
@@ -3606,10 +3890,12 @@
         let csv = [];
         const rows = table.querySelectorAll('tr');
         rows.forEach(row => {
-            let cols = row.querySelectorAll('th, td');
-            let rowData = [];
-            cols.forEach(col => rowData.push('"' + (col.innerText || col.textContent).replace(/"/g, '""') + '"'));
-            csv.push(rowData.join(','));
+            if(row.style.display !== 'none') {
+                let cols = row.querySelectorAll('th, td');
+                let rowData = [];
+                cols.forEach(col => rowData.push('"' + (col.innerText || col.textContent).replace(/"/g, '""') + '"'));
+                csv.push(rowData.join(','));
+            }
         });
         const csvString = csv.join('\n');
         const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
@@ -3618,6 +3904,34 @@
         link.download = filename;
         link.click();
     }
+
+    window.printPDF = function(tableId, title) {
+        let printWindow = window.open('', '', 'height=700,width=1000');
+        printWindow.document.write('<html><head><title>' + title + '</title>');
+        
+        // CSS ditambahkan properti text-align: center dan margin: 0 auto;
+        printWindow.document.write('<style>body { font-family: "Segoe UI", sans-serif; padding: 20px; text-align: center; } h2 { color: #333; margin-bottom: 20px;} table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-left: auto; margin-right: auto; } th, td { border: 1px solid #666; padding: 10px; text-align: center; vertical-align: middle; font-size: 13px; } th { background-color: #e2e8f0; color: #0f172a; font-weight: bold; text-transform: uppercase; } tr:nth-child(even) { background-color: #f8fafc; }</style>');
+        
+        printWindow.document.write('</head><body>');
+        printWindow.document.write('<h2>' + title + '</h2>');
+        
+        let tableHtml = document.getElementById(tableId).cloneNode(true);
+        // Hapus kolom tombol/aksi jika ada (kolom terakhir)
+        let headerRow = tableHtml.querySelector('thead tr');
+        if (headerRow && headerRow.lastElementChild.innerText.toLowerCase().includes('aksi')) {
+            headerRow.lastElementChild.remove();
+            tableHtml.querySelectorAll('tbody tr').forEach(row => {
+                if (row.lastElementChild) row.lastElementChild.remove();
+            });
+        }
+        
+        printWindow.document.write(tableHtml.outerHTML);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.onload = function() {
+            printWindow.print();
+        };
+    };
 
     window.editMasterSPP = function(firebaseKey) {
         let choice = prompt("Pilih data SPP/SPL yang ingin diedit:\n1. Status Terkini\n2. Nama Produk\n3. Urgensi Prioritas\n4. Reset Deadline\n5. Tanggal & Jam Keluar");
@@ -3631,7 +3945,7 @@
             let val = prompt("Format YYYY-MM-DD HH:MM"); 
             if(val) { 
                 let d = new Date(val); 
-                if (!isNaN(d.getTime())) { // FIX Validasi NaN Master SPP
+                if (!isNaN(d.getTime())) { 
                     updates.datetime = window.formatDateToString(d); 
                     updates.rawTimestampMs = d.getTime(); 
                 } else {
@@ -3665,7 +3979,7 @@
             let val = prompt("Format YYYY-MM-DD HH:MM"); 
             if(val) { 
                 let d = new Date(val); 
-                if (!isNaN(d.getTime())) { // FIX Validasi NaN Log Operator
+                if (!isNaN(d.getTime())) { 
                     updates.time = window.formatDateToString(d); 
                     updates.timestampMs = d.getTime(); 
                 } else {
@@ -3718,6 +4032,57 @@
         if (Object.keys(updates).length > 0) { db.ref('internalOuts/' + firebaseKey).update(updates); alert("Data penarikan internal berhasil diperbarui!"); }
     }
 
+    window.editAdminDokumen = function(firebaseKey) {
+        let choice = prompt("Pilih data Rekap yang ingin diedit:\n1. Tgl BPMP\n2. No BPMP\n3. Tgl LPBHP\n4. No LPBHP\n5. QTY");
+        if (!choice) return;
+        let updates = {};
+        if (choice === '1') { let val = prompt("Tanggal BPMP Baru (YYYY-MM-DD):"); if(val) updates.tglBPMP = val.trim(); }
+        else if (choice === '2') { let val = prompt("No BPMP Baru:"); if(val) updates.noBPMP = val.trim(); }
+        else if (choice === '3') { let val = prompt("Tanggal LPBHP Baru (YYYY-MM-DD):"); if(val) updates.tglLPBHP = val.trim(); }
+        else if (choice === '4') { let val = prompt("No LPBHP Baru:"); if(val) updates.noLPBHP = val.trim(); }
+        else if (choice === '5') { let val = prompt("QTY Baru:"); if(val && !isNaN(val)) updates.qty = parseInt(val); }
+        
+        if (Object.keys(updates).length > 0) {
+            firebase.database().ref('rekapDokumen/' + firebaseKey).update(updates);
+            alert("Data rekap berhasil diperbarui!");
+        }
+    }
+
+    // --- AUTO FILL ADMIN DOKUMEN ---
+    window.autoFillAdminDokumen = function() {
+        const sppNo = document.getElementById('admin-select-selesai').value;
+        if (!sppNo) {
+            document.getElementById('admin-bulan').value = "";
+            document.getElementById('admin-spp').value = "";
+            document.getElementById('admin-noprod').value = "";
+            document.getElementById('admin-jenispek').value = "";
+            document.getElementById('admin-jenisprod').value = "";
+            return;
+        }
+
+        const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
+        if (matchedSPP) {
+            const dateObj = new Date(matchedSPP.rawTimestampMs);
+            const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            document.getElementById('admin-bulan').value = monthNames[dateObj.getMonth()];
+            document.getElementById('admin-spp').value = matchedSPP.no;
+            document.getElementById('admin-jenisprod').value = matchedSPP.product;
+            
+            // Cari No Produksi dari Log Operator
+            const logs = window.databaseLogOperator.filter(l => l.noSPP === sppNo && l.noProd && l.noProd !== "-");
+            if (logs.length > 0) {
+                // Ambil No Produksi unik
+                let prods = [...new Set(logs.map(l => l.noProd))];
+                document.getElementById('admin-noprod').value = prods.join(", ");
+            } else {
+                document.getElementById('admin-noprod').value = "Belum Ada Data";
+            }
+            
+            // Set Jenis Pekerjaan (default Baru)
+            document.getElementById('admin-jenispek').value = "Baru";
+        }
+    };
+
     // Panggil sapaan Bee-Boot saat halaman pertama kali dibuka
     window.setLoginGreeting();
     
@@ -3733,7 +4098,311 @@
         }
     };
     window.initFlatpickrPlugins();
-    
+
+    // --- FUNGSI UNTUK MENGISI DROPDOWN ADMIN ---
+    window.populateAdminSelectSelesai = function() {
+        const select = document.getElementById('admin-select-selesai');
+        if (!select) return;
+
+        const currentSavedValue = select.value;
+        select.innerHTML = '<option value="">-- Klik untuk menampilkan daftar pekerjaan selesai --</option>';
+        
+        // Filter: Hanya ambil status selesai, BUKAN SPL, BUKAN yang terkirim, 
+        // DAN HANYA YANG BELUM ADA DI TABEL REKAP ADMIN (Mencegah Dobel Input)
+        const produkSelesai = window.databaseMasterSPP.filter(i => 
+            ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && 
+            !i.isSPL && 
+            !i.isShipped &&
+            !window.databaseRekapAdmin.some(rekap => rekap.spp === i.no) // <-- Pengecekan otomatis
+        );
+        
+        produkSelesai.forEach(item => {
+            let noProdTambahan = "";
+            let logTerkait = window.databaseLogOperator.find(log => log.noSPP === item.no && log.noProd && log.noProd !== "-");
+            if (logTerkait) {
+                noProdTambahan = ` - [Prod: ${logTerkait.noProd}]`;
+            }
+            
+            select.innerHTML += `<option value="${item.no}">${item.product} (${item.no})${noProdTambahan}</option>`;
+        });
+
+        if(currentSavedValue) select.value = currentSavedValue;
+    };
+
+   // ================================================================
+    // 1. RENDER TABEL ADMIN DOKUMEN (QTY GROUPING & ROWSPAN RATA TENGAH)
+    // ================================================================
+    window.renderAdminDokumenTable = function() {
+        const tbody = document.getElementById('admin-dokumen-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        // Terapkan filter khusus dari dropdown export-dokumen-filter ke tabel Admin
+        let filterType = document.getElementById('export-dokumen-filter').value;
+        
+        let filteredRekap = window.databaseRekapAdmin.filter(rekap => {
+            if (filterType === 'all') return true;
+            if (filterType !== 'custom') return window.isWithinTimeframe(rekap.timestampMs, filterType);
+            
+            // Custom filter untuk dokumen
+            const startD = document.getElementById('custom-export-start').value; 
+            const endD = document.getElementById('custom-export-end').value;
+            if(!startD || !endD) return true; 
+            const st = new Date(startD).setHours(0,0,0,0); const en = new Date(endD).setHours(23,59,59,999);
+            return rekap.timestampMs >= st && rekap.timestampMs <= en;
+        });
+
+        if (filteredRekap.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada data dokumen yang diinput pada periode waktu ini.</td></tr>';
+            return;
+        }
+
+        // Kelompokkan data berdasarkan jenisProduksi
+        const groupedData = {};
+        filteredRekap.forEach(item => {
+            const prod = item.jenisProduksi || 'Lainnya';
+            if (!groupedData[prod]) groupedData[prod] = [];
+            groupedData[prod].push(item);
+        });
+
+        // Render ke tabel dengan Rowspan pada QTY
+        for (const prod in groupedData) {
+            // Urutkan per grup agar data terbaru di atas
+            groupedData[prod].sort((a, b) => b.timestampMs - a.timestampMs);
+            
+            let totalQty = 0;
+            // Hitung total QTY dalam grup produk ini
+            groupedData[prod].forEach(item => totalQty += (parseInt(item.qty) || 1));
+            
+            groupedData[prod].forEach((item, index) => {
+                let tr = `<tr style="border-left: 3px solid var(--blue-glow); border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td>${item.bulan || '-'}</td>
+                    <td><strong style="color:var(--blue-glow);">${item.spp || '-'}</strong></td>
+                    <td>${item.tglBPMP || '-'}</td>
+                    <td><code style="color:var(--emerald-glow); font-weight:bold;">${item.noBPMP || '-'}</code></td>
+                    <td>${item.tglLPBHP || '-'}</td>
+                    <td><code style="color:var(--purple-glow); font-weight:bold;">${item.noLPBHP || '-'}</code></td>
+                    <td>${item.noProd || '-'}</td>
+                    <td>${item.jenisPekerjaan || '-'}</td>
+                    <td><strong>${item.jenisProduksi || '-'}</strong></td>`;
+                    
+                // Kolom QTY digabung (rowspan) untuk seluruh jumlah data dalam grup produk ini
+                if (index === 0) {
+                    tr += `<td rowspan="${groupedData[prod].length}" style="text-align:center; vertical-align:middle; background:rgba(56, 189, 248, 0.1); border-left:1px solid rgba(56, 189, 248, 0.2); border-right:1px solid rgba(56, 189, 248, 0.2);">
+                        <span style="font-size:24px; font-weight:900; color:var(--emerald-glow);">${totalQty}</span>
+                    </td>`;
+                }
+                
+                tr += `<td>
+                        <button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-bottom:5px; width:100%;" onclick="editAdminDokumen('${item.firebaseKey}')">✏️ Edit</button>
+                        <button class="btn-delete" style="width:100%;" onclick="hapusAdminDokumen('${item.firebaseKey}')">Hapus</button>
+                       </td></tr>`;
+                
+                tbody.innerHTML += tr;
+            });
+        }
+    };
+
+    window.hapusAdminDokumen = function(key) {
+        if(confirm("Yakin ingin menghapus rekap dokumen ini?")) {
+            firebase.database().ref('rekapDokumen/' + key).remove().then(() => {
+                alert("Data berhasil dihapus!");
+            });
+        }
+    };
+
+    // ================================================================
+    // 2. LOGIKA PEMISAHAN ON-PROSES & RIWAYAT UNTUK SEMUA PANEL HISTORY
+    // ================================================================
+
+    // -- HISTORY 1: MASTER SPP --
+    window.modeHistorySPP = 'proses';
+    window.toggleHistorySPP = function() {
+        window.modeHistorySPP = window.modeHistorySPP === 'proses' ? 'riwayat' : 'proses';
+        window.renderMasterTable();
+    };
+
+    window.renderMasterTable = function() {
+        // Injeksi tombol toggle ke Header UI
+        let toggleBtn = document.getElementById('btn-toggle-spp-mode');
+        if (!toggleBtn) {
+            const headerDiv = document.querySelector('#panel-history-spp .header-flex div');
+            if (headerDiv) {
+                toggleBtn = document.createElement('button');
+                toggleBtn.id = 'btn-toggle-spp-mode';
+                toggleBtn.className = 'btn-action-trigger';
+                toggleBtn.style.marginRight = '10px';
+                toggleBtn.onclick = window.toggleHistorySPP;
+                headerDiv.insertBefore(toggleBtn, headerDiv.firstChild);
+            }
+        }
+        if (toggleBtn) {
+            toggleBtn.innerHTML = window.modeHistorySPP === 'proses' ? '📂 Buka Riwayat Selesai' : '🔄 Tampilkan On Proses';
+            toggleBtn.style.background = window.modeHistorySPP === 'proses' ? 'var(--blue-glow)' : 'var(--emerald-glow)';
+            toggleBtn.style.color = '#000';
+        }
+
+        const tbody = document.getElementById('spp-master-body'); 
+        tbody.innerHTML = ''; 
+        const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
+        const isAdmin = (window.currentUserRole === "Admin");
+        const showDocCol = (isDev || isAdmin);
+        let cols = 7 + (showDocCol ? 1 : 0) + (isDev ? 1 : 0);
+        
+        let rawSPP = window.getFilteredNonSPLSPP(); 
+        
+        // Filter berdasarkan Mode (On Proses ATAU Selesai)
+        let filteredSPP = rawSPP.filter(item => {
+            let isSelesai = ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(item.status) || item.isShipped;
+            return window.modeHistorySPP === 'proses' ? !isSelesai : isSelesai;
+        });
+
+        if(filteredSPP.length === 0) { 
+            tbody.innerHTML = `<tr><td colspan="${cols}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada data di tampilan ini.</td></tr>`; 
+            return; 
+        }
+
+        let filteredLogs = window.getFilteredLogs();
+        filteredSPP.forEach(item => {
+            let relatedLogs = filteredLogs.filter(log => log.noSPP === item.no);
+            let uniqueProdNos = [...new Set(relatedLogs.map(l => l.noProd))].filter(n => n && n !== "-");
+            let displayProdNo = uniqueProdNos.length > 0 ? uniqueProdNos.join("<br>") : `<span style="color:var(--text-muted); font-size:11px;">Belum Tersedia</span>`;
+            let uniqueOperators = [...new Set(relatedLogs.map(l => l.operator))].filter(o => o && !o.toLowerCase().includes('dev'));
+            let displayOperators = uniqueOperators.length > 0 ? "• " + uniqueOperators.join("<br>• ") : `<span style="color:var(--text-muted); font-size:11px;">Belum ada tim</span>`;
+
+            let fileLinkHtml = item.fileUrl ? `<a href="${item.fileUrl}" target="_blank" style="background:var(--blue-glow); color:#000; padding:6px 12px; font-size:11px; font-weight:bold; border-radius:6px; text-decoration:none;">📄 Dokumen</a>` : `<span style="color:var(--text-muted); font-size:11px;">Tanpa Lampiran</span>`;
+            let displayStatus = item.isShipped ? '<span class="badge bg-urgent">Digunakan/Terkirim</span>' : window.getStatusBadge(item.status); 
+            let docColHtml = showDocCol ? `<td>${fileLinkHtml}</td>` : '';
+            let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-bottom:5px; width:100%;" onclick="editMasterSPP('${item.firebaseKey}')">✏️ Edit</button><br><button class="btn-delete" style="width:100%;" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button></td>` : '';
+            
+            tbody.innerHTML += `<tr><td><strong>${item.no}</strong><br><span style="font-size: 11px; color: var(--text-muted);">${item.datetime}</span></td><td><code style="color:var(--blue-glow); font-weight:bold;">${displayProdNo}</code></td><td><span class="badge bg-reguler" style="font-size:12px; font-weight:700;">${item.product}</span></td><td style="font-size:12px; font-weight:600; line-height: 1.5;">${displayOperators}</td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${docColHtml}${actionBtns}</tr>`;
+        });
+    };
+
+    // -- HISTORY 2: LOG AKTIVITAS OPERATOR --
+    window.modeHistoryLog = 'proses';
+    window.toggleHistoryLog = function() {
+        window.modeHistoryLog = window.modeHistoryLog === 'proses' ? 'riwayat' : 'proses';
+        window.renderOperatorTable();
+    };
+
+    window.renderOperatorTable = function() {
+        let toggleBtn = document.getElementById('btn-toggle-log-mode');
+        if (!toggleBtn) {
+            const headerDiv = document.querySelector('#panel-history-prod .header-flex div');
+            if (headerDiv) {
+                toggleBtn = document.createElement('button');
+                toggleBtn.id = 'btn-toggle-log-mode';
+                toggleBtn.className = 'btn-action-trigger';
+                toggleBtn.style.marginRight = '10px';
+                toggleBtn.onclick = window.toggleHistoryLog;
+                headerDiv.insertBefore(toggleBtn, headerDiv.firstChild);
+            }
+        }
+        if (toggleBtn) {
+            toggleBtn.innerHTML = window.modeHistoryLog === 'proses' ? '📂 Buka Riwayat Selesai' : '🔄 Tampilkan On Proses';
+            toggleBtn.style.background = window.modeHistoryLog === 'proses' ? 'var(--blue-glow)' : 'var(--emerald-glow)';
+            toggleBtn.style.color = '#000';
+        }
+
+        const tbody = document.getElementById('operator-history-body'); 
+        tbody.innerHTML = ''; 
+        let rawLogs = window.getFilteredLogs();
+        const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
+        
+        // Filter Logs berdasarkan status Induk SPP
+        let filteredLogs = rawLogs.filter(log => {
+            let masterSPP = window.databaseMasterSPP.find(s => s.no === log.noSPP);
+            let isSelesai = masterSPP ? (['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(masterSPP.status) || masterSPP.isShipped) : ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(log.status);
+            return window.modeHistoryLog === 'proses' ? !isSelesai : isSelesai;
+        });
+
+        if(filteredLogs.length === 0) { 
+            tbody.innerHTML = `<tr><td colspan="${isDev ? '9' : '8'}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat laporan pada rentang waktu/mode ini.</td></tr>`; return; 
+        }
+
+        let groupedLogs = new Map();
+        filteredLogs.forEach((item) => {
+            if (!groupedLogs.has(item.noSPP)) groupedLogs.set(item.noSPP, []);
+            groupedLogs.get(item.noSPP).push(item);
+        });
+
+        groupedLogs.forEach((logs, sppNo) => {
+            let masterSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
+            let productName = masterSPP ? masterSPP.product : "Produk Tidak Diketahui";
+            let urgency = masterSPP ? masterSPP.priority : "Reguler";
+            let urgencyClass = urgency === 'Urgent' ? 'bg-urgent' : (urgency === 'Buffer Stok' ? 'bg-buffer' : 'bg-reguler');
+
+            let uniqueProds = [...new Set(logs.map(l => l.noProd))].filter(n => n && n !== "-").join(", ") || "-";
+
+            tbody.innerHTML += `<tr style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--blue-glow); border-top: 2px solid var(--panel-border);">
+                <td colspan="${isDev ? '9' : '8'}" style="padding: 15px 20px;">
+                    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                        <span style="font-size: 14px; font-weight: 800; color: #f8fafc;">📁 NO. SPP: <span style="color: var(--blue-glow);">${sppNo}</span></span>
+                        <span style="font-size: 14px; font-weight: 700; color: #f8fafc;">🛒 Produk: <span style="color: var(--emerald-glow);">${productName}</span></span>
+                        <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">🏷️ No. Produksi: <span style="color: var(--warning-glow);">${uniqueProds}</span></span>
+                        <span class="badge ${urgencyClass}">${urgency}</span>
+                    </div>
+                </td>
+            </tr>`;
+
+            logs.forEach((item) => {
+                let amanAktivitas = window.sanitizeHTML(item.aktivitas);
+                let amanReason = window.sanitizeHTML(item.reason);
+                let badgeHTML = window.getStatusBadge(item.status);
+                let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
+                
+                tbody.innerHTML += `<tr style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                    <td><b>${item.operator}</b></td><td><span style="color:var(--cyan-glow); font-weight:600;">${amanAktivitas}</span></td><td><u>${item.condition}</u></td><td><i>${item.stage}</i></td><td>${item.time}</td><td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td><td>${badgeHTML}</td><td><span style="font-weight:700; color:var(--blue-glow);">${amanReason}</span></td>${actionBtns}
+                </tr>`;
+            });
+        });
+    };
+
+    // -- HISTORY 3: SURAT PERINTAH LANGSUNG (SPL) --
+    window.modeHistorySPL = 'proses';
+    window.toggleHistorySPL = function() {
+        window.modeHistorySPL = window.modeHistorySPL === 'proses' ? 'riwayat' : 'proses';
+        window.renderSPLTable();
+    };
+
+    window.renderSPLTable = function() {
+        let toggleBtn = document.getElementById('btn-toggle-spl-mode');
+        if (!toggleBtn) {
+            const headerDiv = document.querySelector('#panel-surat-perintah .header-flex div');
+            if (headerDiv) {
+                toggleBtn = document.createElement('button');
+                toggleBtn.id = 'btn-toggle-spl-mode';
+                toggleBtn.className = 'btn-action-trigger';
+                toggleBtn.style.marginRight = '10px';
+                toggleBtn.onclick = window.toggleHistorySPL;
+                headerDiv.insertBefore(toggleBtn, headerDiv.firstChild);
+            }
+        }
+        if (toggleBtn) {
+            toggleBtn.innerHTML = window.modeHistorySPL === 'proses' ? '📂 Buka Riwayat Selesai' : '🔄 Tampilkan On Proses';
+            toggleBtn.style.background = window.modeHistorySPL === 'proses' ? 'var(--blue-glow)' : 'var(--emerald-glow)';
+            toggleBtn.style.color = '#000';
+        }
+
+        const tbody = document.getElementById('spl-history-body'); tbody.innerHTML = ''; 
+        let rawSPP = window.getFilteredSPP(); 
+        const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
+
+        let onlySPL = rawSPP.filter(i => {
+            if (!i.isSPL) return false;
+            let isSelesai = ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) || i.isShipped;
+            return window.modeHistorySPL === 'proses' ? !isSelesai : isSelesai;
+        });
+
+        if(onlySPL.length === 0) { tbody.innerHTML = `<tr><td colspan="${isDev ? '9' : '8'}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada Surat Perintah Langsung pada tampilan ini.</td></tr>`; return; }
+        
+        onlySPL.forEach(item => {
+            let displayStatus = item.isShipped ? '<span class="badge bg-urgent">Digunakan/Terkirim</span>' : window.getStatusBadge(item.status); 
+            let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editMasterSPP('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button></td>` : '';
+            tbody.innerHTML += `<tr style="background: rgba(234, 88, 12, 0.05); border-left: 3px solid #ea580c;"><td><strong style="color:#fb923c;">${item.no}</strong></td><td>${item.datetime}</td><td><span class="badge bg-buffer" style="font-size:12px; font-weight:700;">${item.product}</span></td><td>${item.maker}</td><td><b>${item.receiver}</b></td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${actionBtns}</tr>`;
+        });
+    };    
 </script>
 </body>
 </html>
