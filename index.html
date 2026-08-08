@@ -23,8 +23,7 @@
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
-
+   
     <style>
         :root {
             --bg-main: #000000;
@@ -975,7 +974,9 @@
                         <label>Penanggung Jawab</label>
                         <select id="spp-maker" onchange="toggleManualInput(this, 'maker-manual')" required>
                             <option value="">-- Pilih Pembuat --</option>
-                            <option value="Rizal">Rizal</option><option value="Anto">Anto</option><option value="Sistem Gudang">Sistem Gudang</option>
+                            <option value="Rizal">		Rizal</option>
+				<option value="Anto">		Anto</option>
+<option value="Fihki Alkar">						Fihki Alkar</option>
                             <option value="other">Other (Isi Manual...)</option>
                         </select>
                         <input type="text" id="maker-manual" class="manual-input" placeholder="Ketik nama...">
@@ -1187,7 +1188,7 @@
     // ==========================================
     // URL WEB APP GOOGLE APPS SCRIPT ANDA
     // ==========================================
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxzoVSP2zkZ-I5ikMvJq5oDGjg83EmIy2a2jNSLsAyHGFLcu2xpPbbeJ9hSgh8bNsyxkQ/exec"; 
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyzvJ1f3FXMTLEXeU98IHy-FyBEPUG8Vhvf8PrfAYc4mAiZzmW28trfa_u4-Bo-J4Ujww/exec"; 
 
     // ==========================================
     // FIREBASE INITIALIZATION & REALTIME SYNC
@@ -1232,7 +1233,7 @@
 
     window.activeOperators = {}; 
 
-    // ================================================================
+// ================================================================
     // FITUR TEMA HITAM & PUTIH (LIGHT/DARK MODE)
     // ================================================================
     const lightThemeStyle = document.createElement('style');
@@ -1253,8 +1254,11 @@
             --cyan-glow: #0d9488;
         }
         
-        /* Memaksa elemen teks umum berubah warna */
+        /* Memaksa elemen teks umum berubah warna, TERMASUK WELCOME POPUP */
+        body.light-theme .welcome-box h2,
         body.light-theme .welcome-box h3,
+        body.light-theme .welcome-box p,
+        body.light-theme .welcome-box span,
         body.light-theme .maintenance-box p,
         body.light-theme .stat-value,
         body.light-theme .chat-msg,
@@ -1276,6 +1280,26 @@
             color: var(--text-main) !important;
         }
 
+        /* --- PERBAIKAN: FORM PRODUKSI YANG TERKUNCI (DISABLED/READONLY) --- */
+        body.light-theme input[readonly],
+        body.light-theme select[style*="pointer-events: none"],
+        body.light-theme input[style*="pointer-events: none"] {
+            background: #e2e8f0 !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+
+        /* --- PERBAIKAN BACKGROUND BEE-BOOT & CHAT AGAR TERBACA --- */
+        body.light-theme .bee-boot-bubble { 
+            background: rgba(255, 255, 255, 0.95) !important; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important; 
+        }
+        body.light-theme #chat-window { background: #f8fafc !important; }
+        body.light-theme #chat-header { background: #e2e8f0 !important; color: var(--text-main) !important; }
+        body.light-theme .chat-msg { background: #e2e8f0 !important; }
+        body.light-theme .chat-msg.self { background: #d1fae5 !important; }
+        body.light-theme #chat-input { color: var(--text-main) !important; }
+
         body.light-theme .input-readonly { background: #e2e8f0 !important; color: #0f172a !important; border-color: #cbd5e1 !important; }
         body.light-theme table th { background: #e2e8f0 !important; color: #0f172a !important; }
         body.light-theme table td { border-bottom: 1px solid #cbd5e1 !important; color: #0f172a !important; }
@@ -1286,7 +1310,7 @@
         body.light-theme #main-header h2 { color: #0f172a !important; text-shadow: none !important; }
         body.light-theme .panel h3 { color: var(--blue-glow) !important; text-shadow: none !important; }
     `;
-    document.head.appendChild(lightThemeStyle);
+    document.head.appendChild(lightThemeStyle);   
 
     function setupThemeToggle() {
         if(!document.getElementById('theme-toggle-btn')) {
@@ -1477,9 +1501,9 @@ document.getElementById('bee-boot-container').style.display = 'flex';
     const userRoles = {
         "randi@tirta.com": { role: "Randi", panel: "all" },
         "manager@tirta.com": { role: "Manager Warehouse", panel: "mw" },
-        "admin@tirta.com": { role: "Admin", panel: "admin" },
+        "admin@tirta.com": { role: "Septi Utami", panel: "admin" },
         "manajemen@tirta.com": { role: "Managemen", panel: "viewonly" },
-        "gudang@tirta.com": { role: "Gudang", panel: "gudang" },
+        "gudang@tirta.com": { role: "Fihki Alkar", panel: "gudang" },
         "anto@tirta.com": { role: "Anto", panel: "gudang" },
         "rizal@tirta.com": { role: "Rizal", panel: "gudang" },
         "tv@tirta.com": { role: "TV Mode", panel: "viewonly" },
@@ -2051,7 +2075,7 @@ document.getElementById('bee-boot-container').style.display = 'flex';
     }
     window.stopAutoScroll = function() { if(autoScrollInterval) clearInterval(autoScrollInterval); }
 
-    window.applyRoleAccess = function() {
+  window.applyRoleAccess = function() {
         const panels = ['panel-analytics','panel-aktual','panel-inbox','panel-monitoring','panel-input-prod','panel-history-prod','panel-ranking','panel-surat-perintah','panel-input-spp','panel-history-spp','panel-internal-produksi','panel-input-shipment','panel-history-shipment'];
         panels.forEach(id => {
             let el = document.getElementById(id);
@@ -2062,7 +2086,7 @@ document.getElementById('bee-boot-container').style.display = 'flex';
     
         const isGudang = (window.currentUserAccess === "gudang");
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
-        const isAdmin = (window.currentUserRole === "Admin");
+        const isAdmin = (window.currentUserRole === "Admin" || window.currentUserRole === "Septi Utami");
         const showDocCol = (isDev || isAdmin);
         
         if (!isGudang && !isDev) {
@@ -2102,13 +2126,45 @@ document.getElementById('bee-boot-container').style.display = 'flex';
         }
     
         window.updateConditionDropdown(null);
-    
+
+        // --- RENDER JUDUL TABEL HISTORY ---
         document.getElementById('spl-history-head').innerHTML = `<th>No. SPL</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Penanggung Jawab</th><th>Penerima Tugas</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('shipment-history-head').innerHTML = `<th>Keberangkatan</th><th>Produk</th><th>No. SPP Asal</th><th>Operator Logistik</th><th>Customer</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
-        document.getElementById('operator-history-head').innerHTML = `<th>Nama Operator</th><th>Aktivitas Kegiatan</th><th>Kondisi Progres</th><th>Tahap Produksi</th><th>Waktu Input</th><th>Target Deadline</th><th>Status Hasil</th><th>Keterangan / Poin Tambahan</th>${isDev ? '<th>Aksi</th>' : ''}`;
+        // KOLOM SISA WAKTU DITAMBAHKAN DI SINI:
+        document.getElementById('operator-history-head').innerHTML = `<th>Nama Operator</th><th>Aktivitas Kegiatan</th><th>Kondisi Progres</th><th>Tahap Produksi</th><th>Waktu Input</th><th>Sisa Waktu Pekerjaan</th><th>Target Deadline</th><th>Status Hasil</th><th>Keterangan / Poin Tambahan</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('internal-history-head').innerHTML = `<th>Waktu Pengambilan</th><th>Komponen</th><th>No. SPP Asal</th><th>Tujuan Produk</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('spp-master-head').innerHTML = `<th>No. SPP & Tgl Rilis</th><th>No. Produksi</th><th>Nama Produk</th><th>Tim Operator</th><th>Target Waktu</th><th>Urgensi</th><th>Status Terkini</th>${showDocCol ? '<th>Dokumen</th>' : ''}${isDev ? '<th>Aksi</th>' : ''}`;
     
+        // --- LOGIKA KUNCI MATI (DISABLE) TARGET WAKTU HANYA UNTUK DEVELOPER ---
+        let deadlineVal = document.getElementById('prod-deadline-val');
+        let deadlineUnit = document.getElementById('prod-deadline-unit');
+        
+        if (deadlineVal && deadlineUnit) {
+            if (isDev) {
+                // Developer bisa edit
+                deadlineVal.disabled = false;
+                deadlineVal.style.cursor = 'text';
+                deadlineVal.style.background = 'var(--input-bg)';
+                deadlineVal.style.color = '#fff';
+                
+                deadlineUnit.disabled = false;
+                deadlineUnit.style.cursor = 'pointer';
+                deadlineUnit.style.background = 'var(--input-bg)';
+                deadlineUnit.style.color = '#fff';
+            } else {
+                // Operator TERKUNCI TOTAL (Disabled)
+                deadlineVal.disabled = true;
+                deadlineVal.style.cursor = 'not-allowed';
+                deadlineVal.style.background = 'rgba(15, 23, 42, 0.8)';
+                deadlineVal.style.color = 'var(--danger-glow)';
+                
+                deadlineUnit.disabled = true;
+                deadlineUnit.style.cursor = 'not-allowed';
+                deadlineUnit.style.background = 'rgba(15, 23, 42, 0.8)';
+                deadlineUnit.style.color = 'var(--danger-glow)';
+            }
+        }
+
         const acc = window.currentUserAccess;
         if(acc === "viewonly") { 
             ['panel-surat-perintah','panel-input-spp','panel-internal-produksi','panel-input-shipment','panel-input-prod'].forEach(id=>document.getElementById(id).style.display='none');
@@ -2275,7 +2331,7 @@ document.getElementById('bee-boot-container').style.display = 'flex';
         });
     }
 
-    window.beeShowDynamicStats = function() {
+window.beeShowDynamicStats = function() {
         if(window.isBeeBootTyping) return; document.getElementById('bee-boot-actions').innerHTML = '';
         
         const filteredSPP = window.getFilteredNonSPLSPP();
@@ -2293,21 +2349,29 @@ document.getElementById('bee-boot-container').style.display = 'flex';
         
         const readyItems = filteredSPP.filter(i => ['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status) && !i.isShipped);
         const ready = readyItems.length;
+        const terkirim = filteredSPP.filter(i => i.isShipped).length;
         
-        const terkirimItems = filteredSPP.filter(i => i.isShipped);
-        const terkirim = terkirimItems.length;
-        
-        // Hitung Barang Ready (Gudang)
+        const filterSelect = document.getElementById('global-time-filter');
+        const filterLabel = filterSelect ? filterSelect.options[filterSelect.selectedIndex].text : "Waktu Terpilih";
+
         let readyMap = {};
         readyItems.forEach(i => { readyMap[i.product] = (readyMap[i.product] || 0) + 1; });
         let readyTextHTML = ready > 0 ? Object.entries(readyMap).map(([prod, count]) => `• ${prod} : <b style="color:var(--emerald-glow)">${count} Unit</b>`).join("<br>") : "<i style='color:var(--text-muted)'>Belum ada barang tersedia di Gudang.</i>";
 
-        // Hitung Barang Terkirim
-        let terkirimMap = {};
-        terkirimItems.forEach(i => { terkirimMap[i.product] = (terkirimMap[i.product] || 0) + 1; });
-        let terkirimTextHTML = terkirim > 0 ? Object.entries(terkirimMap).map(([prod, count]) => `• ${prod} : <b style="color:var(--cyan-glow)">${count} Unit</b>`).join("<br>") : "<i style='color:var(--text-muted)'>Belum ada barang terkirim.</i>";
+        // --- FITUR BARU: KALKULASI TREN TOP 5 & BOTTOM 5 ---
+        let completedProdMap = {};
+        completedItems.forEach(i => { completedProdMap[i.product] = (completedProdMap[i.product] || 0) + 1; });
+        
+        let sortedCompleted = Object.entries(completedProdMap).map(([prod, count]) => { return {prod, count}; }).sort((a,b) => b.count - a.count);
 
-        // Hitung Pending/Menggantung
+        let top5HTML = sortedCompleted.length > 0 
+            ? sortedCompleted.slice(0, 5).map((item, idx) => `${idx+1}. ${item.prod} : <b style="color:var(--emerald-glow)">${item.count} Unit</b>`).join("<br>") 
+            : "<i style='color:var(--text-muted)'>Belum ada produk yang selesai.</i>";
+
+        let bottom5HTML = sortedCompleted.length > 0 
+            ? sortedCompleted.slice().sort((a,b) => a.count - b.count).slice(0, 5).map((item, idx) => `${idx+1}. ${item.prod} : <b style="color:var(--danger-glow)">${item.count} Unit</b>`).join("<br>") 
+            : "<i style='color:var(--text-muted)'>Belum ada produk yang selesai.</i>";
+
         const activeSPPList = filteredSPP.filter(i => !['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status));
         let pendingTextHTML = "<span style='color:var(--emerald-glow)'>Semua SPP telah berhasil diselesaikan! Gudang aman.</span>";
         if(activeSPPList.length > 0) {
@@ -2315,28 +2379,31 @@ document.getElementById('bee-boot-container').style.display = 'flex';
         }
 
         const text = `<div style="text-align:left; font-size:12px; max-height:220px; overflow-y:auto; color:var(--text-main); padding-right:5px;">
-            <b style="color:var(--blue-glow); font-size:14px;">📊 ANALISA DATA MENYELURUH:</b><hr style="border-color:#38bdf8;">
+            <b style="color:var(--blue-glow); font-size:14px;">📊 ANALISA DATA (${filterLabel.toUpperCase()}):</b><hr style="border-color:#38bdf8;">
             <b>1. Efisiensi Produksi:</b><br>
-            Tingkat penyelesaian SPP adalah <b style="color:var(--emerald-glow); font-size:14px;">${persentase}%</b> (${selesai} dari ${totalSPP} SPP selesai).<br>
+            Penyelesaian SPP adalah <b style="color:var(--emerald-glow); font-size:14px;">${persentase}%</b> (${selesai} dari ${totalSPP} SPP selesai).<br>
             Sedang proses: <b>${proses}</b>, Pending: <b>${pending}</b>, Terjeda: <b>${terjeda}</b>, Stoppage: <b>${stoppage}</b>, Takeover: <b>${takeover}</b>.<br>
-            Total barang ready: <b style="color:var(--emerald-glow);">${ready}</b>, Total barang terkirim: <b style="color:var(--cyan-glow);">${terkirim}</b>.<br><br>
+            Total di gudang: <b style="color:var(--emerald-glow);">${ready}</b>, Terkirim: <b style="color:var(--cyan-glow);">${terkirim}</b>.<br><br>
             
             <b>2. Laporan Barang Tersedia di Gudang:</b><br>
             <div style="background: rgba(16,185,129,0.1); padding:8px; border-radius:6px; border:1px solid rgba(16,185,129,0.3); margin-top:5px; margin-bottom:10px;">
                 ${readyTextHTML}
             </div>
             
-            <b>3. Laporan Barang Terkirim:</b><br>
-            <div style="background: rgba(14,213,192,0.1); padding:8px; border-radius:6px; border:1px solid rgba(14,213,192,0.3); margin-top:5px; margin-bottom:10px;">
-                ${terkirimTextHTML}
+            <b>3. Tren 5 Produk Terbanyak Selesai:</b><br>
+            <div style="background: rgba(56, 189, 248, 0.1); padding:8px; border-radius:6px; border:1px solid rgba(56, 189, 248, 0.3); margin-top:5px; margin-bottom:10px;">
+                ${top5HTML}
             </div>
 
-            <b>4. Pekerjaan Menggantung (Belum Selesai):</b><br>
-            <div style="background: rgba(244,63,94,0.1); padding:8px; border-radius:6px; border:1px solid rgba(244,63,94,0.3); margin-top:5px; margin-bottom:10px;">
+            <b>4. Tren 5 Produk Terdikit Selesai:</b><br>
+            <div style="background: rgba(244, 63, 94, 0.1); padding:8px; border-radius:6px; border:1px solid rgba(244, 63, 94, 0.3); margin-top:5px; margin-bottom:10px;">
+                ${bottom5HTML}
+            </div>
+
+            <b>5. Pekerjaan Menggantung (Belum Selesai):</b><br>
+            <div style="background: rgba(251, 191, 36, 0.1); padding:8px; border-radius:6px; border:1px solid rgba(251, 191, 36, 0.3); margin-top:5px; margin-bottom:10px;">
                 ${pendingTextHTML}
             </div>
-            
-            <i style="color:var(--text-muted); font-size:11px;">Analitik ini bersifat real-time berdasarkan filter waktu di atas.</i>
             </div>`;
             
         window.typeWriterHTML('bee-boot-text', text, 1, () => { document.getElementById('bee-boot-actions').innerHTML = '<button class="bee-boot-btn bee-btn-yes" onclick="beeOfferTour()">Lanjut Tour</button><button class="bee-boot-btn bee-btn-no" onclick="beeExplainNo()">Tutup</button>'; });
@@ -2358,17 +2425,28 @@ document.getElementById('bee-boot-container').style.display = 'flex';
         
         const readyItems = filteredSPP.filter(i => ['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status) && !i.isShipped);
         const ready = readyItems.length;
+        const terkirim = filteredSPP.filter(i => i.isShipped).length;
         
-        const terkirimItems = filteredSPP.filter(i => i.isShipped);
-        const terkirim = terkirimItems.length;
-        
+        const filterSelect = document.getElementById('global-time-filter');
+        const filterLabel = filterSelect ? filterSelect.options[filterSelect.selectedIndex].text : "Waktu Terpilih";
+
         let readyMap = {};
         readyItems.forEach(i => { readyMap[i.product] = (readyMap[i.product] || 0) + 1; });
         let readyTextHTML = ready > 0 ? Object.entries(readyMap).map(([prod, count]) => `• ${prod} : <b style="color:var(--emerald-glow)">${count} Unit</b>`).join("<br>") : "<i style='color:var(--text-muted)'>Belum ada barang tersedia di Gudang.</i>";
 
-        let terkirimMap = {};
-        terkirimItems.forEach(i => { terkirimMap[i.product] = (terkirimMap[i.product] || 0) + 1; });
-        let terkirimTextHTML = terkirim > 0 ? Object.entries(terkirimMap).map(([prod, count]) => `• ${prod} : <b style="color:var(--cyan-glow)">${count} Unit</b>`).join("<br>") : "<i style='color:var(--text-muted)'>Belum ada barang terkirim.</i>";
+        // --- FITUR BARU: KALKULASI TREN TOP 5 & BOTTOM 5 TV MODE ---
+        let completedProdMap = {};
+        completedItems.forEach(i => { completedProdMap[i.product] = (completedProdMap[i.product] || 0) + 1; });
+        
+        let sortedCompleted = Object.entries(completedProdMap).map(([prod, count]) => { return {prod, count}; }).sort((a,b) => b.count - a.count);
+
+        let top5HTML = sortedCompleted.length > 0 
+            ? sortedCompleted.slice(0, 5).map((item, idx) => `${idx+1}. ${item.prod} : <b style="color:var(--blue-glow)">${item.count} Unit</b>`).join("<br>") 
+            : "<i style='color:var(--text-muted)'>Belum ada produk yang selesai.</i>";
+
+        let bottom5HTML = sortedCompleted.length > 0 
+            ? sortedCompleted.slice().sort((a,b) => a.count - b.count).slice(0, 5).map((item, idx) => `${idx+1}. ${item.prod} : <b style="color:var(--danger-glow)">${item.count} Unit</b>`).join("<br>") 
+            : "<i style='color:var(--text-muted)'>Belum ada produk yang selesai.</i>";
 
         const activeSPPList = filteredSPP.filter(i => !['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status));
         let pendingTextHTML = "<span style='color:var(--emerald-glow)'>Semua SPP telah berhasil diselesaikan! Gudang aman.</span>";
@@ -2377,30 +2455,34 @@ document.getElementById('bee-boot-container').style.display = 'flex';
         }
 
         const text = `<div style="text-align:left; font-size:12px; max-height:220px; overflow-y:auto; color:var(--text-main); padding-right:5px;">
-            <b style="color:var(--blue-glow); font-size:14px;">📊 REKAPITULASI REAL-TIME:</b><hr style="border-color:#38bdf8;">
+            <b style="color:var(--blue-glow); font-size:14px;">📊 REKAPITULASI (${filterLabel.toUpperCase()}):</b><hr style="border-color:#38bdf8;">
             <b>1. Efisiensi Produksi:</b> <b style="color:var(--emerald-glow); font-size:14px;">${persentase}%</b> (${selesai} dari ${totalSPP} selesai).<br>
             Sedang proses: <b>${proses}</b>, Pending: <b>${pending}</b>, Terjeda: <b>${terjeda}</b>, Stoppage: <b>${stoppage}</b>, Takeover: <b>${takeover}</b>.<br>
-            Total barang ready: <b style="color:var(--emerald-glow);">${ready}</b>, Total barang terkirim: <b style="color:var(--cyan-glow);">${terkirim}</b>.<br><br>
+            Total di gudang: <b style="color:var(--emerald-glow);">${ready}</b>, Terkirim: <b style="color:var(--cyan-glow);">${terkirim}</b>.<br><br>
             
             <b>2. Laporan Barang Tersedia:</b><br>
             <div style="background: rgba(16,185,129,0.1); padding:8px; border-radius:6px; border:1px solid rgba(16,185,129,0.3); margin-top:5px; margin-bottom:10px;">
                 ${readyTextHTML}
             </div>
             
-            <b>3. Laporan Barang Terkirim:</b><br>
-            <div style="background: rgba(14,213,192,0.1); padding:8px; border-radius:6px; border:1px solid rgba(14,213,192,0.3); margin-top:5px; margin-bottom:10px;">
-                ${terkirimTextHTML}
+            <b>3. Tren 5 Produk Terbanyak Selesai:</b><br>
+            <div style="background: rgba(56, 189, 248, 0.1); padding:8px; border-radius:6px; border:1px solid rgba(56, 189, 248, 0.3); margin-top:5px; margin-bottom:10px;">
+                ${top5HTML}
             </div>
 
-            <b>4. Masih Proses/Pending:</b><br>
-            <div style="background: rgba(244,63,94,0.1); padding:8px; border-radius:6px; border:1px solid rgba(244,63,94,0.3); margin-top:5px; margin-bottom:10px;">
+            <b>4. Tren 5 Produk Terdikit Selesai:</b><br>
+            <div style="background: rgba(244, 63, 94, 0.1); padding:8px; border-radius:6px; border:1px solid rgba(244, 63, 94, 0.3); margin-top:5px; margin-bottom:10px;">
+                ${bottom5HTML}
+            </div>
+
+            <b>5. Masih Proses/Pending:</b><br>
+            <div style="background: rgba(251, 191, 36, 0.1); padding:8px; border-radius:6px; border:1px solid rgba(251, 191, 36, 0.3); margin-top:5px; margin-bottom:10px;">
                 ${pendingTextHTML}
             </div>
             </div>`;
             
         showTVAlert(text, 25000); 
     }
-
     setInterval(() => {
         if(window.currentUserRole === "TV Mode" && window.isTVModeReady && !window.isBeeBootTyping) {
             window.beeShowDynamicStatsTV();
@@ -3191,29 +3273,49 @@ document.getElementById('bee-boot-container').style.display = 'flex';
         let uploadedFileUrl = null;
 
         if (file) {
-            btnSubmit.innerHTML = "⏳ MENGUNGGAH DOKUMEN KE FIREBASE...";
+            btnSubmit.innerHTML = "⏳ MENGUNGGAH DOKUMEN KE GOOGLE DRIVE...";
             btnSubmit.disabled = true;
             btnSubmit.style.background = "var(--warning-glow)";
             
             try {
-                // Inisialisasi referensi Firebase Storage
-                const storageRef = firebase.storage().ref();
-                const docRef = storageRef.child(`spp_documents/${noSPP}_${file.name}`);
+                // 1. Membaca file menjadi format Base64 agar bisa dikirim via HTTP Request
+                const base64Data = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = error => reject(error);
+                    reader.readAsDataURL(file);
+                });
+
+                // 2. Mempersiapkan struktur data yang akan dikirim ke Apps Script
+                const payload = {
+                    fileName: `${noSPP}_${file.name}`,
+                    mimeType: file.type,
+                    fileData: base64Data
+                };
+
+                // 3. Mengirim data ke Google Apps Script (GAS_WEB_APP_URL)
+                const response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                // 4. Menerima balasan dari Apps Script berupa link URL Google Drive
+                const result = await response.json(); 
                 
-                // Mulai proses upload
-                const uploadTask = await docRef.put(file);
-                
-                // Ambil link url untuk di download nanti
-                uploadedFileUrl = await uploadTask.ref.getDownloadURL();
+                if (result && result.url) {
+                    uploadedFileUrl = result.url; // Simpan URL untuk dipush ke Firebase Realtime Database
+                } else {
+                    throw new Error("Gagal mendapatkan link URL dari Google Drive.");
+                }
+
             } catch (error) {
-                alert("Gagal mengunggah file ke Firebase Storage: " + error.message);
+                alert("Gagal mengunggah file ke Google Drive: " + error.message);
                 btnSubmit.innerHTML = "Submit & Rilis Master SPP";
                 btnSubmit.disabled = false;
                 btnSubmit.style.background = "linear-gradient(135deg, #7c3aed, #a855f7)";
                 return;
             }
         }
-
         window.dbPushSPP({ 
             no: noSPP, 
             datetime: datetimeInput, 
@@ -3315,9 +3417,19 @@ document.getElementById('bee-boot-container').style.display = 'flex';
         const formattedTime = window.formatDateToString(rawTime); 
         const customer = document.getElementById('shipment-customer').value;
         
-        window.dbPushShipment({ time: formattedTime, rawTimestampMs: rawTime.getTime(), product: productSelection, spp: sppAsal, operatorReceiver: "-", carrier: carrier, customer: customer });
+        window.dbPushShipment({ 
+            time: formattedTime, 
+            rawTimestampMs: rawTime.getTime(), 
+            product: productSelection, 
+            spp: sppAsal, 
+            operatorReceiver: "-", 
+            carrier: carrier, 
+            customer: customer,
+            status: "Dalam Perjalanan" // <-- TAMBAHAN BARU
+        });
         
-        this.reset(); 
+        this.reset();
+
         document.getElementById('shipment-carrier-manual').style.display = "none"; 
         window.resetDateTimeInputs();
         alert("Terimakasih data yang sudah anda berikan akan terekam di log history gudang");
@@ -3684,7 +3796,7 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
         });
     };
 
-    window.renderShipmentTable = function() {
+window.renderShipmentTable = function() {
         const tbody = document.getElementById('shipment-history-body'); tbody.innerHTML = ""; 
         let filteredShips = window.databaseShipment.filter(ship => window.isWithinTimeframe(ship.rawTimestampMs, document.getElementById('global-time-filter').value));
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
@@ -3698,10 +3810,32 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
             let amanCarrier = window.sanitizeHTML(item.carrier);
             let amanCustomer = window.sanitizeHTML(item.customer);
 
+            // --- FITUR BARU: LOGIKA STATUS TERKIRIM ---
+            let statusText = item.status || "Dalam Perjalanan"; // Jika data lama belum ada status, otomatis "Dalam Perjalanan"
+            let badgeHTML = "";
+            if (statusText === "Terkirim") {
+                badgeHTML = `<span class="badge bg-reguler" style="background:#d1fae5; color:#059669; border-color:#34d399;">Terkirim ✅</span>`;
+            } else {
+                badgeHTML = `<span class="badge bg-reguler" style="background:#ccfbf1; color:var(--emerald-glow); border-color:#5eead4; margin-bottom: 5px; display: inline-block;">Dalam Perjalanan 🚚</span><br>
+                <button class="btn-action-trigger" style="background:var(--emerald-glow); color:#fff; font-size:10px; padding:4px 8px; border:none;" onclick="markShipmentTerkirim('${item.firebaseKey}')">✔️ Set Terkirim</button>`;
+            }
+
             let delBtn = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editShipment('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteShipment('${item.firebaseKey}', '${item.spp}')">Hapus</button></td>` : '';
-            tbody.innerHTML += `<tr style="border-left: 4px solid var(--blue-glow);"><td>${item.time}</td><td><strong style="color: var(--text-main);">${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>🚚 ${amanCarrier}</b></td><td><span style="color: var(--blue-glow); font-weight:700;">🏢 ${amanCustomer}</span></td><td><span class="badge bg-reguler" style="background:#ccfbf1; color:var(--emerald-glow); border-color:#5eead4;">Dalam Perjalanan</span></td>${delBtn}</tr>`;
+            
+            tbody.innerHTML += `<tr style="border-left: 4px solid var(--blue-glow);"><td>${item.time}</td><td><strong style="color: var(--text-main);">${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>🚚 ${amanCarrier}</b></td><td><span style="color: var(--blue-glow); font-weight:700;">🏢 ${amanCustomer}</span></td><td>${badgeHTML}</td>${delBtn}</tr>`;
         });
     }
+
+    // --- FUNGSI KLIK TERKIRIM ---
+    window.markShipmentTerkirim = function(firebaseKey) {
+        if(confirm("Tandai pengiriman ini sebagai TERKIRIM (Sudah sampai di lokasi/customer)?")) {
+            firebase.database().ref('shipments/' + firebaseKey).update({ status: "Terkirim" }).then(() => {
+                alert("Status pengiriman berhasil diperbarui menjadi Terkirim!");
+            }).catch(err => {
+                alert("Gagal memperbarui status: " + err.message);
+            });
+        }
+    };
 
     window.renderSPLTable = function() {
         const tbody = document.getElementById('spl-history-body'); tbody.innerHTML = ''; 
@@ -3763,22 +3897,45 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
         });
     }
 
-    window.renderOperatorTable = function() {
+  window.renderOperatorTable = function() {
+        let toggleBtn = document.getElementById('btn-toggle-log-mode');
+        if (!toggleBtn) {
+            const headerDiv = document.querySelector('#panel-history-prod .header-flex div');
+            if (headerDiv) {
+                toggleBtn = document.createElement('button');
+                toggleBtn.id = 'btn-toggle-log-mode';
+                toggleBtn.className = 'btn-action-trigger';
+                toggleBtn.style.marginRight = '10px';
+                toggleBtn.onclick = window.toggleHistoryLog;
+                headerDiv.insertBefore(toggleBtn, headerDiv.firstChild);
+            }
+        }
+        if (toggleBtn) {
+            toggleBtn.innerHTML = window.modeHistoryLog === 'proses' ? '📂 Buka Riwayat Selesai' : '🔄 Tampilkan On Proses';
+            toggleBtn.style.background = window.modeHistoryLog === 'proses' ? 'var(--blue-glow)' : 'var(--emerald-glow)';
+            toggleBtn.style.color = '#000';
+        }
+
         const tbody = document.getElementById('operator-history-body'); 
         tbody.innerHTML = ''; 
-        let filteredLogs = window.getFilteredLogs();
+        let rawLogs = window.getFilteredLogs();
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
         
+        // Filter Logs berdasarkan status Induk SPP
+        let filteredLogs = rawLogs.filter(log => {
+            let masterSPP = window.databaseMasterSPP.find(s => s.no === log.noSPP);
+            let isSelesai = masterSPP ? (['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(masterSPP.status) || masterSPP.isShipped) : ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(log.status);
+            return window.modeHistoryLog === 'proses' ? !isSelesai : isSelesai;
+        });
+
         if(filteredLogs.length === 0) { 
-            tbody.innerHTML = `<tr><td colspan="${isDev ? '9' : '8'}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat laporan pada rentang waktu ini.</td></tr>`; 
+            tbody.innerHTML = `<tr><td colspan="${isDev ? '10' : '9'}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat laporan pada rentang waktu/mode ini.</td></tr>`; 
             return; 
         }
 
         let groupedLogs = new Map();
         filteredLogs.forEach((item) => {
-            if (!groupedLogs.has(item.noSPP)) {
-                groupedLogs.set(item.noSPP, []);
-            }
+            if (!groupedLogs.has(item.noSPP)) groupedLogs.set(item.noSPP, []);
             groupedLogs.get(item.noSPP).push(item);
         });
 
@@ -3788,36 +3945,51 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
             let urgency = masterSPP ? masterSPP.priority : "Reguler";
             let urgencyClass = urgency === 'Urgent' ? 'bg-urgent' : (urgency === 'Buffer Stok' ? 'bg-buffer' : 'bg-reguler');
 
-            let uniqueProds = [...new Set(logs.map(l => l.noProd))].filter(n => n && n !== "-").join(", ");
-            if (!uniqueProds) uniqueProds = "-";
+            let uniqueProds = [...new Set(logs.map(l => l.noProd))].filter(n => n && n !== "-").join(", ") || "-";
 
-            tbody.innerHTML += `
-                <tr style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--blue-glow); border-top: 2px solid var(--panel-border);">
-                    <td colspan="${isDev ? '9' : '8'}" style="padding: 15px 20px;">
-                        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-                            <span style="font-size: 14px; font-weight: 800; color: #f8fafc;">📁 NO. SPP: <span style="color: var(--blue-glow);">${sppNo}</span></span>
-                            <span style="font-size: 14px; font-weight: 700; color: #f8fafc;">🛒 Produk: <span style="color: var(--emerald-glow);">${productName}</span></span>
-                            <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">🏷️ No. Produksi: <span style="color: var(--warning-glow);">${uniqueProds}</span></span>
-                            <span class="badge ${urgencyClass}">${urgency}</span>
-                        </div>
-                    </td>
-                </tr>
-            `;
+            tbody.innerHTML += `<tr style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--blue-glow); border-top: 2px solid var(--panel-border);">
+                <td colspan="${isDev ? '10' : '9'}" style="padding: 15px 20px;">
+                    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                        <span style="font-size: 14px; font-weight: 800; color: #f8fafc;">📁 NO. SPP: <span style="color: var(--blue-glow);">${sppNo}</span></span>
+                        <span style="font-size: 14px; font-weight: 700; color: #f8fafc;">🛒 Produk: <span style="color: var(--emerald-glow);">${productName}</span></span>
+                        <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">🏷️ No. Produksi: <span style="color: var(--warning-glow);">${uniqueProds}</span></span>
+                        <span class="badge ${urgencyClass}">${urgency}</span>
+                    </div>
+                </td>
+            </tr>`;
 
             logs.forEach((item) => {
                 let amanAktivitas = window.sanitizeHTML(item.aktivitas);
                 let amanReason = window.sanitizeHTML(item.reason);
-
                 let badgeHTML = window.getStatusBadge(item.status);
                 let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
                 
-                tbody.innerHTML += `
-                <tr style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                // KALKULASI SISA WAKTU PEKERJAAN SAAT LOG DIKIRIM
+                let sisaWaktuHtml = "-";
+                if (masterSPP && masterSPP.deadlineRawObjectMs) {
+                    let timeDiff = masterSPP.deadlineRawObjectMs - item.timestampMs;
+                    if (timeDiff > 0) {
+                        const h = Math.floor(timeDiff / (1000 * 60 * 60));
+                        const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                        sisaWaktuHtml = `<span style="color:var(--emerald-glow); font-weight:bold;">${h} Jam ${m} Menit</span>`;
+                    } else {
+                        const lateMs = Math.abs(timeDiff);
+                        const h = Math.floor(lateMs / (1000 * 60 * 60));
+                        const m = Math.floor((lateMs % (1000 * 60 * 60)) / (1000 * 60));
+                        sisaWaktuHtml = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${h} Jam ${m} Menit</span>`;
+                    }
+                } else {
+                     sisaWaktuHtml = `<span style="color:var(--text-muted); font-size:11px;">Belum Terkunci</span>`;
+                }
+
+                // Masukkan "sisaWaktuHtml" tepat setelah kolom "item.time"
+                tbody.innerHTML += `<tr style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
                     <td><b>${item.operator}</b></td>
                     <td><span style="color:var(--cyan-glow); font-weight:600;">${amanAktivitas}</span></td>
                     <td><u>${item.condition}</u></td>
                     <td><i>${item.stage}</i></td>
                     <td>${item.time}</td>
+                    <td>${sisaWaktuHtml}</td>
                     <td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td>
                     <td>${badgeHTML}</td>
                     <td><span style="font-weight:700; color:var(--blue-glow);">${amanReason}</span></td>
@@ -3825,9 +3997,8 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
                 </tr>`;
             });
         });
-    }
-
-    window.renderDevInjectTable = function() {
+    }; 
+window.renderDevInjectTable = function() {
         const tbody = document.getElementById('dev-inject-body');
         if(!tbody) return;
         tbody.innerHTML = '';
@@ -3905,32 +4076,90 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
         link.click();
     }
 
-    window.printPDF = function(tableId, title) {
-        let printWindow = window.open('', '', 'height=700,width=1000');
-        printWindow.document.write('<html><head><title>' + title + '</title>');
+window.printPDF = function(tableId, title) {
+        let tableEl = document.getElementById(tableId);
+        if (!tableEl) {
+            alert("Tabel tidak ditemukan untuk dicetak!");
+            return;
+        }
+
+        // 1. Kloning tabel agar tidak merusak tabel asli di web
+        let tableHtml = tableEl.cloneNode(true);
         
-        // CSS ditambahkan properti text-align: center dan margin: 0 auto;
-        printWindow.document.write('<style>body { font-family: "Segoe UI", sans-serif; padding: 20px; text-align: center; } h2 { color: #333; margin-bottom: 20px;} table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-left: auto; margin-right: auto; } th, td { border: 1px solid #666; padding: 10px; text-align: center; vertical-align: middle; font-size: 13px; } th { background-color: #e2e8f0; color: #0f172a; font-weight: bold; text-transform: uppercase; } tr:nth-child(even) { background-color: #f8fafc; }</style>');
-        
-        printWindow.document.write('</head><body>');
-        printWindow.document.write('<h2>' + title + '</h2>');
-        
-        let tableHtml = document.getElementById(tableId).cloneNode(true);
-        // Hapus kolom tombol/aksi jika ada (kolom terakhir)
+        // 2. Hapus kolom "Aksi" (kolom paling kanan) jika ada
         let headerRow = tableHtml.querySelector('thead tr');
-        if (headerRow && headerRow.lastElementChild.innerText.toLowerCase().includes('aksi')) {
+        if (headerRow && headerRow.lastElementChild && headerRow.lastElementChild.innerText.toLowerCase().includes('aksi')) {
             headerRow.lastElementChild.remove();
             tableHtml.querySelectorAll('tbody tr').forEach(row => {
                 if (row.lastElementChild) row.lastElementChild.remove();
             });
         }
-        
-        printWindow.document.write(tableHtml.outerHTML);
-        printWindow.document.write('</body></html>');
+
+        // 3. Susun HTML baru khusus untuk layout Kertas PDF
+        let htmlContent = `
+        <!DOCTYPE html>
+        <html lang="id">
+        <head>
+            <meta charset="UTF-8">
+            <title>${title}</title>
+            <style>
+                @page { size: auto; margin: 15mm; } 
+                body { 
+                    font-family: "Segoe UI", Helvetica, sans-serif; 
+                    padding: 0; margin: 0; 
+                    text-align: center; 
+                    background-color: #fff; 
+                    color: #000; 
+                } 
+                h2 { color: #000; margin-bottom: 20px; text-transform: uppercase; } 
+                table { 
+                    width: 100%; max-width: 100%; 
+                    border-collapse: collapse; 
+                    margin: 0 auto; 
+                } 
+                th, td { 
+                    border: 1px solid #000; 
+                    padding: 8px 10px; 
+                    text-align: center; 
+                    vertical-align: middle; 
+                    font-size: 12px; 
+                } 
+                th { 
+                    background-color: #e2e8f0; 
+                    font-weight: bold; 
+                    text-transform: uppercase; 
+                } 
+                
+                /* ========================================================
+                   KUNCI ANTI-BUG: PAKSA SEMUA WARNA MENJADI GELAP UNTUK KERTAS
+                   Membatalkan semua warna glow & teks putih dari web
+                   ======================================================== */
+                td *, th * { 
+                    color: #000 !important; 
+                    background: transparent !important; 
+                    text-shadow: none !important; 
+                    box-shadow: none !important;
+                    border: none !important;
+                }
+            </style>
+        </head>
+        <body>
+            <h2>${title}</h2>
+            ${tableHtml.outerHTML}
+        </body>
+        </html>
+        `;
+
+        // 4. Buka tab baru dan tulis dokumennya
+        let printWindow = window.open('', '_blank', 'height=700,width=1000');
+        printWindow.document.open();
+        printWindow.document.write(htmlContent);
         printWindow.document.close();
-        printWindow.onload = function() {
+
+        // 5. Beri jeda 0.5 detik agar browser merender tabel sebelum memunculkan popup Save PDF
+        setTimeout(() => {
             printWindow.print();
-        };
+        }, 500);
     };
 
     window.editMasterSPP = function(firebaseKey) {
@@ -4129,13 +4358,36 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
         if(currentSavedValue) select.value = currentSavedValue;
     };
 
-   // ================================================================
-    // 1. RENDER TABEL ADMIN DOKUMEN (QTY GROUPING & ROWSPAN RATA TENGAH)
-    // ================================================================
+ // --- VARIABEL & FUNGSI TOGGLE UNTUK ADMIN DOKUMEN ---
+    window.isAdminDokumenMinimized = true;
+
+    window.toggleAdminDokumenView = function() {
+        window.isAdminDokumenMinimized = !window.isAdminDokumenMinimized;
+        const btn = document.getElementById('btn-toggle-admin-dokumen');
+        if (btn) {
+            btn.innerHTML = window.isAdminDokumenMinimized ? "🔍 Tampilkan Semua Data" : "🗜️ Sembunyikan Detail";
+        }
+        window.renderAdminDokumenTable();
+    };
+
+    // --- FUNGSI RENDER TABEL ADMIN DOKUMEN ---
     window.renderAdminDokumenTable = function() {
         const tbody = document.getElementById('admin-dokumen-body');
         if (!tbody) return;
         tbody.innerHTML = '';
+
+        // Injeksi tombol toggle "Tampilkan Semua Data" jika belum ada
+        let toggleContainer = document.getElementById('admin-dokumen-toggle-container');
+        if (!toggleContainer) {
+            const panel = document.getElementById('panel-admin-bpmp');
+            if (panel) {
+                toggleContainer = document.createElement('div');
+                toggleContainer.id = 'admin-dokumen-toggle-container';
+                toggleContainer.className = 'toggle-matrix-container';
+                toggleContainer.innerHTML = `<button type="button" id="btn-toggle-admin-dokumen" class="btn-toggle-matrix" onclick="toggleAdminDokumenView()">🔍 Tampilkan Semua Data</button>`;
+                panel.appendChild(toggleContainer);
+            }
+        }
 
         // Terapkan filter khusus dari dropdown export-dokumen-filter ke tabel Admin
         let filterType = document.getElementById('export-dokumen-filter').value;
@@ -4154,53 +4406,65 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
 
         if (filteredRekap.length === 0) {
             tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada data dokumen yang diinput pada periode waktu ini.</td></tr>';
+            if(toggleContainer) toggleContainer.style.display = 'none';
             return;
         }
 
-        // Kelompokkan data berdasarkan jenisProduksi
+        if(toggleContainer) toggleContainer.style.display = 'flex';
+
+        // 1. Urutkan data berdasarkan waktu (Dari yang terlama ke terbaru)
+        filteredRekap.sort((a, b) => a.timestampMs - b.timestampMs);
+
+        // 2. Batasi 5 data terbaru jika mode "Minimized" aktif
+        // Menggunakan .slice(-5) untuk mengambil 5 data dari urutan paling belakang (terbaru), tapi susunannya tetap lama -> baru
+        let displayData = window.isAdminDokumenMinimized ? filteredRekap.slice(-5) : filteredRekap;
+
+        // 3. Kelompokkan data yang tampil berdasarkan BULAN
         const groupedData = {};
-        filteredRekap.forEach(item => {
-            const prod = item.jenisProduksi || 'Lainnya';
-            if (!groupedData[prod]) groupedData[prod] = [];
-            groupedData[prod].push(item);
+        displayData.forEach(item => {
+            const b = item.bulan || 'Lainnya';
+            if (!groupedData[b]) groupedData[b] = [];
+            groupedData[b].push(item);
         });
 
-        // Render ke tabel dengan Rowspan pada QTY
-        for (const prod in groupedData) {
-            // Urutkan per grup agar data terbaru di atas
-            groupedData[prod].sort((a, b) => b.timestampMs - a.timestampMs);
-            
-            let totalQty = 0;
-            // Hitung total QTY dalam grup produk ini
-            groupedData[prod].forEach(item => totalQty += (parseInt(item.qty) || 1));
-            
-            groupedData[prod].forEach((item, index) => {
-                let tr = `<tr style="border-left: 3px solid var(--blue-glow); border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <td>${item.bulan || '-'}</td>
-                    <td><strong style="color:var(--blue-glow);">${item.spp || '-'}</strong></td>
-                    <td>${item.tglBPMP || '-'}</td>
-                    <td><code style="color:var(--emerald-glow); font-weight:bold;">${item.noBPMP || '-'}</code></td>
-                    <td>${item.tglLPBHP || '-'}</td>
-                    <td><code style="color:var(--purple-glow); font-weight:bold;">${item.noLPBHP || '-'}</code></td>
-                    <td>${item.noProd || '-'}</td>
-                    <td>${item.jenisPekerjaan || '-'}</td>
-                    <td><strong>${item.jenisProduksi || '-'}</strong></td>`;
+        // 4. Render ke tabel urut berdasarkan susunan kalender (Januari -> Desember)
+        const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember", "Lainnya"];
+        
+        monthNames.forEach(month => {
+            if (groupedData[month]) {
+                
+                let totalQty = 0;
+                // Hitung total QTY dalam bulan ini
+                groupedData[month].forEach(item => totalQty += (parseInt(item.qty) || 1));
+                
+                groupedData[month].forEach((item, index) => {
+                    let tr = `<tr style="border-left: 3px solid var(--blue-glow); border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td><strong style="color: #fff;">${item.bulan || '-'}</strong></td>
+                        <td><strong style="color:var(--blue-glow);">${item.spp || '-'}</strong></td>
+                        <td>${item.tglBPMP || '-'}</td>
+                        <td><code style="color:var(--emerald-glow); font-weight:bold;">${item.noBPMP || '-'}</code></td>
+                        <td>${item.tglLPBHP || '-'}</td>
+                        <td><code style="color:var(--purple-glow); font-weight:bold;">${item.noLPBHP || '-'}</code></td>
+                        <td>${item.noProd || '-'}</td>
+                        <td>${item.jenisPekerjaan || '-'}</td>
+                        <td><strong>${item.jenisProduksi || '-'}</strong></td>`;
+                        
+                    // Kolom QTY digabung (rowspan) berdasarkan jumlah data di BULAN tersebut
+                    if (index === 0) {
+                        tr += `<td rowspan="${groupedData[month].length}" style="text-align:center; vertical-align:middle; background:rgba(56, 189, 248, 0.1); border-left:1px solid rgba(56, 189, 248, 0.2); border-right:1px solid rgba(56, 189, 248, 0.2);">
+                            <span style="font-size:24px; font-weight:900; color:var(--emerald-glow);">${totalQty}</span>
+                        </td>`;
+                    }
                     
-                // Kolom QTY digabung (rowspan) untuk seluruh jumlah data dalam grup produk ini
-                if (index === 0) {
-                    tr += `<td rowspan="${groupedData[prod].length}" style="text-align:center; vertical-align:middle; background:rgba(56, 189, 248, 0.1); border-left:1px solid rgba(56, 189, 248, 0.2); border-right:1px solid rgba(56, 189, 248, 0.2);">
-                        <span style="font-size:24px; font-weight:900; color:var(--emerald-glow);">${totalQty}</span>
-                    </td>`;
-                }
-                
-                tr += `<td>
-                        <button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-bottom:5px; width:100%;" onclick="editAdminDokumen('${item.firebaseKey}')">✏️ Edit</button>
-                        <button class="btn-delete" style="width:100%;" onclick="hapusAdminDokumen('${item.firebaseKey}')">Hapus</button>
-                       </td></tr>`;
-                
-                tbody.innerHTML += tr;
-            });
-        }
+                    tr += `<td>
+                            <button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-bottom:5px; width:100%;" onclick="editAdminDokumen('${item.firebaseKey}')">✏️ Edit</button>
+                            <button class="btn-delete" style="width:100%;" onclick="hapusAdminDokumen('${item.firebaseKey}')">Hapus</button>
+                           </td></tr>`;
+                    
+                    tbody.innerHTML += tr;
+                });
+            }
+        });
     };
 
     window.hapusAdminDokumen = function(key) {
@@ -4318,12 +4582,15 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
         });
 
         if(filteredLogs.length === 0) { 
-            tbody.innerHTML = `<tr><td colspan="${isDev ? '9' : '8'}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat laporan pada rentang waktu/mode ini.</td></tr>`; return; 
+            tbody.innerHTML = `<tr><td colspan="${isDev ? '10' : '9'}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat laporan pada rentang waktu/mode ini.</td></tr>`; 
+            return; 
         }
 
         let groupedLogs = new Map();
         filteredLogs.forEach((item) => {
-            if (!groupedLogs.has(item.noSPP)) groupedLogs.set(item.noSPP, []);
+            if (!groupedLogs.has(item.noSPP)) {
+                groupedLogs.set(item.noSPP, []);
+            }
             groupedLogs.get(item.noSPP).push(item);
         });
 
@@ -4333,18 +4600,21 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
             let urgency = masterSPP ? masterSPP.priority : "Reguler";
             let urgencyClass = urgency === 'Urgent' ? 'bg-urgent' : (urgency === 'Buffer Stok' ? 'bg-buffer' : 'bg-reguler');
 
-            let uniqueProds = [...new Set(logs.map(l => l.noProd))].filter(n => n && n !== "-").join(", ") || "-";
+            let uniqueProds = [...new Set(logs.map(l => l.noProd))].filter(n => n && n !== "-").join(", ");
+            if (!uniqueProds) uniqueProds = "-";
 
-            tbody.innerHTML += `<tr style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--blue-glow); border-top: 2px solid var(--panel-border);">
-                <td colspan="${isDev ? '9' : '8'}" style="padding: 15px 20px;">
-                    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-                        <span style="font-size: 14px; font-weight: 800; color: #f8fafc;">📁 NO. SPP: <span style="color: var(--blue-glow);">${sppNo}</span></span>
-                        <span style="font-size: 14px; font-weight: 700; color: #f8fafc;">🛒 Produk: <span style="color: var(--emerald-glow);">${productName}</span></span>
-                        <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">🏷️ No. Produksi: <span style="color: var(--warning-glow);">${uniqueProds}</span></span>
-                        <span class="badge ${urgencyClass}">${urgency}</span>
-                    </div>
-                </td>
-            </tr>`;
+            tbody.innerHTML += `
+                <tr style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--blue-glow); border-top: 2px solid var(--panel-border);">
+                    <td colspan="${isDev ? '10' : '9'}" style="padding: 15px 20px;">
+                        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                            <span style="font-size: 14px; font-weight: 800; color: #f8fafc;">📁 NO. SPP: <span style="color: var(--blue-glow);">${sppNo}</span></span>
+                            <span style="font-size: 14px; font-weight: 700; color: #f8fafc;">🛒 Produk: <span style="color: var(--emerald-glow);">${productName}</span></span>
+                            <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">🏷️ No. Produksi: <span style="color: var(--warning-glow);">${uniqueProds}</span></span>
+                            <span class="badge ${urgencyClass}">${urgency}</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
 
             logs.forEach((item) => {
                 let amanAktivitas = window.sanitizeHTML(item.aktivitas);
@@ -4352,13 +4622,40 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
                 let badgeHTML = window.getStatusBadge(item.status);
                 let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
                 
-                tbody.innerHTML += `<tr style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-                    <td><b>${item.operator}</b></td><td><span style="color:var(--cyan-glow); font-weight:600;">${amanAktivitas}</span></td><td><u>${item.condition}</u></td><td><i>${item.stage}</i></td><td>${item.time}</td><td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td><td>${badgeHTML}</td><td><span style="font-weight:700; color:var(--blue-glow);">${amanReason}</span></td>${actionBtns}
+                // --- KALKULASI SISA WAKTU PEKERJAAN SAAT LOG DIKIRIM ---
+                let sisaWaktuHtml = "-";
+                if (masterSPP && masterSPP.deadlineRawObjectMs) {
+                    let timeDiff = masterSPP.deadlineRawObjectMs - item.timestampMs;
+                    if (timeDiff > 0) {
+                        const h = Math.floor(timeDiff / (1000 * 60 * 60));
+                        const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                        sisaWaktuHtml = `<span style="color:var(--emerald-glow); font-weight:bold;">${h} Jam ${m} Mnt</span>`;
+                    } else {
+                        const lateMs = Math.abs(timeDiff);
+                        const h = Math.floor(lateMs / (1000 * 60 * 60));
+                        const m = Math.floor((lateMs % (1000 * 60 * 60)) / (1000 * 60));
+                        sisaWaktuHtml = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${h} Jam ${m} Mnt</span>`;
+                    }
+                } else {
+                     sisaWaktuHtml = `<span style="color:var(--text-muted); font-size:11px;">Belum Terkunci</span>`;
+                }
+
+                tbody.innerHTML += `
+                <tr style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                    <td><b>${item.operator}</b></td>
+                    <td><span style="color:var(--cyan-glow); font-weight:600;">${amanAktivitas}</span></td>
+                    <td><u>${item.condition}</u></td>
+                    <td><i>${item.stage}</i></td>
+                    <td>${item.time}</td>
+                    <td>${sisaWaktuHtml}</td>
+                    <td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td>
+                    <td>${badgeHTML}</td>
+                    <td><span style="font-weight:700; color:var(--blue-glow);">${amanReason}</span></td>
+                    ${actionBtns}
                 </tr>`;
             });
         });
     };
-
     // -- HISTORY 3: SURAT PERINTAH LANGSUNG (SPL) --
     window.modeHistorySPL = 'proses';
     window.toggleHistorySPL = function() {
