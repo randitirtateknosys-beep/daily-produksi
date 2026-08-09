@@ -2,10 +2,6 @@
 <html lang="id">
 <head>
     <script>
-        // ==========================================
-        // CEGAT RENDER: Eksekusi super cepat sebelum browser menggambar UI
-        // Session akan dikelola otomatis oleh Firebase Auth
-        // ==========================================
         window.loginSelesai = false;
     </script>
     <meta charset="UTF-8">
@@ -19,7 +15,6 @@
     <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     
-    <!-- MENGGUNAKAN LINK CDN RESMI FIREBASE (BEBAS BLOKIR) -->
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -52,7 +47,6 @@
             letter-spacing: 0.3px; overflow-x: hidden;
         }
 
-        /* --- LOGIN SCREEN & ROBOT --- */
         #login-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; display: none; /* UBAH KE NONE DEFAULT-NYA */
@@ -91,7 +85,7 @@
         }
         #login-error { color: var(--danger-glow); margin-top: 15px; font-weight: bold; font-size: 14px; display: none; }
 
-        /* --- WELCOME POPUP --- */
+    
         #welcome-popup {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
             display: flex; align-items: center; justify-content: center; z-index: 9998; cursor: pointer; display: none;
@@ -104,7 +98,6 @@
         .welcome-box h3 { color: #fff; margin-bottom: 5px; }
         @keyframes popIn { to { transform: scale(1); } }
 
-        /* --- MAINTENANCE SCREEN --- */
         #maintenance-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(15, 23, 42, 0.98); backdrop-filter: blur(15px);
@@ -119,7 +112,7 @@
         .maintenance-box p { color: #fff; font-size: 16px; line-height: 1.6; }
         .maintenance-icon { font-size: 80px; margin-bottom: 10px; animation: floatLogin 3s ease-in-out infinite; }
 
-        /* --- DASHBOARD STYLES --- */
+
         #main-app { display: none; padding: 30px; }
         .container { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; }
 
@@ -128,7 +121,7 @@
         .user-identity b { color: var(--emerald-glow); background: rgba(16,185,129,0.1); padding: 4px 10px; border-radius: 4px; border: 1px solid var(--emerald-glow); text-transform: uppercase; }
         .btn-logout { background: #f43f5e; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
         
-        /* LIVE INDICATOR CLOCK */
+      
         .live-indicator-container { display: inline-flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 18px; border-radius: 20px; margin-top: 15px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.2); }
         .live-dot { width: 10px; height: 10px; background-color: var(--emerald-glow); border-radius: 50%; animation: blink 1.5s infinite; }
         @keyframes blink { 0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--emerald-glow); } 50% { opacity: 0.3; box-shadow: none; } }
@@ -137,7 +130,6 @@
         .global-filter-bar label { font-weight: 700; color: var(--blue-glow); font-size: 14px; }
         .global-filter-bar select, .global-filter-bar input[type="date"] { padding: 8px 16px; border-radius: 6px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-main); font-weight: 700; cursor: pointer; }
 
-        /* SEARCH BAR CSS */
         .global-search-container {
             background: var(--panel-bg); padding: 15px 20px; border-radius: 8px; border: 1px solid var(--panel-border);
             display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); flex-wrap: wrap;
@@ -167,7 +159,7 @@
 
         .panel { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 25px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); transition: box-shadow 0.3s; }
         
-        /* --- CSS BARU UNTUK HIGHLIGHT ROOM TOUR --- */
+       
         .highlight-tour {
             outline: 4px dashed var(--emerald-glow) !important;
             outline-offset: 4px !important;
@@ -248,7 +240,7 @@
         .badge { padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         .bg-reguler { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); } .bg-buffer { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); } .bg-urgent { background: rgba(244, 63, 94, 0.15); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.3); }
 
-        /* KELAS STATUS SERAGAM */
+        
         .status-pending { background: rgba(100, 116, 139, 0.2); color: #cbd5e1; border: 1px solid #64748b; } 
         .status-proses { background: rgba(2, 132, 199, 0.2); color: #38bdf8; border: 1px solid #0284c7; } 
         .status-selesai { background: rgba(22, 163, 74, 0.2); color: #4ade80; border: 1px solid #16a34a; } 
@@ -277,7 +269,7 @@
         .btn-choice { width: 130px; padding: 12px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 14px; font-weight: 800; border-radius: 8px; cursor: pointer; }
         .btn-choice.selected-yes { background: var(--emerald-glow) !important; border-color: var(--emerald-glow) !important; } .btn-choice.selected-no { background: var(--danger-glow) !important; border-color: var(--danger-glow) !important; }
 
-        /* --- CHAT SYSTEM --- */
+       
         #chat-fab {
             position: fixed; bottom: 30px; left: 30px; width: 60px; height: 60px;
             background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%;
@@ -316,7 +308,7 @@
         #chat-input { flex: 1; background: transparent; border: none; padding: 15px; color: #fff; outline: none; }
         #chat-send { background: var(--emerald-glow); color: #fff; border: none; padding: 0 20px; font-weight: bold; cursor: pointer; border-radius: 0 0 12px 0; }
 
-        /* --- ROBOT BEE BOOT CSS --- */
+        
         .bee-boot { 
             position: fixed; bottom: 30px; right: 30px; z-index: 1000; display: none; flex-direction: column; align-items: flex-end; 
             transition: bottom 0.4s ease-out;
@@ -353,7 +345,7 @@
 
         .hidden { display: none !important; }
 
-        /* RESPONSIVE */
+      
         @media (max-width: 768px) {
             .analytics-grid { grid-template-columns: 1fr; }
             .unified-grid { grid-template-columns: 1fr !important; }
@@ -387,7 +379,6 @@
             </div>
         </div>
         
-        <!-- KOLOM INPUT LOGIN (SUDAH DIUBAH MENGGUNAKAN EMAIL) -->
         <input type="email" id="login-email" placeholder="Masukkan email pengguna..." autocomplete="off">
         <input type="password" id="login-password" placeholder="Masukkan kata sandi..." autocomplete="off" onkeypress="if(event.key === 'Enter') { event.preventDefault(); checkLogin(); }">
         <button onclick="checkLogin()">Masuk Dashboard</button>
@@ -836,7 +827,7 @@
             </div>
         </div>
 
-        <!-- PANEL KHUSUS ADMIN: REKAP DOKUMEN BPMP & LPBHP -->
+        
         <div class="panel" id="panel-admin-bpmp" style="border-color: var(--blue-glow); display: none;">
             <h3 style="color: var(--blue-glow) !important; border-bottom: 1px solid rgba(56, 189, 248, 0.2); padding-bottom: 12px;">
                 📑 Rekap Dokumen BPMP & LPBHP (Khusus Admin)
@@ -1185,14 +1176,9 @@
 </div>
 
 <script>
-    // ==========================================
-    // URL WEB APP GOOGLE APPS SCRIPT ANDA
-    // ==========================================
+	
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyzvJ1f3FXMTLEXeU98IHy-FyBEPUG8Vhvf8PrfAYc4mAiZzmW28trfa_u4-Bo-J4Ujww/exec"; 
 
-    // ==========================================
-    // FIREBASE INITIALIZATION & REALTIME SYNC
-    // ==========================================
     const firebaseConfig = {
       apiKey: "AIzaSyAYvoe-2IbLgchTdsER5DgDxBOgjegAHJw",
       authDomain: "tirta-monitoring.firebaseapp.com",
@@ -1204,7 +1190,7 @@
       measurementId: "G-7C343LPLT6"
     };
 
-    // 1. Inisialisasi Firebase
+   
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const auth = firebase.auth(); 
@@ -1227,15 +1213,12 @@
     window.isMaintenanceActive = false;
     window.maintenanceMessage = "Sistem sedang diperbaiki.";
     
-    // Variabel Penyimpanan Password Dinamis
+    
     window.dynamicPasswords = {};
     window.currentActivePassword = "";
 
     window.activeOperators = {}; 
 
-// ================================================================
-    // FITUR TEMA HITAM & PUTIH (LIGHT/DARK MODE)
-    // ================================================================
     const lightThemeStyle = document.createElement('style');
     lightThemeStyle.innerHTML = `
         body.light-theme {
@@ -1254,7 +1237,6 @@
             --cyan-glow: #0d9488;
         }
         
-        /* Memaksa elemen teks umum berubah warna, TERMASUK WELCOME POPUP */
         body.light-theme .welcome-box h2,
         body.light-theme .welcome-box h3,
         body.light-theme .welcome-box p,
@@ -1273,14 +1255,16 @@
             color: var(--text-main) !important; 
         }
 
-        /* Memaksa inline style putih menjadi teks gelap pada mode terang */
         body.light-theme [style*="color: #fff"], 
         body.light-theme [style*="color:#fff"], 
         body.light-theme [style*="color: white"] {
             color: var(--text-main) !important;
         }
+body.light-theme .welcome-box {
+            background: var(--panel-bg) !important;
+        }
 
-        /* --- PERBAIKAN: FORM PRODUKSI YANG TERKUNCI (DISABLED/READONLY) --- */
+       
         body.light-theme input[readonly],
         body.light-theme select[style*="pointer-events: none"],
         body.light-theme input[style*="pointer-events: none"] {
@@ -1289,7 +1273,6 @@
             border-color: #cbd5e1 !important;
         }
 
-        /* --- PERBAIKAN BACKGROUND BEE-BOOT & CHAT AGAR TERBACA --- */
         body.light-theme .bee-boot-bubble { 
             background: rgba(255, 255, 255, 0.95) !important; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important; 
@@ -1344,10 +1327,8 @@
     }
     setTimeout(setupThemeToggle, 2000);
 
-    // Aktifkan TV Mode setelah 5 detik agar pesan Bee-boot tidak spam saat muat awal
     setTimeout(() => { window.isTVModeReady = true; }, 5000); 
 
-    // --- FUNGSI AKTIVASI STATUS ONLINE/OFFLINE REALTIME ---
     window.setupUserPresence = function(roleName) {
         if (!roleName || roleName === "Guest" || roleName === "TV Mode") return;
 
@@ -1363,21 +1344,17 @@
         });
     };
 
-    // --- ARRAY FILTER PRODUK INTERNAL ---
     window.isInternalProduct = function(productName) {
         if (!productName) return false;
         let name = productName.trim().toUpperCase();
         
-        // Memasukkan semua yang berawalan FRAME atau PART ke dalam stok komponen internal
         if (name.startsWith("FRAME") || name.startsWith("PART")) {
             return true;
         }
         
-        // Selain kondisi di atas, otomatis masuk ke Stok Produk Eksternal (Ready Kirim)
         return false;
     }
 
-    // --- BUNGKUS SEMUA FUNGSI REAL-TIME KE DALAM FUNGSI INI ---
     function startRealtimeListeners() {
        
         db.ref('masterSPP').orderByChild('rawTimestampMs').limitToLast(500).on('value', snap => {            
@@ -2127,21 +2104,20 @@ document.getElementById('bee-boot-container').style.display = 'flex';
     
         window.updateConditionDropdown(null);
 
-        // --- RENDER JUDUL TABEL HISTORY ---
         document.getElementById('spl-history-head').innerHTML = `<th>No. SPL</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Penanggung Jawab</th><th>Penerima Tugas</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('shipment-history-head').innerHTML = `<th>Keberangkatan</th><th>Produk</th><th>No. SPP Asal</th><th>Operator Logistik</th><th>Customer</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
-        // KOLOM SISA WAKTU DITAMBAHKAN DI SINI:
+
         document.getElementById('operator-history-head').innerHTML = `<th>Nama Operator</th><th>Aktivitas Kegiatan</th><th>Kondisi Progres</th><th>Tahap Produksi</th><th>Waktu Input</th><th>Sisa Waktu Pekerjaan</th><th>Target Deadline</th><th>Status Hasil</th><th>Keterangan / Poin Tambahan</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('internal-history-head').innerHTML = `<th>Waktu Pengambilan</th><th>Komponen</th><th>No. SPP Asal</th><th>Tujuan Produk</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('spp-master-head').innerHTML = `<th>No. SPP & Tgl Rilis</th><th>No. Produksi</th><th>Nama Produk</th><th>Tim Operator</th><th>Target Waktu</th><th>Urgensi</th><th>Status Terkini</th>${showDocCol ? '<th>Dokumen</th>' : ''}${isDev ? '<th>Aksi</th>' : ''}`;
     
-        // --- LOGIKA KUNCI MATI (DISABLE) TARGET WAKTU HANYA UNTUK DEVELOPER ---
+    
         let deadlineVal = document.getElementById('prod-deadline-val');
         let deadlineUnit = document.getElementById('prod-deadline-unit');
         
         if (deadlineVal && deadlineUnit) {
             if (isDev) {
-                // Developer bisa edit
+              
                 deadlineVal.disabled = false;
                 deadlineVal.style.cursor = 'text';
                 deadlineVal.style.background = 'var(--input-bg)';
@@ -2152,7 +2128,7 @@ document.getElementById('bee-boot-container').style.display = 'flex';
                 deadlineUnit.style.background = 'var(--input-bg)';
                 deadlineUnit.style.color = '#fff';
             } else {
-                // Operator TERKUNCI TOTAL (Disabled)
+                
                 deadlineVal.disabled = true;
                 deadlineVal.style.cursor = 'not-allowed';
                 deadlineVal.style.background = 'rgba(15, 23, 42, 0.8)';
@@ -2434,7 +2410,7 @@ window.beeShowDynamicStats = function() {
         readyItems.forEach(i => { readyMap[i.product] = (readyMap[i.product] || 0) + 1; });
         let readyTextHTML = ready > 0 ? Object.entries(readyMap).map(([prod, count]) => `• ${prod} : <b style="color:var(--emerald-glow)">${count} Unit</b>`).join("<br>") : "<i style='color:var(--text-muted)'>Belum ada barang tersedia di Gudang.</i>";
 
-        // --- FITUR BARU: KALKULASI TREN TOP 5 & BOTTOM 5 TV MODE ---
+        
         let completedProdMap = {};
         completedItems.forEach(i => { completedProdMap[i.product] = (completedProdMap[i.product] || 0) + 1; });
         
@@ -3278,7 +3254,7 @@ window.beeShowDynamicStats = function() {
             btnSubmit.style.background = "var(--warning-glow)";
             
             try {
-                // 1. Membaca file menjadi format Base64 agar bisa dikirim via HTTP Request
+            
                 const base64Data = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -3286,20 +3262,20 @@ window.beeShowDynamicStats = function() {
                     reader.readAsDataURL(file);
                 });
 
-                // 2. Mempersiapkan struktur data yang akan dikirim ke Apps Script
+             
                 const payload = {
                     fileName: `${noSPP}_${file.name}`,
                     mimeType: file.type,
                     fileData: base64Data
                 };
 
-                // 3. Mengirim data ke Google Apps Script (GAS_WEB_APP_URL)
+                
                 const response = await fetch(GAS_WEB_APP_URL, {
                     method: 'POST',
                     body: JSON.stringify(payload)
                 });
 
-                // 4. Menerima balasan dari Apps Script berupa link URL Google Drive
+             
                 const result = await response.json(); 
                 
                 if (result && result.url) {
@@ -3496,7 +3472,7 @@ window.beeShowDynamicStats = function() {
         });
     }
 
-    // --- SUBMIT REKAP DOKUMEN ADMIN ---
+ 
     document.getElementById('form-admin-dokumen').addEventListener('submit', function(e) {
         e.preventDefault();
 
@@ -3826,7 +3802,6 @@ window.renderShipmentTable = function() {
         });
     }
 
-    // --- FUNGSI KLIK TERKIRIM ---
     window.markShipmentTerkirim = function(firebaseKey) {
         if(confirm("Tandai pengiriman ini sebagai TERKIRIM (Sudah sampai di lokasi/customer)?")) {
             firebase.database().ref('shipments/' + firebaseKey).update({ status: "Terkirim" }).then(() => {
@@ -3964,7 +3939,6 @@ window.renderShipmentTable = function() {
                 let badgeHTML = window.getStatusBadge(item.status);
                 let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
                 
-                // KALKULASI SISA WAKTU PEKERJAAN SAAT LOG DIKIRIM
                 let sisaWaktuHtml = "-";
                 if (masterSPP && masterSPP.deadlineRawObjectMs) {
                     let timeDiff = masterSPP.deadlineRawObjectMs - item.timestampMs;
@@ -3982,7 +3956,6 @@ window.renderShipmentTable = function() {
                      sisaWaktuHtml = `<span style="color:var(--text-muted); font-size:11px;">Belum Terkunci</span>`;
                 }
 
-                // Masukkan "sisaWaktuHtml" tepat setelah kolom "item.time"
                 tbody.innerHTML += `<tr style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
                     <td><b>${item.operator}</b></td>
                     <td><span style="color:var(--cyan-glow); font-weight:600;">${amanAktivitas}</span></td>
@@ -4010,7 +3983,7 @@ window.renderDevInjectTable = function() {
             return;
         }
 
-        // Batasi tampilan menggunakan isDevInjectMinimized
+        
         let displayLogs = window.isDevInjectMinimized ? injectedLogs.slice(0, 5) : injectedLogs;
         
         displayLogs.forEach(log => {
@@ -4083,10 +4056,8 @@ window.printPDF = function(tableId, title) {
             return;
         }
 
-        // 1. Kloning tabel agar tidak merusak tabel asli di web
         let tableHtml = tableEl.cloneNode(true);
-        
-        // 2. Hapus kolom "Aksi" (kolom paling kanan) jika ada
+
         let headerRow = tableHtml.querySelector('thead tr');
         if (headerRow && headerRow.lastElementChild && headerRow.lastElementChild.innerText.toLowerCase().includes('aksi')) {
             headerRow.lastElementChild.remove();
@@ -4095,7 +4066,6 @@ window.printPDF = function(tableId, title) {
             });
         }
 
-        // 3. Susun HTML baru khusus untuk layout Kertas PDF
         let htmlContent = `
         <!DOCTYPE html>
         <html lang="id">
@@ -4130,10 +4100,7 @@ window.printPDF = function(tableId, title) {
                     text-transform: uppercase; 
                 } 
                 
-                /* ========================================================
-                   KUNCI ANTI-BUG: PAKSA SEMUA WARNA MENJADI GELAP UNTUK KERTAS
-                   Membatalkan semua warna glow & teks putih dari web
-                   ======================================================== */
+            
                 td *, th * { 
                     color: #000 !important; 
                     background: transparent !important; 
@@ -4150,13 +4117,11 @@ window.printPDF = function(tableId, title) {
         </html>
         `;
 
-        // 4. Buka tab baru dan tulis dokumennya
         let printWindow = window.open('', '_blank', 'height=700,width=1000');
         printWindow.document.open();
         printWindow.document.write(htmlContent);
         printWindow.document.close();
 
-        // 5. Beri jeda 0.5 detik agar browser merender tabel sebelum memunculkan popup Save PDF
         setTimeout(() => {
             printWindow.print();
         }, 500);
@@ -4277,7 +4242,7 @@ window.printPDF = function(tableId, title) {
         }
     }
 
-    // --- AUTO FILL ADMIN DOKUMEN ---
+
     window.autoFillAdminDokumen = function() {
         const sppNo = document.getElementById('admin-select-selesai').value;
         if (!sppNo) {
@@ -4312,7 +4277,6 @@ window.printPDF = function(tableId, title) {
         }
     };
 
-    // Panggil sapaan Bee-Boot saat halaman pertama kali dibuka
     window.setLoginGreeting();
     
     // Inisialisasi Flatpickr ke semua input tipe datetime agar UI modern berfungsi
@@ -4328,7 +4292,6 @@ window.printPDF = function(tableId, title) {
     };
     window.initFlatpickrPlugins();
 
-    // --- FUNGSI UNTUK MENGISI DROPDOWN ADMIN ---
     window.populateAdminSelectSelesai = function() {
         const select = document.getElementById('admin-select-selesai');
         if (!select) return;
@@ -4336,8 +4299,6 @@ window.printPDF = function(tableId, title) {
         const currentSavedValue = select.value;
         select.innerHTML = '<option value="">-- Klik untuk menampilkan daftar pekerjaan selesai --</option>';
         
-        // Filter: Hanya ambil status selesai, BUKAN SPL, BUKAN yang terkirim, 
-        // DAN HANYA YANG BELUM ADA DI TABEL REKAP ADMIN (Mencegah Dobel Input)
         const produkSelesai = window.databaseMasterSPP.filter(i => 
             ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && 
             !i.isSPL && 
@@ -4358,7 +4319,6 @@ window.printPDF = function(tableId, title) {
         if(currentSavedValue) select.value = currentSavedValue;
     };
 
- // --- VARIABEL & FUNGSI TOGGLE UNTUK ADMIN DOKUMEN ---
     window.isAdminDokumenMinimized = true;
 
     window.toggleAdminDokumenView = function() {
@@ -4370,13 +4330,11 @@ window.printPDF = function(tableId, title) {
         window.renderAdminDokumenTable();
     };
 
-    // --- FUNGSI RENDER TABEL ADMIN DOKUMEN ---
     window.renderAdminDokumenTable = function() {
         const tbody = document.getElementById('admin-dokumen-body');
         if (!tbody) return;
         tbody.innerHTML = '';
 
-        // Injeksi tombol toggle "Tampilkan Semua Data" jika belum ada
         let toggleContainer = document.getElementById('admin-dokumen-toggle-container');
         if (!toggleContainer) {
             const panel = document.getElementById('panel-admin-bpmp');
@@ -4389,14 +4347,12 @@ window.printPDF = function(tableId, title) {
             }
         }
 
-        // Terapkan filter khusus dari dropdown export-dokumen-filter ke tabel Admin
         let filterType = document.getElementById('export-dokumen-filter').value;
         
         let filteredRekap = window.databaseRekapAdmin.filter(rekap => {
             if (filterType === 'all') return true;
             if (filterType !== 'custom') return window.isWithinTimeframe(rekap.timestampMs, filterType);
-            
-            // Custom filter untuk dokumen
+    
             const startD = document.getElementById('custom-export-start').value; 
             const endD = document.getElementById('custom-export-end').value;
             if(!startD || !endD) return true; 
@@ -4412,29 +4368,21 @@ window.printPDF = function(tableId, title) {
 
         if(toggleContainer) toggleContainer.style.display = 'flex';
 
-        // 1. Urutkan data berdasarkan waktu (Dari yang terlama ke terbaru)
+  
         filteredRekap.sort((a, b) => a.timestampMs - b.timestampMs);
-
-        // 2. Batasi 5 data terbaru jika mode "Minimized" aktif
-        // Menggunakan .slice(-5) untuk mengambil 5 data dari urutan paling belakang (terbaru), tapi susunannya tetap lama -> baru
         let displayData = window.isAdminDokumenMinimized ? filteredRekap.slice(-5) : filteredRekap;
-
-        // 3. Kelompokkan data yang tampil berdasarkan BULAN
         const groupedData = {};
         displayData.forEach(item => {
             const b = item.bulan || 'Lainnya';
             if (!groupedData[b]) groupedData[b] = [];
             groupedData[b].push(item);
         });
-
-        // 4. Render ke tabel urut berdasarkan susunan kalender (Januari -> Desember)
         const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember", "Lainnya"];
         
         monthNames.forEach(month => {
             if (groupedData[month]) {
                 
                 let totalQty = 0;
-                // Hitung total QTY dalam bulan ini
                 groupedData[month].forEach(item => totalQty += (parseInt(item.qty) || 1));
                 
                 groupedData[month].forEach((item, index) => {
@@ -4448,8 +4396,7 @@ window.printPDF = function(tableId, title) {
                         <td>${item.noProd || '-'}</td>
                         <td>${item.jenisPekerjaan || '-'}</td>
                         <td><strong>${item.jenisProduksi || '-'}</strong></td>`;
-                        
-                    // Kolom QTY digabung (rowspan) berdasarkan jumlah data di BULAN tersebut
+               
                     if (index === 0) {
                         tr += `<td rowspan="${groupedData[month].length}" style="text-align:center; vertical-align:middle; background:rgba(56, 189, 248, 0.1); border-left:1px solid rgba(56, 189, 248, 0.2); border-right:1px solid rgba(56, 189, 248, 0.2);">
                             <span style="font-size:24px; font-weight:900; color:var(--emerald-glow);">${totalQty}</span>
@@ -4474,12 +4421,7 @@ window.printPDF = function(tableId, title) {
             });
         }
     };
-
-    // ================================================================
-    // 2. LOGIKA PEMISAHAN ON-PROSES & RIWAYAT UNTUK SEMUA PANEL HISTORY
-    // ================================================================
-
-    // -- HISTORY 1: MASTER SPP --
+	
     window.modeHistorySPP = 'proses';
     window.toggleHistorySPP = function() {
         window.modeHistorySPP = window.modeHistorySPP === 'proses' ? 'riwayat' : 'proses';
@@ -4487,7 +4429,7 @@ window.printPDF = function(tableId, title) {
     };
 
     window.renderMasterTable = function() {
-        // Injeksi tombol toggle ke Header UI
+  
         let toggleBtn = document.getElementById('btn-toggle-spp-mode');
         if (!toggleBtn) {
             const headerDiv = document.querySelector('#panel-history-spp .header-flex div');
@@ -4514,8 +4456,6 @@ window.printPDF = function(tableId, title) {
         let cols = 7 + (showDocCol ? 1 : 0) + (isDev ? 1 : 0);
         
         let rawSPP = window.getFilteredNonSPLSPP(); 
-        
-        // Filter berdasarkan Mode (On Proses ATAU Selesai)
         let filteredSPP = rawSPP.filter(item => {
             let isSelesai = ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(item.status) || item.isShipped;
             return window.modeHistorySPP === 'proses' ? !isSelesai : isSelesai;
@@ -4542,8 +4482,7 @@ window.printPDF = function(tableId, title) {
             tbody.innerHTML += `<tr><td><strong>${item.no}</strong><br><span style="font-size: 11px; color: var(--text-muted);">${item.datetime}</span></td><td><code style="color:var(--blue-glow); font-weight:bold;">${displayProdNo}</code></td><td><span class="badge bg-reguler" style="font-size:12px; font-weight:700;">${item.product}</span></td><td style="font-size:12px; font-weight:600; line-height: 1.5;">${displayOperators}</td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${docColHtml}${actionBtns}</tr>`;
         });
     };
-
-    // -- HISTORY 2: LOG AKTIVITAS OPERATOR --
+	
     window.modeHistoryLog = 'proses';
     window.toggleHistoryLog = function() {
         window.modeHistoryLog = window.modeHistoryLog === 'proses' ? 'riwayat' : 'proses';
@@ -4621,8 +4560,7 @@ window.printPDF = function(tableId, title) {
                 let amanReason = window.sanitizeHTML(item.reason);
                 let badgeHTML = window.getStatusBadge(item.status);
                 let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
-                
-                // --- KALKULASI SISA WAKTU PEKERJAAN SAAT LOG DIKIRIM ---
+            
                 let sisaWaktuHtml = "-";
                 if (masterSPP && masterSPP.deadlineRawObjectMs) {
                     let timeDiff = masterSPP.deadlineRawObjectMs - item.timestampMs;
@@ -4656,7 +4594,7 @@ window.printPDF = function(tableId, title) {
             });
         });
     };
-    // -- HISTORY 3: SURAT PERINTAH LANGSUNG (SPL) --
+
     window.modeHistorySPL = 'proses';
     window.toggleHistorySPL = function() {
         window.modeHistorySPL = window.modeHistorySPL === 'proses' ? 'riwayat' : 'proses';
