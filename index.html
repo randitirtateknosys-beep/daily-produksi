@@ -2063,7 +2063,7 @@ document.getElementById('bee-boot-container').style.display = 'flex';
         document.getElementById('panel-analytics').style.display = 'grid';
     
         const isGudang = (window.currentUserAccess === "gudang");
-        const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
+        const isDev = (window.currentUserRole.toUpperCase() === "RANDI" || window.currentUserRole.toUpperCase() === "FEBRI");
         const isAdmin = (window.currentUserRole === "Admin" || window.currentUserRole === "Septi Utami");
         const showDocCol = (isDev || isAdmin);
         
