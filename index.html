@@ -1458,7 +1458,7 @@ body.light-theme .welcome-box {
                 }
             }
         } else {
-            if (window.isMaintenanceActive && window.currentUserRole.toUpperCase() !== "RANDI") {
+           if (window.isMaintenanceActive && window.currentUserRole.toUpperCase() !== "RANDI" && window.currentUserRole.toUpperCase() !== "FEBRI") {
                 mtScreen.style.display = 'flex';
                 mainApp.style.display = 'none';
                 welcomePopup.style.display = 'none';
@@ -4153,7 +4153,7 @@ window.printPDF = function(tableId, title) {
     }
 
     window.setMaintenanceStatus = function(status) {
-        if(window.currentUserRole.toUpperCase() !== "RANDI") { alert("Akses Ditolak!"); return; }
+ if(window.currentUserRole.toUpperCase() !== "RANDI" && window.currentUserRole.toUpperCase() !== "FEBRI") { alert("Akses Ditolak!"); return; }
         let msg = document.getElementById('dev-maintenance-msg').value.trim();
         if (confirm("Ubah status maintenance?")) {
             db.ref('appSettings/maintenance').set({ isActive: status, message: msg }).then(() => {
@@ -4451,7 +4451,7 @@ window.printPDF = function(tableId, title) {
 
         const tbody = document.getElementById('spp-master-body'); 
         tbody.innerHTML = ''; 
-        const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
+        const isDev = (window.currentUserRole.toUpperCase() === "RANDI" || window.currentUserRole.toUpperCase() === "FEBRI");
         const isAdmin = (window.currentUserRole === "Admin");
         const showDocCol = (isDev || isAdmin);
         let cols = 7 + (showDocCol ? 1 : 0) + (isDev ? 1 : 0);
