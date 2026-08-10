@@ -3941,8 +3941,43 @@ window.renderShipmentTable = function() {
                 let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
                 
                 let sisaWaktuHtml = "-";
-                if (masterSPP && masterSPP.deadlineRawObjectMs) {
-                    let timeDiff = masterSPP.deadlineRawObjectMs - item.timestampMs;
+if (masterSPP && masterSPP.deadlineRawObjectMs && masterSPP.startTimeObjectMs) {
+    // 1. Hitung total target durasi asli yang diberikan saat pertama kali mulai
+    let targetDurationMs = masterSPP.deadlineRawObjectMs - masterSPP.startTimeObjectMs;
+    
+    // 2. Fungsi untuk menghitung waktu yang berlalu TANPA Sabtu dan Minggu
+    let elapsedMs = 0;
+    let currentMs = masterSPP.startTimeObjectMs;
+    let endMs = item.timestampMs;
+    
+    while (currentMs < endMs) {
+        let currentDate = new Date(currentMs);
+        let nextDayMs = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1).getTime();
+        let chunkMs = Math.min(nextDayMs - currentMs, endMs - currentMs);
+        
+        // Cek jika hari ini bukan Minggu (0) dan bukan Sabtu (6)
+        if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
+            elapsedMs += chunkMs; // Tambahkan ke waktu berjalan
+        }
+        currentMs += chunkMs;
+    }
+    
+    // 3. Sisa waktu adalah Target Durasi dikurangi Waktu Berjalan (tanpa akhir pekan)
+    let timeDiff = targetDurationMs - elapsedMs;
+
+    if (timeDiff > 0) {
+        const h = Math.floor(timeDiff / (1000 * 60 * 60));
+        const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+        sisaWaktuHtml = `<span style="color:var(--emerald-glow); font-weight:bold;">${h} Jam ${m} Mnt</span>`;
+    } else {
+        const lateMs = Math.abs(timeDiff);
+        const h = Math.floor(lateMs / (1000 * 60 * 60));
+        const m = Math.floor((lateMs % (1000 * 60 * 60)) / (1000 * 60));
+        sisaWaktuHtml = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${h} Jam ${m} Mnt</span>`;
+    }
+} else {
+    sisaWaktuHtml = `<span style="color:var(--text-muted); font-size:11px;">Belum Terkunci</span>`;
+}
                     if (timeDiff > 0) {
                         const h = Math.floor(timeDiff / (1000 * 60 * 60));
                         const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
