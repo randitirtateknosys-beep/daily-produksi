@@ -1812,7 +1812,7 @@ document.getElementById('bee-boot-container').style.display = 'flex';
         "RENALPRO R-404": { ops: 2, hours: 40 },
         "WTP ZOOMBA": { ops: 2, hours: 15 },
         "PANEL CONDUCTIVITY": { ops: 1, hours: 4 },
-        "PANEL SBR PIK": { ops: 2, hours: 98 },
+        "PANEL SBR PIK": { ops: 2, hours: 53 },
         "PANEL LIFT PUMP": { ops: 1, hours: 24 },
         "PANEL SISTEM STP": { ops: 1, hours: 24 },
         "PANEL SISTEM WTP": { ops: 1, hours: 24 },
@@ -3941,43 +3941,8 @@ window.renderShipmentTable = function() {
                 let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
                 
                 let sisaWaktuHtml = "-";
-if (masterSPP && masterSPP.deadlineRawObjectMs && masterSPP.startTimeObjectMs) {
-    // 1. Hitung total target durasi asli yang diberikan saat pertama kali mulai
-    let targetDurationMs = masterSPP.deadlineRawObjectMs - masterSPP.startTimeObjectMs;
-    
-    // 2. Fungsi untuk menghitung waktu yang berlalu TANPA Sabtu dan Minggu
-    let elapsedMs = 0;
-    let currentMs = masterSPP.startTimeObjectMs;
-    let endMs = item.timestampMs;
-    
-    while (currentMs < endMs) {
-        let currentDate = new Date(currentMs);
-        let nextDayMs = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1).getTime();
-        let chunkMs = Math.min(nextDayMs - currentMs, endMs - currentMs);
-        
-        // Cek jika hari ini bukan Minggu (0) dan bukan Sabtu (6)
-        if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
-            elapsedMs += chunkMs; // Tambahkan ke waktu berjalan
-        }
-        currentMs += chunkMs;
-    }
-    
-    // 3. Sisa waktu adalah Target Durasi dikurangi Waktu Berjalan (tanpa akhir pekan)
-    let timeDiff = targetDurationMs - elapsedMs;
-
-    if (timeDiff > 0) {
-        const h = Math.floor(timeDiff / (1000 * 60 * 60));
-        const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-        sisaWaktuHtml = `<span style="color:var(--emerald-glow); font-weight:bold;">${h} Jam ${m} Mnt</span>`;
-    } else {
-        const lateMs = Math.abs(timeDiff);
-        const h = Math.floor(lateMs / (1000 * 60 * 60));
-        const m = Math.floor((lateMs % (1000 * 60 * 60)) / (1000 * 60));
-        sisaWaktuHtml = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${h} Jam ${m} Mnt</span>`;
-    }
-} else {
-    sisaWaktuHtml = `<span style="color:var(--text-muted); font-size:11px;">Belum Terkunci</span>`;
-}
+                if (masterSPP && masterSPP.deadlineRawObjectMs) {
+                    let timeDiff = masterSPP.deadlineRawObjectMs - item.timestampMs;
                     if (timeDiff > 0) {
                         const h = Math.floor(timeDiff / (1000 * 60 * 60));
                         const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
@@ -4162,15 +4127,21 @@ window.printPDF = function(tableId, title) {
             printWindow.print();
         }, 500);
     };
-
-    window.editMasterSPP = function(firebaseKey) {
-        let choice = prompt("Pilih data SPP/SPL yang ingin diedit:\n1. Status Terkini\n2. Nama Produk\n3. Urgensi Prioritas\n4. Reset Deadline\n5. Tanggal & Jam Keluar");
+window.editMasterSPP = function(firebaseKey) {
+        // Tambahkan opsi "6. Edit Target Deadline" pada prompt
+        let choice = prompt("Pilih data SPP/SPL yang ingin diedit:\n1. Status Terkini\n2. Nama Produk\n3. Urgensi Prioritas\n4. Reset Deadline\n5. Tanggal & Jam Keluar\n6. Edit Target Deadline");
         if (!choice) return;
+        
         let updates = {};
+        
         if (choice === '1') { let val = prompt("Status Baru:"); if(val) updates.status = val.trim(); }
         else if (choice === '2') { let val = prompt("Nama Produk Baru:"); if(val) updates.product = val.trim(); }
         else if (choice === '3') { let val = prompt("Urgensi Baru:"); if(val) updates.priority = val.trim(); }
-        else if (choice === '4') { updates.isLocked = false; updates.deadlineRawObjectMs = null; updates.formattedDeadline = "Belum dimulai"; }
+        else if (choice === '4') { 
+            updates.isLocked = false; 
+            updates.deadlineRawObjectMs = null; 
+            updates.formattedDeadline = "Belum dimulai"; 
+        }
         else if (choice === '5') { 
             let val = prompt("Format YYYY-MM-DD HH:MM"); 
             if(val) { 
@@ -4183,10 +4154,28 @@ window.printPDF = function(tableId, title) {
                 }
             } 
         }
+        // Terapkan logika baru untuk opsi 6 di sini
+        else if (choice === '6') {
+            let val = prompt("Masukkan Target Deadline Baru (Format YYYY-MM-DD HH:MM):");
+            if (val) {
+                let d = new Date(val);
+                if (!isNaN(d.getTime())) {
+                    updates.deadlineRawObjectMs = d.getTime();
+                    updates.formattedDeadline = window.formatDateToString(d);
+                    updates.isLocked = true; // Memastikan timer hitung mundur tetap berjalan
+                } else {
+                    alert("Format tanggal tidak valid! Harap gunakan format seperti 2026-08-10 14:30"); 
+                    return;
+                }
+            }
+        }
         
-        if (Object.keys(updates).length > 0) { window.dbUpdateSPP(firebaseKey, updates); alert("Data berhasil diperbarui!"); }
+        if (Object.keys(updates).length > 0) { 
+            window.dbUpdateSPP(firebaseKey, updates); 
+            alert("Data berhasil diperbarui!"); 
+        }
     }
-
+    
     window.setMaintenanceStatus = function(status) {
  if(window.currentUserRole.toUpperCase() !== "RANDI" && window.currentUserRole.toUpperCase() !== "FEBRI") { alert("Akses Ditolak!"); return; }
         let msg = document.getElementById('dev-maintenance-msg').value.trim();
