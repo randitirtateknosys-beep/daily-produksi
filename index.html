@@ -1218,8 +1218,8 @@
     window.currentActivePassword = "";
 
     window.activeOperators = {}; 
-    // Mesin 1: Menghitung target deadline dengan pergerakan Jam-demi-Jam (Mendukung Maju & Mundur)
-    window.addWorkingHours = function(startMs, hoursToAdd) {
+        
+window.addWorkingHours = function(startMs, hoursToAdd) {
         let currentMs = startMs;
         let msToAdd = Math.abs(hoursToAdd * 60 * 60 * 1000);
         let direction = hoursToAdd >= 0 ? 1 : -1;
@@ -1230,7 +1230,7 @@
             let hour = d.getHours();
 
             if (direction === 1) {
-                // Pergerakan MAJU
+                
                 if (day !== 0 && day !== 6 && hour !== 12) {
                     let nextHourMs = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hour + 1, 0, 0).getTime();
                     let stepMs = nextHourMs - currentMs;
@@ -1243,7 +1243,7 @@
                     currentMs = nextHourMs;
                 }
             } else {
-                // Pergerakan MUNDUR (Untuk input nilai negatif / Telat)
+               
                 let prevHourMs = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hour, 0, 0).getTime();
                 if (currentMs === prevHourMs) {
                     prevHourMs = prevHourMs - (60 * 60 * 1000);
@@ -1265,7 +1265,7 @@
         }
         return currentMs;
     };
-    // Mesin 2: Menghitung SISA WAKTU asli (bergerak Jam-demi-Jam)
+    
     window.getWorkingTimeDiff = function(startMs, endMs) {
         let isNegative = startMs > endMs;
         let t1 = isNegative ? endMs : startMs;
@@ -1284,7 +1284,7 @@
 
             if (current + stepMs > t2) stepMs = t2 - current;
 
-            // Tambahkan waktu jika bukan akhir pekan dan bukan jam istirahat
+          
             if (day !== 0 && day !== 6 && hour !== 12) {
                 workingMs += stepMs;
             }
@@ -1712,7 +1712,7 @@ document.getElementById('bee-boot-container').style.display = 'flex';
     }, 1000);
 
     window.getStatusBadge = function(status) {
-        let badgeClass = "status-proses"; // default
+        let badgeClass = "status-proses";
         if (status === 'Pending') badgeClass = "status-pending";
         else if (status === 'Idle Time') badgeClass = "status-idle"; 
         else if (status === 'Stoppage') badgeClass = "status-stoppage";
@@ -2159,9 +2159,11 @@ document.getElementById('bee-boot-container').style.display = 'flex';
                 prodDateEl.style.background = '#1e293b';
                 prodDateEl.value = "Otomatis Mengikuti Sistem Waktu Aktual";
                 prodDateEl.setAttribute('readonly', 'true');
-                if (prodDateEl._flatpickr) {
-                    prodDateEl._flatpickr.destroy(); 
-                }
+
+if (prodDateEl._flatpickr) {
+    prodDateEl._flatpickr.set("clickOpens", false); 
+    prodDateEl._flatpickr.element.style.pointerEvents = 'none'; } 
+               
             }
         } else {
             if (prodDateEl) {
@@ -2409,7 +2411,6 @@ window.beeShowDynamicStats = function() {
         readyItems.forEach(i => { readyMap[i.product] = (readyMap[i.product] || 0) + 1; });
         let readyTextHTML = ready > 0 ? Object.entries(readyMap).map(([prod, count]) => `• ${prod} : <b style="color:var(--emerald-glow)">${count} Unit</b>`).join("<br>") : "<i style='color:var(--text-muted)'>Belum ada barang tersedia di Gudang.</i>";
 
-        // --- FITUR BARU: KALKULASI TREN TOP 5 & BOTTOM 5 ---
         let completedProdMap = {};
         completedItems.forEach(i => { completedProdMap[i.product] = (completedProdMap[i.product] || 0) + 1; });
         
@@ -2911,11 +2912,9 @@ window.beeShowDynamicStats = function() {
         window.updateInternalProductDropdown();
         window.renderInternalStockTable();
         window.renderInternalHistoryTable();
-        
         window.updateWarehouseProductDropdown(); 
         window.renderReadyStockTable();
         window.renderShipmentTable();
-        
         window.renderWarehouseInbox(); 
         window.renderRealtimeWAMonitor(); 
         window.calculateAndRenderRanking();
@@ -2992,7 +2991,7 @@ window.beeShowDynamicStats = function() {
 
         let htmlRows = "";
 monitoredSPP.forEach(item => {
-           // Menggunakan mesin waktu baru yang bebas bocor
+           
            const timeDiff = window.getWorkingTimeDiff((item.lastInputTimeMs || Date.now()), item.deadlineRawObjectMs);
         
 let cdText = ""; let cdStyle = "color: #fff; font-weight: 700;";
@@ -3048,7 +3047,7 @@ let cdText = ""; let cdStyle = "color: #fff; font-weight: 700;";
         
         document.getElementById('stat-idle').innerText = filteredSPP.filter(i => ['Idle Time', 'Lanjutkan Besok'].includes(i.status)).length;
         
-        // PISAHAN STOPPAGE & TAKEOVER
+      
         document.getElementById('stat-stoppage').innerText = filteredSPP.filter(i => i.status === 'Stoppage').length;
         document.getElementById('stat-takeover').innerText = filteredSPP.filter(i => i.status === 'Takeover').length;
         
@@ -3059,7 +3058,7 @@ let cdText = ""; let cdStyle = "color: #fff; font-weight: 700;";
         document.getElementById('overall-progress-text').innerText = progressPct + '%';
         document.getElementById('overall-progress-bar').style.width = progressPct + '%';
 
-        // Update Tabel Tambahan (Inventaris Akhir)
+
         const readyItems = filteredSPP.filter(i => ['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status) && !i.isShipped).length;
         const shippedItems = filteredSPP.filter(i => i.isShipped).length;
         const statReadyGudang = document.getElementById('stat-ready-gudang');
@@ -3308,6 +3307,25 @@ let cdText = ""; let cdStyle = "color: #fff; font-weight: 700;";
         if (value === 'YA') { yesBtn.classList.add('selected-yes'); noBtn.classList.remove('selected-no'); } else { yesBtn.classList.remove('selected-yes'); noBtn.classList.add('selected-no'); }
     }
 
+window.openStatusModal = function(title, desc, showKPI = false) {
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-desc').innerText = desc;
+    document.getElementById('reason-section').style.display = 'block';
+    document.getElementById('kpi-commitment-block').style.display = showKPI ? 'block' : 'none';
+    document.getElementById('statusModal').style.display = 'flex';
+};
+
+document.getElementById('modal-close-btn').addEventListener('click', function() {
+    let reason = document.getElementById('general-reason-input').value;
+    if(!reason) {
+        alert("Harap isi catatan lapangan terlebih dahulu!");
+        return;
+    }
+    // Anda bisa menambahkan logika push ke Firebase di sini sebelum modal tertutup
+    document.getElementById('statusModal').style.display = 'none';
+});
+
+
     document.getElementById('spp-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btnSubmit = document.querySelector('.btn-spp'); 
@@ -3357,7 +3375,7 @@ let cdText = ""; let cdStyle = "color: #fff; font-weight: 700;";
                 const result = await response.json(); 
                 
                 if (result && result.url) {
-                    uploadedFileUrl = result.url; // Simpan URL untuk dipush ke Firebase Realtime Database
+                    uploadedFileUrl = result.url;
                 } else {
                     throw new Error("Gagal mendapatkan link URL dari Google Drive.");
                 }
@@ -3480,7 +3498,7 @@ let cdText = ""; let cdStyle = "color: #fff; font-weight: 700;";
             operatorReceiver: "-", 
             carrier: carrier, 
             customer: customer,
-            status: "Dalam Perjalanan" // <-- TAMBAHAN BARU
+            status: "Dalam Perjalanan"
         });
         
         this.reset();
@@ -3599,14 +3617,12 @@ let cdText = ""; let cdStyle = "color: #fff; font-weight: 700;";
             window.updateConditionDropdown(null);
             return;
         }
-
-        // --- MULAI PERBAIKAN BUG TARGET JAM SPL ---
         if (PRODUCT_DICTIONARY[matchedSPP.product]) {
             document.getElementById('prod-target-ops').value = PRODUCT_DICTIONARY[matchedSPP.product].ops + " Orang";
             document.getElementById('prod-deadline-val').value = PRODUCT_DICTIONARY[matchedSPP.product].hours;
             document.getElementById('prod-deadline-unit').value = "jam";
         } else if (matchedSPP.isSPL && matchedSPP.deadlineRawObjectMs && matchedSPP.startTimeObjectMs) {
-            // Kalkulasi jam berdasarkan selisih waktu SPL yang sudah di-input Manager
+      
             const diffMs = matchedSPP.deadlineRawObjectMs - matchedSPP.startTimeObjectMs;
             const targetHours = Math.round(diffMs / (1000 * 60 * 60));
             document.getElementById('prod-target-ops').value = "SPL (Manual)";
@@ -3616,8 +3632,7 @@ let cdText = ""; let cdStyle = "color: #fff; font-weight: 700;";
             document.getElementById('prod-target-ops').value = "";
             document.getElementById('prod-deadline-val').value = "";
         }
-        // --- AKHIR PERBAIKAN ---
-
+      
         if (matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
             const timeDiff = window.getWorkingTimeDiff(Date.now(), matchedSPP.deadlineRawObjectMs);
 
@@ -3685,8 +3700,6 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
         
         let statusKirim = "Proses";
         let isSelesai = false;
-
-        // --- MULAI PERBAIKAN BUG STATUS SELESAI ---
         if (condition.includes("Selesai") || stage.includes("7. Packing")) {
             if (condition === "Pekerjaan Selesai Awal") {
                 statusKirim = "Selesai Awal";
@@ -3701,7 +3714,7 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
         } else if (PENJEDAAN_STATUS_LIST.includes(condition)) {
             statusKirim = condition;
         }
-        // --- AKHIR PERBAIKAN ---
+
 let processPoints = 10; 
         if (isSelesai) processPoints = 50; 
 
@@ -3739,8 +3752,9 @@ let processPoints = 10;
             reason: reasonValue,
             processPoints: processPoints,
             msTerlambat: delayMs,
-            sisaWaktuSaved: sisaWaktuSavedHTML // Mengunci history secara statis
+            sisaWaktuSaved: sisaWaktuSavedHTML
         };
+
         window.dbPushLog(logData);
 
         let sppUpdates = {
@@ -3871,7 +3885,7 @@ if (targetUnit === "jam") {
 
         let stockArray = Object.keys(stockMap).map(nama => { return { nama: nama, jumlah: stockMap[nama] }; }).sort((a, b) => b.jumlah - a.jumlah);
 
-        // Batasi tampilan menggunakan isReadyStockMinimized
+
         let displayStock = window.isReadyStockMinimized ? stockArray.slice(0, 5) : stockArray;
 
         displayStock.forEach(item => {
@@ -3896,9 +3910,7 @@ window.renderShipmentTable = function() {
             let amanCarrier = window.sanitizeHTML(item.carrier);
             let amanCustomer = window.sanitizeHTML(item.customer);
 
-            // --- FITUR BARU: LOGIKA STATUS TERKIRIM ---
-            let statusText = item.status || "Dalam Perjalanan"; // Jika data lama belum ada status, otomatis "Dalam Perjalanan"
-            let badgeHTML = "";
+                       let statusText = item.status || "Dalam Perjalanan";             let badgeHTML = "";
             if (statusText === "Terkirim") {
                 badgeHTML = `<span class="badge bg-reguler" style="background:#d1fae5; color:#059669; border-color:#34d399;">Terkirim ✅</span>`;
             } else {
@@ -3934,21 +3946,100 @@ window.renderShipmentTable = function() {
             tbody.innerHTML += `<tr style="background: rgba(234, 88, 12, 0.05); border-left: 3px solid #ea580c;"><td><strong style="color:#fb923c;">${item.no}</strong></td><td>${item.datetime}</td><td><span class="badge bg-buffer" style="font-size:12px; font-weight:700;">${item.product}</span></td><td>${item.maker}</td><td><b>${item.receiver}</b></td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${actionBtns}</tr>`;
         });
     }
-window.editOperatorLog = function(firebaseKey) {
-    let choice = prompt("Pilih data Log Operator yang ingin diedit:\n1. Status Kondisi Lapangan\n2. Keterangan / Alasan Kendala\n3. Aktivitas");
-    if (!choice) return;
-    
-    let updates = {};
-    if (choice === '1') { let val = prompt("Status Baru:"); if(val) updates.condition = val.trim(); }
-    else if (choice === '2') { let val = prompt("Keterangan Baru:"); if(val) updates.reason = val.trim(); }
-    else if (choice === '3') { let val = prompt("Aktivitas Baru:"); if(val) updates.aktivitas = val.trim(); }
-    
-    if (Object.keys(updates).length > 0) {
-        db.ref('logOperator/' + firebaseKey).update(updates);
-        alert("Data Log Operator berhasil diperbarui!");
-    }
-}
 
+window.editOperatorLog = function(firebaseKey) {
+        let logItem = window.databaseLogOperator.find(l => l.firebaseKey === firebaseKey);
+        if (!logItem) return;
+
+        let choice = prompt("Pilih data Log Aktual yang ingin diedit:\n1. Aktivitas\n2. Kondisi\n3. Tahap Produksi\n4. No. Produksi\n5. Waktu Input\n6. Target Deadline\n7. Sisa Waktu Pekerjaan");
+        if (!choice) return;
+        
+        let updates = {};
+        
+        if (choice === '1') { let val = prompt("Detail Aktivitas Baru:"); if(val) updates.aktivitas = val.trim(); }
+        else if (choice === '2') { let val = prompt("Kondisi Progres Baru:"); if(val) updates.condition = val.trim(); }
+        else if (choice === '3') { let val = prompt("Tahap Produksi Baru:"); if(val) updates.stage = val.trim(); }
+        else if (choice === '4') { let val = prompt("No. Produksi Baru:"); if(val) updates.noProd = val.trim(); }
+        else if (choice === '5') { 
+            let val = prompt("Format YYYY-MM-DD HH:MM"); 
+            if(val) { 
+                let d = new Date(val); 
+                if (!isNaN(d.getTime())) { 
+                    updates.time = window.formatDateToString(d); 
+                    updates.timestampMs = d.getTime(); 
+                } else {
+                    alert("Format tanggal tidak valid!"); return;
+                }
+            } 
+        }
+        else if (choice === '6') {
+            let val = prompt("Masukkan Target Deadline Baru dalam satuan JAM (Hanya angka, contoh: 8):");
+            if (val && !isNaN(val)) {
+                let newHours = parseInt(val);
+                updates.deadline = newHours + " jam";
+                
+                let matchedSPP = window.databaseMasterSPP.find(s => s.no === logItem.noSPP);
+                if (matchedSPP && matchedSPP.startTimeObjectMs) {
+                    let newDeadlineMs = window.addWorkingHours(matchedSPP.startTimeObjectMs, newHours);
+                    let d = new Date(newDeadlineMs);
+                    window.dbUpdateSPP(matchedSPP.firebaseKey, {
+                        deadlineRawObjectMs: newDeadlineMs,
+                        formattedDeadline: window.formatDateToString(d)
+                    });
+
+                  
+                    let timeDiff = window.getWorkingTimeDiff(logItem.timestampMs, newDeadlineMs);
+                    let sisaHtml = "";
+                    if (timeDiff > 0) {
+                        const h = Math.floor(timeDiff / (1000 * 60 * 60));
+                        const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                        sisaHtml = `<span style="color:var(--emerald-glow); font-weight:bold;">${h} Jam ${m} Menit</span>`;
+                    } else {
+                        const lateMs = Math.abs(timeDiff);
+                        const h = Math.floor(lateMs / (1000 * 60 * 60));
+                        const m = Math.floor((lateMs % (1000 * 60 * 60)) / (1000 * 60));
+                        sisaHtml = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${h} Jam ${m} Menit</span>`;
+                    }
+                    updates.sisaWaktuSaved = sisaHtml;
+                }
+            } else if (val) {
+                alert("Harap masukkan angka yang valid!"); return;
+            }
+        }
+        else if (choice === '7') {
+            let val = prompt("Masukkan Sisa Waktu Pekerjaan dalam satuan JAM (Contoh: ketik 24 untuk 24 jam, atau ketik -5 jika telat 5 jam):");
+            if (val && !isNaN(val)) {
+                let sisaJam = parseInt(val);
+                
+                let sisaHtml = "";
+                if (sisaJam >= 0) {
+                    sisaHtml = `<span style="color:var(--emerald-glow); font-weight:bold;">${sisaJam} Jam 0 Menit</span>`;
+                } else {
+                    sisaHtml = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${Math.abs(sisaJam)} Jam 0 Menit</span>`;
+                }
+                
+                updates.sisaWaktuSaved = sisaHtml;
+
+                let matchedSPP = window.databaseMasterSPP.find(s => s.no === logItem.noSPP);
+                if (matchedSPP) {
+                    let newDeadlineMs = window.addWorkingHours(logItem.timestampMs, sisaJam);
+                    let d = new Date(newDeadlineMs);
+                    window.dbUpdateSPP(matchedSPP.firebaseKey, {
+                        deadlineRawObjectMs: newDeadlineMs,
+                        formattedDeadline: window.formatDateToString(d)
+                    });
+                }
+            } else if (val) {
+                alert("Harap masukkan angka yang valid!");
+                return;
+            }
+        }
+        
+        if (Object.keys(updates).length > 0) { 
+            db.ref('logOperator/' + firebaseKey).update(updates); 
+            alert("Data log berhasil diperbarui!"); 
+        }
+    }
     window.renderMasterTable = function() {
         const tbody = document.getElementById('spp-master-body'); 
         tbody.innerHTML = ''; 
@@ -4067,7 +4158,7 @@ window.editOperatorLog = function(firebaseKey) {
                 let badgeHTML = window.getStatusBadge(item.status);
                 let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
             
-                // 计算 Sisa Waktu Pekerjaan
+            
                 let sisaWaktuHtml = "-";
                 if (masterSPP && masterSPP.deadlineRawObjectMs) {
                     let timeDiff = window.getWorkingTimeDiff(item.timestampMs, masterSPP.deadlineRawObjectMs);
@@ -4095,7 +4186,14 @@ window.editOperatorLog = function(firebaseKey) {
                     <td>${sisaWaktuHtml}</td>
                     <td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td>
                     <td>${badgeHTML}</td>
-                    <td><span style="font-weight:700; color:var(--blue-glow);">${amanReason}</span></td>
+                    <td>
+
+    <span style="font-weight:700; color:var(--blue-glow);">${amanReason}</span>
+    <br>
+    <span style="color:var(--emerald-glow); font-size:11px; font-weight:800; background:rgba(16,185,129,0.1); padding:2px 6px; border-radius:4px; border:1px solid rgba(16,185,129,0.3);">
+        +${item.processPoints || 0} Poin
+    </span>
+</td>
                     ${actionBtns}
                 </tr>`;
             });
@@ -4304,7 +4402,6 @@ window.editMasterSPP = function(firebaseKey) {
     }
     
     if (Object.keys(updates).length > 0) { 
-        // PERBAIKAN: Harus update ke tabel masterSPP, BUKAN logOperator
         db.ref('masterSPP/' + firebaseKey).update(updates); 
         alert("Data SPP/SPL berhasil diperbarui!"); 
     }
@@ -4386,24 +4483,19 @@ window.editMasterSPP = function(firebaseKey) {
             document.getElementById('admin-spp').value = matchedSPP.no;
             document.getElementById('admin-jenisprod').value = matchedSPP.product;
             
-            // Cari No Produksi dari Log Operator
             const logs = window.databaseLogOperator.filter(l => l.noSPP === sppNo && l.noProd && l.noProd !== "-");
             if (logs.length > 0) {
-                // Ambil No Produksi unik
                 let prods = [...new Set(logs.map(l => l.noProd))];
                 document.getElementById('admin-noprod').value = prods.join(", ");
             } else {
                 document.getElementById('admin-noprod').value = "Belum Ada Data";
             }
             
-            // Set Jenis Pekerjaan (default Baru)
             document.getElementById('admin-jenispek').value = "Baru";
         }
     };
 
     window.setLoginGreeting();
-    
-    // Inisialisasi Flatpickr ke semua input tipe datetime agar UI modern berfungsi
     window.initFlatpickrPlugins = function() {
         if (typeof flatpickr !== 'undefined') {
             flatpickr("#spp-date, #spl-date, #prod-datetime, #internal-datetime, #shipment-datetime", {
@@ -4427,8 +4519,7 @@ window.editMasterSPP = function(firebaseKey) {
             ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && 
             !i.isSPL && 
             !i.isShipped &&
-            !window.databaseRekapAdmin.some(rekap => rekap.spp === i.no) // <-- Pengecekan otomatis
-        );
+            !window.databaseRekapAdmin.some(rekap => rekap.spp === i.no));
         
         produkSelesai.forEach(item => {
             let noProdTambahan = "";
@@ -4549,7 +4640,7 @@ window.editMasterSPP = function(firebaseKey) {
     window.modeHistorySPP = 'proses';
     window.toggleHistorySPP = function() {
         window.modeHistorySPP = window.modeHistorySPP === 'proses' ? 'riwayat' : 'proses';
-        window.renderMasterTable();
+        
     };
 
     window.renderMasterTable = function() {
@@ -4637,7 +4728,7 @@ window.editMasterSPP = function(firebaseKey) {
         let rawLogs = window.getFilteredLogs();
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
         
-        // Filter Logs berdasarkan status Induk SPP
+      
         let filteredLogs = rawLogs.filter(log => {
             let masterSPP = window.databaseMasterSPP.find(s => s.no === log.noSPP);
             let isSelesai = masterSPP ? (['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(masterSPP.status) || masterSPP.isShipped) : ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(log.status);
@@ -4685,8 +4776,7 @@ window.editMasterSPP = function(firebaseKey) {
                 let badgeHTML = window.getStatusBadge(item.status);
                 let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
             
-                let sisaWaktuHtml = item.sisaWaktuSaved; 
-                // Fallback otomatis untuk data lama yang belum punya sistem kunci waktu
+              let sisaWaktuHtml = item.sisaWaktuSaved; 
                 if (!sisaWaktuHtml) {
                     if (masterSPP && masterSPP.deadlineRawObjectMs) {
                         let timeDiff = window.getWorkingTimeDiff(item.timestampMs, masterSPP.deadlineRawObjectMs);
@@ -4717,7 +4807,8 @@ window.editMasterSPP = function(firebaseKey) {
                     <td>${badgeHTML}</td>
                     <td><span style="font-weight:700; color:var(--blue-glow);">${amanReason}</span></td>
                     ${actionBtns}
-                </tr>`;            });
+                </tr>`;
+            });
         });
     };
 
@@ -4765,13 +4856,11 @@ window.editMasterSPP = function(firebaseKey) {
         });
     }; 
 
-   // 1. Fungsi untuk mengatur status Maintenance (Kunci/Buka Aplikasi)
     window.setMaintenanceStatus = function(isActive) {
-        // Ambil pesan dari inputan, jika kosong gunakan pesan default
+        
         const msgInput = document.getElementById('dev-maintenance-msg').value.trim();
         const message = msgInput !== "" ? msgInput : "Mohon maaf, sistem saat ini sedang ditutup untuk sementara waktu karena ada pemeliharaan rutin oleh tim Developer. Silakan kembali beberapa saat lagi.";
         
-        // Simpan ke Firebase Realtime Database
         firebase.database().ref('appSettings/maintenance').set({
             isActive: isActive,
             message: message
@@ -4780,16 +4869,12 @@ window.editMasterSPP = function(firebaseKey) {
                 alert("🔴 Sistem berhasil DIKUNCI (Maintenance Mode Aktif)!");
             } else {
                 alert("🟢 Sistem berhasil DIBUKA kembali (Maintenance Mode Nonaktif)!");
-                document.getElementById('dev-maintenance-msg').value = ""; // Reset input
-            }
+                document.getElementById('dev-maintenance-msg').value = "";             }
         }).catch(err => {
             alert("Gagal mengubah status maintenance: " + err.message);
         });
     };
-
-    // 2. Fungsi untuk Export Data CSV pada tabel Rekap Dokumen BPMP/LPBHP
     window.exportDokumenAdminCSV = function() {
-        // Memanfaatkan fungsi exportTableToCSV yang sudah Anda buat sebelumnya
         window.exportTableToCSV('admin-dokumen-table', 'Rekap_Dokumen_BPMP_LPBHP.csv');
     };
 </script>
