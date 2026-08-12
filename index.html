@@ -3437,12 +3437,29 @@ document.getElementById('modal-close-btn').addEventListener('click', function() 
         const dateBase = new Date(document.getElementById('spl-date').value); const datetimeInput = window.formatDateToString(dateBase);
         let product = document.getElementById('spl-product').value; let maker = document.getElementById('spl-maker').value;
         const receiver = document.getElementById('spl-receiver').value; const priority = document.querySelector('input[name="spl-priority"]:checked').value;
-       const targetJam = parseInt(document.getElementById('spl-target-jam').value) || 0;
-        let targetMs = window.addWorkingHours(dateBase.getTime(), targetJam);
-        let calcDeadline = new Date(targetMs);
-        let formattedDead = window.formatDateToString(calcDeadline); 
+       
+const targetJam = parseInt(document.getElementById('spl-target-jam').value) || 0;
 
-        window.dbPushSPP({ no: noSPL, datetime: datetimeInput, rawTimestampMs: dateBase.getTime(), product: product, maker: maker, receiver: receiver, priority: priority, status: 'Pending', isLocked: true, deadlineRawObjectMs: calcDeadline.getTime(), startTimeObjectMs: dateBase.getTime(), isSPL: true, formattedDeadline: formattedDead, lastEventTimeMs: null, lastEventTimeFormatted: "-", lastInputTimeMs: null, isShipped: false });
+        window.dbPushSPP({ 
+            no: noSPL, 
+            datetime: datetimeInput, 
+            rawTimestampMs: dateBase.getTime(), 
+            product: product, 
+            maker: maker, 
+            receiver: receiver, 
+            priority: priority, 
+            status: 'Pending', 
+            isLocked: false,             // Dibuat false agar tidak langsung jalan
+            deadlineRawObjectMs: null,   // Dikosongkan, menunggu operator
+            startTimeObjectMs: null,     // Dikosongkan, menunggu operator
+            isSPL: true, 
+            splTargetHours: targetJam,   // Simpan target jam ke memori
+            formattedDeadline: "Belum dimulai", 
+            lastEventTimeMs: null, 
+            lastEventTimeFormatted: "-", 
+            lastInputTimeMs: null, 
+            isShipped: false 
+        });
         this.reset(); window.resetDateTimeInputs();
         alert("Surat Perintah Langsung telah masuk ke antrean operator Produksi!");
     });
@@ -3630,14 +3647,18 @@ document.getElementById('modal-close-btn').addEventListener('click', function() 
             document.getElementById('prod-target-ops').value = PRODUCT_DICTIONARY[matchedSPP.product].ops + " Orang";
             document.getElementById('prod-deadline-val').value = PRODUCT_DICTIONARY[matchedSPP.product].hours;
             document.getElementById('prod-deadline-unit').value = "jam";
-        } else if (matchedSPP.isSPL && matchedSPP.deadlineRawObjectMs && matchedSPP.startTimeObjectMs) {
-      
-            const diffMs = matchedSPP.deadlineRawObjectMs - matchedSPP.startTimeObjectMs;
-            const targetHours = Math.round(diffMs / (1000 * 60 * 60));
+        } else if (matchedSPP.isSPL) {
+            // Ambil dari variabel jam SPL yang kita buat di langkah 1
+            let splJam = matchedSPP.splTargetHours || 0;
+            // Fallback (jaga-jaga untuk data SPL lama yang sudah terlanjur jalan)
+            if (splJam === 0 && matchedSPP.deadlineRawObjectMs && matchedSPP.startTimeObjectMs) {
+                splJam = Math.round((matchedSPP.deadlineRawObjectMs - matchedSPP.startTimeObjectMs) / (1000 * 60 * 60));
+            }
             document.getElementById('prod-target-ops').value = "SPL (Manual)";
-            document.getElementById('prod-deadline-val').value = targetHours;
+            document.getElementById('prod-deadline-val').value = splJam;
             document.getElementById('prod-deadline-unit').value = "jam";
         } else {
+
             document.getElementById('prod-target-ops').value = "";
             document.getElementById('prod-deadline-val').value = "";
         }
@@ -3775,7 +3796,7 @@ let processPoints = 10;
             status: statusKirim
         };
 
-        if (!matchedSPP.isLocked && !matchedSPP.isSPL) {
+        if (!matchedSPP.isLocked) {
             sppUpdates.isLocked = true;
             sppUpdates.startTimeObjectMs = timeMs;
             
@@ -4875,7 +4896,7 @@ window.editMasterSPP = function(firebaseKey) {
             let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editMasterSPP('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button></td>` : '';
             tbody.innerHTML += `<tr style="background: rgba(234, 88, 12, 0.05); border-left: 3px solid #ea580c;"><td><strong style="color:#fb923c;">${item.no}</strong></td><td>${item.datetime}</td><td><span class="badge bg-buffer" style="font-size:12px; font-weight:700;">${item.product}</span></td><td>${item.maker}</td><td><b>${item.receiver}</b></td>
 
-<td><b style="color:var(--warning-glow)">${PRODUCT_DICTIONARY[item.product] ? PRODUCT_DICTIONARY[item.product].hours + " Jam" : (item.isSPL && item.deadlineRawObjectMs && item.startTimeObjectMs ? Math.round((item.deadlineRawObjectMs - item.startTimeObjectMs) / 3600000) + " Jam" : "-")}</b></td>
+<td><b style="color:var(--warning-glow)">${item.splTargetHours ? item.splTargetHours + " Jam" : (PRODUCT_DICTIONARY[item.product] ? PRODUCT_DICTIONARY[item.product].hours + " Jam" : (item.deadlineRawObjectMs && item.startTimeObjectMs ? Math.round((item.deadlineRawObjectMs - item.startTimeObjectMs) / 3600000) + " Jam" : "-"))}</b></td>
 
 <td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${actionBtns}</tr>`;
         });
