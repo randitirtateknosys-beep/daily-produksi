@@ -1851,9 +1851,9 @@ document.getElementById('bee-boot-container').style.display = 'flex';
         "AQUATECH TRO 3000 GPD/S": { ops: 2, hours: 24 },
         "AQUATECH TRO 4500 GPD/S": { ops: 2, hours: 24 },
         "AQUATECH TRO 6000 GPD/S": { ops: 2, hours: 24 },
-        "AQUATECH TRO 3000 GPD/BRX": { ops: 2, hours: 32 },
-        "AQUATECH TRO 4500 GPD/BRX": { ops: 2, hours: 32 },
-        "AQUATECH TRO 6000 GPD/BRX": { ops: 2, hours: 32 },
+        "AQUATECH TRO 3000 GPD/BRX": { ops: 2, hours: 24 },
+        "AQUATECH TRO 4500 GPD/BRX": { ops: 2, hours: 24 },
+        "AQUATECH TRO 6000 GPD/BRX": { ops: 2, hours: 24 },
         "AQUATECH TRO 1500 GPD/MX": { ops: 2, hours: 24 },
         "AQUATECH TRO 3000 GPD/MX": { ops: 2, hours: 24 },
         "AQUATECH TRO 4500 GPD/MX": { ops: 2, hours: 24 },
@@ -2992,20 +2992,29 @@ window.beeShowDynamicStats = function() {
         let htmlRows = "";
 monitoredSPP.forEach(item => {
            
-           const timeDiff = window.getWorkingTimeDiff((item.lastInputTimeMs || Date.now()), item.deadlineRawObjectMs);
+           const isPaused = ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(item.status);
+           const timeToCalculate = isPaused ? item.lastInputTimeMs : Date.now();
+           const timeDiff = window.getWorkingTimeDiff(timeToCalculate, item.deadlineRawObjectMs);
         
-let cdText = ""; let cdStyle = "color: #fff; font-weight: 700;";
-            if (timeDiff > 0) {
+           let cdText = ""; let cdStyle = "color: #fff; font-weight: 700;";
+           if (isPaused) {
+               const h = Math.floor(timeDiff / (1000 * 60 * 60)); const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+               cdText = `⏸️ TERJEDA (${h} Jam ${m} Menit)`; cdStyle = "color: var(--warning-glow); font-weight: 800;";
+           } else if (timeDiff > 0) {
                 const h = Math.floor(timeDiff / (1000 * 60 * 60)); const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60)); cdText = `${h} Jam ${m} Menit`;
                 if (timeDiff < (2*60*60*1000)) cdStyle = "color: var(--danger-glow); font-weight: 800;"; else if (timeDiff < (5*60*60*1000)) cdStyle = "color: var(--warning-glow); font-weight: 700;"; else cdStyle = "color: var(--emerald-glow); font-weight: 700;";
-            } else {
+           } else {
                 const lateMs = Math.abs(timeDiff); const h = Math.floor(lateMs / (1000 * 60 * 60)); const m = Math.floor((lateMs % (1000 * 60 * 60)) / (1000 * 60));
                 cdText = `⚠️ Telat ${h} Jam ${m} Menit`; cdStyle = "color: var(--danger-glow); font-weight: 900;";
-            }
+           }
             
             let badgeHTML = window.getStatusBadge(item.status);
 
-            htmlRows += `<tr style="border-left: 3px solid var(--purple-glow);"><td><strong>${item.no}</strong></td><td><span style="font-weight:700;">${item.product}</span></td><td><code style="color:var(--blue-glow); font-weight:700;">${item.formattedDeadline}</code></td><td><span style="${cdStyle}">${cdText}</span></td><td>${badgeHTML}</td><td><button type="button" class="btn-wa" onclick="sendWhatsAppReminder('${item.no}', '${cdText.replace(/'/g, "\\'")}')">Kirim WA</button></td></tr>`;
+            htmlRows += `<tr style="border-left: 3px solid var(--purple-glow);"><td><strong>${item.no}</strong></td><td><span style="font-weight:700;">${item.product}</span></td>
+
+<td><code style="color:var(--blue-glow); font-weight:700;">${PRODUCT_DICTIONARY[item.product] ? PRODUCT_DICTIONARY[item.product].hours + " Jam" : "-"}</code></td>
+
+<td><span style="${cdStyle}">${cdText}</span></td><td>${badgeHTML}</td><td><button type="button" class="btn-wa" onclick="sendWhatsAppReminder('${item.no}', '${cdText.replace(/'/g, "\\'")}')">Kirim WA</button></td></tr>`;
         }); tbody.innerHTML = htmlRows;
     }
 
@@ -3633,26 +3642,34 @@ document.getElementById('modal-close-btn').addEventListener('click', function() 
             document.getElementById('prod-deadline-val').value = "";
         }
       
-        if (matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
-            const timeDiff = window.getWorkingTimeDiff(Date.now(), matchedSPP.deadlineRawObjectMs);
+if (matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
+            const isPaused = ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(matchedSPP.status);
+            const timeToCalculate = isPaused ? matchedSPP.lastInputTimeMs : Date.now();
+            const timeDiff = window.getWorkingTimeDiff(timeToCalculate, matchedSPP.deadlineRawObjectMs);
 
-            if (timeDiff > 0) {
+            if (isPaused) {
                 const h = Math.floor(timeDiff / (1000 * 60 * 60));
                 const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-                deadlineDisplay.innerHTML = `⏳ Sisa Waktu Pekerjaan: ${h} Jam ${m} Menit (${matchedSPP.formattedDeadline})`;
+                deadlineDisplay.innerHTML = `⏸️ WAKTU TERJEDA: Sisa ${h} Jam ${m} Menit`;
+                deadlineDisplay.style.color = "var(--warning-glow)";
+            } else if (timeDiff > 0) {
+                const h = Math.floor(timeDiff / (1000 * 60 * 60));
+                const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                deadlineDisplay.innerHTML = `⏳ Sisa Waktu Pekerjaan: ${h} Jam ${m} Menit`;
                 deadlineDisplay.style.color = "var(--warning-glow)";
             } else {
-                deadlineDisplay.innerHTML = `🚨 WAKTU HABIS! Target Awal: ${matchedSPP.formattedDeadline}`;
+                deadlineDisplay.innerHTML = `🚨 WAKTU HABIS!`;
                 deadlineDisplay.style.color = "var(--danger-glow)";
             }
-        } else {
+        }
+        
+else {
             deadlineDisplay.innerHTML = "🟢 SPP Belum dikerjakan (Waktu akan dikunci saat Anda submit pertama kali).";
             deadlineDisplay.style.color = "var(--emerald-glow)";
         }
-
         window.updateConditionDropdown(matchedSPP);
     };
-    window.liveCalculationHandler = function() { 
+window.liveCalculationHandler = function() { 
         const valInput = document.getElementById('prod-deadline-val').value;
         const unitInput = document.getElementById('prod-deadline-unit').value;
         const sppNo = document.getElementById('prod-spp-select').value;
@@ -3661,18 +3678,13 @@ document.getElementById('modal-close-btn').addEventListener('click', function() 
         if(!sppNo || !valInput) return;
 
         const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
+        
+        // HANYA TAMPILKAN PREVIEW ANGKA JAM/HARI
         if(matchedSPP && !matchedSPP.isLocked) {
-            let targetDate;
-         if(unitInput === 'jam') {
-             targetDate = new Date(window.addWorkingHours(Date.now(), parseInt(valInput)));
-         } else {
-             targetDate = new Date(window.addWorkingHours(Date.now(), parseInt(valInput) * 24));
-         }
-            const formatted = window.formatDateToString(targetDate);
-            deadlineDisplay.innerHTML = `🔮 Preview Estimasi Selesai: ${formatted}`;
+            deadlineDisplay.innerHTML = `🔮 Preview Target Waktu: ${valInput} ${unitInput.charAt(0).toUpperCase() + unitInput.slice(1)}`;
             deadlineDisplay.style.color = "var(--cyan-glow)";
         }
-    };
+    };    
 document.getElementById('prod-form').addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -3776,6 +3788,20 @@ if (targetUnit === "jam") {
 
             sppUpdates.deadlineRawObjectMs = calcTarget.getTime();
             sppUpdates.formattedDeadline = window.formatDateToString(calcTarget);
+        }
+else if (matchedSPP.isLocked && ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(matchedSPP.status) && condition === "Normal") {
+            // OPERATOR MELANJUTKAN KEMBALI PEKERJAAN (RESUME)
+            // 1. Hitung berapa lama waktu jeda terekam
+            let pausedWorkingMs = window.getWorkingTimeDiff(matchedSPP.lastInputTimeMs, timeMs);
+            
+            // 2. Jika ada waktu terlewat saat jeda, perpanjang target deadline
+            if (pausedWorkingMs > 0) {
+                let pausedHours = pausedWorkingMs / (1000 * 60 * 60);
+                let newDeadlineMs = window.addWorkingHours(matchedSPP.deadlineRawObjectMs, pausedHours);
+                
+                sppUpdates.deadlineRawObjectMs = newDeadlineMs;
+                sppUpdates.formattedDeadline = window.formatDateToString(new Date(newDeadlineMs));
+            }
         }
 
         window.dbUpdateSPP(matchedSPP.firebaseKey, sppUpdates);
@@ -4058,32 +4084,27 @@ window.editOperatorLog = function(firebaseKey) {
 
         filteredSPP.forEach(item => {
             let relatedLogs = filteredLogs.filter(log => log.noSPP === item.no);
-            
             let uniqueProdNos = [...new Set(relatedLogs.map(l => l.noProd))].filter(n => n && n !== "-");
             let displayProdNo = uniqueProdNos.length > 0 ? uniqueProdNos.join("<br>") : `<span style="color:var(--text-muted); font-size:11px;">Belum Tersedia</span>`;
-            
             let uniqueOperators = [...new Set(relatedLogs.map(l => l.operator))].filter(o => o && !o.toLowerCase().includes('dev'));
             let displayOperators = uniqueOperators.length > 0 ? "• " + uniqueOperators.join("<br>• ") : `<span style="color:var(--text-muted); font-size:11px;">Belum ada tim</span>`;
 
-            let fileLinkHtml = item.fileUrl 
-                ? `<a href="${item.fileUrl}" target="_blank" style="background:var(--blue-glow); color:#000; padding:6px 12px; font-size:11px; font-weight:bold; border-radius:6px; text-decoration:none;">📄 Dokumen</a>` 
-                : `<span style="color:var(--text-muted); font-size:11px;">Tanpa Lampiran</span>`;
-                
+            let fileLinkHtml = item.fileUrl ? `<a href="${item.fileUrl}" target="_blank" style="background:var(--blue-glow); color:#000; padding:6px 12px; font-size:11px; font-weight:bold; border-radius:6px; text-decoration:none;">📄 Dokumen</a>` : `<span style="color:var(--text-muted); font-size:11px;">Tanpa Lampiran</span>`;
             let displayStatus = item.isShipped ? '<span class="badge bg-urgent">Digunakan/Terkirim</span>' : window.getStatusBadge(item.status); 
             let docColHtml = showDocCol ? `<td>${fileLinkHtml}</td>` : '';
             let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-bottom:5px; width:100%;" onclick="editMasterSPP('${item.firebaseKey}')">✏️ Edit</button><br><button class="btn-delete" style="width:100%;" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button></td>` : '';
             
-            tbody.innerHTML += `<tr>
-                <td><strong>${item.no}</strong><br><span style="font-size: 11px; color: var(--text-muted);">${item.datetime}</span></td>
-                <td><code style="color:var(--blue-glow); font-weight:bold;">${displayProdNo}</code></td>
-                <td><span class="badge bg-reguler" style="font-size:12px; font-weight:700;">${item.product}</span></td>
-                <td style="font-size:12px; font-weight:600; line-height: 1.5;">${displayOperators}</td>
-                <td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td>
-                <td><span class="badge bg-reguler">${item.priority}</span></td>
-                <td>${displayStatus}</td>
-                ${docColHtml}
-                ${actionBtns}
-            </tr>`;
+            // --- KODE TAMBAHAN UNTUK TARGET JAM ---
+            let targetHoursText = "-";
+            if (item.isSPL && item.deadlineRawObjectMs && item.startTimeObjectMs) {
+                targetHoursText = Math.round((item.deadlineRawObjectMs - item.startTimeObjectMs) / (1000 * 60 * 60)) + " Jam";
+            } else if (PRODUCT_DICTIONARY[item.product]) {
+                targetHoursText = PRODUCT_DICTIONARY[item.product].hours + " Jam";
+            }
+            // --------------------------------------
+
+            // GANTI ${item.formattedDeadline} MENJADI ${targetHoursText}
+            tbody.innerHTML += `<tr><td><strong>${item.no}</strong><br><span style="font-size: 11px; color: var(--text-muted);">${item.datetime}</span></td><td><code style="color:var(--blue-glow); font-weight:bold;">${displayProdNo}</code></td><td><span class="badge bg-reguler" style="font-size:12px; font-weight:700;">${item.product}</span></td><td style="font-size:12px; font-weight:600; line-height: 1.5;">${displayOperators}</td><td><b style="color:var(--warning-glow)">${targetHoursText}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${docColHtml}${actionBtns}</tr>`;
         });
     }
 
@@ -4852,7 +4873,11 @@ window.editMasterSPP = function(firebaseKey) {
         onlySPL.forEach(item => {
             let displayStatus = item.isShipped ? '<span class="badge bg-urgent">Digunakan/Terkirim</span>' : window.getStatusBadge(item.status); 
             let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editMasterSPP('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button></td>` : '';
-            tbody.innerHTML += `<tr style="background: rgba(234, 88, 12, 0.05); border-left: 3px solid #ea580c;"><td><strong style="color:#fb923c;">${item.no}</strong></td><td>${item.datetime}</td><td><span class="badge bg-buffer" style="font-size:12px; font-weight:700;">${item.product}</span></td><td>${item.maker}</td><td><b>${item.receiver}</b></td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${actionBtns}</tr>`;
+            tbody.innerHTML += `<tr style="background: rgba(234, 88, 12, 0.05); border-left: 3px solid #ea580c;"><td><strong style="color:#fb923c;">${item.no}</strong></td><td>${item.datetime}</td><td><span class="badge bg-buffer" style="font-size:12px; font-weight:700;">${item.product}</span></td><td>${item.maker}</td><td><b>${item.receiver}</b></td>
+
+<td><b style="color:var(--warning-glow)">${PRODUCT_DICTIONARY[item.product] ? PRODUCT_DICTIONARY[item.product].hours + " Jam" : (item.isSPL && item.deadlineRawObjectMs && item.startTimeObjectMs ? Math.round((item.deadlineRawObjectMs - item.startTimeObjectMs) / 3600000) + " Jam" : "-")}</b></td>
+
+<td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${actionBtns}</tr>`;
         });
     }; 
 
