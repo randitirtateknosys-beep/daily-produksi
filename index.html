@@ -835,10 +835,15 @@
             <form id="form-admin-dokumen">
                 <div class="form-group full-width-group" style="margin-bottom: 15px;">
                     <label style="color: var(--emerald-glow);">Pilih Pekerjaan Produksi yang Sudah Selesai (Otomatis Mengisi Data)</label>
+                    
+                    <!-- INPUT PENCARIAN DROPDOWN BARU -->
+                    <input type="text" id="admin-search-spp-dropdown" placeholder="🔍 Ketik No SPP atau Nama Produk di sini untuk menyaring pilihan..." onkeyup="window.populateAdminSelectSelesai()" style="margin-bottom: 8px; border-color: var(--emerald-glow); background: rgba(16,185,129,0.05);">
+                    
                     <select id="admin-select-selesai" onchange="window.autoFillAdminDokumen()" required style="border-color: var(--emerald-glow);">
                         <option value="">-- Klik untuk menampilkan daftar pekerjaan selesai --</option>
                     </select>
                 </div>
+
                 <div class="unified-grid">
                     <div class="form-group"><label>Bulan (Auto)</label><input type="text" id="admin-bulan" readonly class="input-readonly"></div>
                     <div class="form-group"><label>SPP (Auto)</label><input type="text" id="admin-spp" readonly class="input-readonly"></div>
@@ -857,10 +862,14 @@
                 </button>
             </form>
 
-            <div class="header-flex" style="margin-top: 40px; margin-bottom: 15px; border-bottom: none; padding-bottom: 0;">
-                <h4 style="color: var(--blue-glow); margin: 0; font-size: 14px; text-transform: uppercase;">📋 Tabel Riwayat Rekap Dokumen</h4>
-                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                    <select id="export-dokumen-filter" class="local-search" style="min-width: 120px;" onchange="toggleCustomExportDokumen()">
+<div class="header-flex" style="margin-top: 40px; margin-bottom: 15px; border-bottom: none; padding-bottom: 0;">
+    <h4 style="color: var(--blue-glow); margin: 0; font-size: 14px; text-transform: uppercase;">📋 Tabel Riwayat Rekap Dokumen</h4>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <!-- INPUT PENCARIAN BARU -->
+        <input type="text" id="search-admin-dokumen" class="local-search" placeholder="Cari SPP / Data Dokumen..." onkeyup="window.performGlobalSearch()">
+        
+        <select id="export-dokumen-filter" class="local-search" style="min-width: 120px;" onchange="toggleCustomExportDokumen()">            
+
                         <option value="all" selected>Semua Waktu</option>
                         <option value="today">Hari Ini</option>
                         <option value="week">Minggu Ini</option>
@@ -1793,13 +1802,15 @@ document.getElementById('bee-boot-container').style.display = 'flex';
     }
 
     window.performGlobalSearch = function() {
-        const configs = [
-            { tbody: 'spp-master-body', localInput: 'search-spp' },
-            { tbody: 'operator-history-body', localInput: 'search-log' },
-            { tbody: 'spl-history-body', localInput: 'search-spl' },
-            { tbody: 'shipment-history-body', localInput: 'search-ship' },
-            { tbody: 'product-actual-body', localInput: 'search-aktual' }
-        ];
+    const configs = [
+        { tbody: 'spp-master-body', localInput: 'search-spp' },
+        { tbody: 'operator-history-body', localInput: 'search-log' },
+        { tbody: 'spl-history-body', localInput: 'search-spl' },
+        { tbody: 'shipment-history-body', localInput: 'search-ship' },
+        { tbody: 'product-actual-body', localInput: 'search-aktual' },
+        // TAMBAHKAN BARIS DI BAWAH INI
+        { tbody: 'admin-dokumen-body', localInput: 'search-admin-dokumen' } 
+    ];
 
         configs.forEach(conf => {
             const tbody = document.getElementById(conf.tbody);
@@ -4547,8 +4558,11 @@ window.editMasterSPP = function(firebaseKey) {
 
     window.populateAdminSelectSelesai = function() {
         const select = document.getElementById('admin-select-selesai');
+        const searchInput = document.getElementById('admin-search-spp-dropdown'); // Tangkap input pencarian
         if (!select) return;
 
+        // Ambil teks yang diketik untuk pencarian
+        const filterText = searchInput ? searchInput.value.toLowerCase().trim() : "";
         const currentSavedValue = select.value;
         select.innerHTML = '<option value="">-- Klik untuk menampilkan daftar pekerjaan selesai --</option>';
         
@@ -4565,10 +4579,18 @@ window.editMasterSPP = function(firebaseKey) {
                 noProdTambahan = ` - [Prod: ${logTerkait.noProd}]`;
             }
             
-            select.innerHTML += `<option value="${item.no}">${item.product} (${item.no})${noProdTambahan}</option>`;
+            const optionText = `${item.product} (${item.no})${noProdTambahan}`;
+            
+            // Logika filter: Jika kotak pencarian kosong, tampilkan semua. Jika ada ketikan, saring datanya.
+            if (filterText === "" || optionText.toLowerCase().includes(filterText)) {
+                select.innerHTML += `<option value="${item.no}">${optionText}</option>`;
+            }
         });
 
-        if(currentSavedValue) select.value = currentSavedValue;
+        // Setel ulang nilai yang terpilih jika masih ada dalam daftar yang difilter
+        if(currentSavedValue && Array.from(select.options).some(opt => opt.value === currentSavedValue)) {
+            select.value = currentSavedValue;
+        }
     };
 
     window.isAdminDokumenMinimized = true;
