@@ -15,10 +15,10 @@
     <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     
-    <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-   
+<script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
     <style>
         :root {
             --bg-main: #000000;
@@ -3330,7 +3330,7 @@ document.getElementById('modal-close-btn').addEventListener('click', function() 
         alert("Harap isi catatan lapangan terlebih dahulu!");
         return;
     }
-    // Anda bisa menambahkan logika push ke Firebase di sini sebelum modal tertutup
+
     document.getElementById('statusModal').style.display = 'none';
 });
 
@@ -3449,11 +3449,11 @@ const targetJam = parseInt(document.getElementById('spl-target-jam').value) || 0
             receiver: receiver, 
             priority: priority, 
             status: 'Pending', 
-            isLocked: false,             // Dibuat false agar tidak langsung jalan
-            deadlineRawObjectMs: null,   // Dikosongkan, menunggu operator
-            startTimeObjectMs: null,     // Dikosongkan, menunggu operator
+            isLocked: false,             
+            deadlineRawObjectMs: null,   
+            startTimeObjectMs: null,     
             isSPL: true, 
-            splTargetHours: targetJam,   // Simpan target jam ke memori
+            splTargetHours: targetJam,   
             formattedDeadline: "Belum dimulai", 
             lastEventTimeMs: null, 
             lastEventTimeFormatted: "-", 
@@ -3648,9 +3648,9 @@ const targetJam = parseInt(document.getElementById('spl-target-jam').value) || 0
             document.getElementById('prod-deadline-val').value = PRODUCT_DICTIONARY[matchedSPP.product].hours;
             document.getElementById('prod-deadline-unit').value = "jam";
         } else if (matchedSPP.isSPL) {
-            // Ambil dari variabel jam SPL yang kita buat di langkah 1
+            
             let splJam = matchedSPP.splTargetHours || 0;
-            // Fallback (jaga-jaga untuk data SPL lama yang sudah terlanjur jalan)
+            
             if (splJam === 0 && matchedSPP.deadlineRawObjectMs && matchedSPP.startTimeObjectMs) {
                 splJam = Math.round((matchedSPP.deadlineRawObjectMs - matchedSPP.startTimeObjectMs) / (1000 * 60 * 60));
             }
@@ -3700,7 +3700,7 @@ window.liveCalculationHandler = function() {
 
         const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
         
-        // HANYA TAMPILKAN PREVIEW ANGKA JAM/HARI
+        
         if(matchedSPP && !matchedSPP.isLocked) {
             deadlineDisplay.innerHTML = `🔮 Preview Target Waktu: ${valInput} ${unitInput.charAt(0).toUpperCase() + unitInput.slice(1)}`;
             deadlineDisplay.style.color = "var(--cyan-glow)";
@@ -3811,11 +3811,10 @@ if (targetUnit === "jam") {
             sppUpdates.formattedDeadline = window.formatDateToString(calcTarget);
         }
 else if (matchedSPP.isLocked && ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(matchedSPP.status) && condition === "Normal") {
-            // OPERATOR MELANJUTKAN KEMBALI PEKERJAAN (RESUME)
-            // 1. Hitung berapa lama waktu jeda terekam
+            
             let pausedWorkingMs = window.getWorkingTimeDiff(matchedSPP.lastInputTimeMs, timeMs);
             
-            // 2. Jika ada waktu terlewat saat jeda, perpanjang target deadline
+            
             if (pausedWorkingMs > 0) {
                 let pausedHours = pausedWorkingMs / (1000 * 60 * 60);
                 let newDeadlineMs = window.addWorkingHours(matchedSPP.deadlineRawObjectMs, pausedHours);
@@ -3993,215 +3992,188 @@ window.renderShipmentTable = function() {
             tbody.innerHTML += `<tr style="background: rgba(234, 88, 12, 0.05); border-left: 3px solid #ea580c;"><td><strong style="color:#fb923c;">${item.no}</strong></td><td>${item.datetime}</td><td><span class="badge bg-buffer" style="font-size:12px; font-weight:700;">${item.product}</span></td><td>${item.maker}</td><td><b>${item.receiver}</b></td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${actionBtns}</tr>`;
         });
     }
-
 window.editOperatorLog = function(firebaseKey) {
-        let logItem = window.databaseLogOperator.find(l => l.firebaseKey === firebaseKey);
-        if (!logItem) return;
+    let logItem = window.databaseLogOperator.find(l => l.firebaseKey === firebaseKey);
+    if (!logItem) return;
 
-        let choice = prompt("Pilih data Log Aktual yang ingin diedit:\n1. Aktivitas\n2. Kondisi\n3. Tahap Produksi\n4. No. Produksi\n5. Waktu Input\n6. Target Deadline\n7. Sisa Waktu Pekerjaan");
-        if (!choice) return;
-        
-        let updates = {};
-        
-        if (choice === '1') { let val = prompt("Detail Aktivitas Baru:"); if(val) updates.aktivitas = val.trim(); }
-        else if (choice === '2') { let val = prompt("Kondisi Progres Baru:"); if(val) updates.condition = val.trim(); }
-        else if (choice === '3') { let val = prompt("Tahap Produksi Baru:"); if(val) updates.stage = val.trim(); }
-        else if (choice === '4') { let val = prompt("No. Produksi Baru:"); if(val) updates.noProd = val.trim(); }
-        else if (choice === '5') { 
-            let val = prompt("Format YYYY-MM-DD HH:MM"); 
-            if(val) { 
-                let d = new Date(val); 
-                if (!isNaN(d.getTime())) { 
-                    updates.time = window.formatDateToString(d); 
-                    updates.timestampMs = d.getTime(); 
-                } else {
-                    alert("Format tanggal tidak valid!"); return;
-                }
-            } 
-        }
-        else if (choice === '6') {
-            let val = prompt("Masukkan Target Deadline Baru dalam satuan JAM (Hanya angka, contoh: 8):");
-            if (val && !isNaN(val)) {
-                let newHours = parseInt(val);
-                updates.deadline = newHours + " jam";
-                
-                let matchedSPP = window.databaseMasterSPP.find(s => s.no === logItem.noSPP);
-                if (matchedSPP && matchedSPP.startTimeObjectMs) {
-                    let newDeadlineMs = window.addWorkingHours(matchedSPP.startTimeObjectMs, newHours);
-                    let d = new Date(newDeadlineMs);
-                    window.dbUpdateSPP(matchedSPP.firebaseKey, {
-                        deadlineRawObjectMs: newDeadlineMs,
-                        formattedDeadline: window.formatDateToString(d)
-                    });
-
-                  
-                    let timeDiff = window.getWorkingTimeDiff(logItem.timestampMs, newDeadlineMs);
-                    let sisaHtml = "";
-                    if (timeDiff > 0) {
-                        const h = Math.floor(timeDiff / (1000 * 60 * 60));
-                        const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-                        sisaHtml = `<span style="color:var(--emerald-glow); font-weight:bold;">${h} Jam ${m} Menit</span>`;
-                    } else {
-                        const lateMs = Math.abs(timeDiff);
-                        const h = Math.floor(lateMs / (1000 * 60 * 60));
-                        const m = Math.floor((lateMs % (1000 * 60 * 60)) / (1000 * 60));
-                        sisaHtml = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${h} Jam ${m} Menit</span>`;
-                    }
-                    updates.sisaWaktuSaved = sisaHtml;
-                }
-            } else if (val) {
-                alert("Harap masukkan angka yang valid!"); return;
+    let choice = prompt("Pilih data Log Aktual yang ingin diedit:\n1. Aktivitas\n2. Kondisi\n3. Tahap Produksi\n4. No. Produksi\n5. Waktu Input\n6. Target Deadline\n7. Sisa Waktu Pekerjaan\n8. Status Hasil");
+    if (!choice) return;
+    
+    let updates = {};
+    
+    if (choice === '1') { let val = prompt("Detail Aktivitas Baru:"); if(val) updates.aktivitas = val.trim(); }
+    else if (choice === '2') { let val = prompt("Kondisi Progres Baru:"); if(val) updates.condition = val.trim(); }
+    else if (choice === '3') { let val = prompt("Tahap Produksi Baru:"); if(val) updates.stage = val.trim(); }
+    else if (choice === '4') { let val = prompt("No. Produksi Baru:"); if(val) updates.noProd = val.trim(); }
+    else if (choice === '5') { 
+        let val = prompt("Format YYYY-MM-DD HH:MM"); 
+        if(val) { 
+            let d = new Date(val); 
+            if (!isNaN(d.getTime())) { 
+                updates.time = window.formatDateToString(d); 
+                updates.timestampMs = d.getTime(); 
+            } else {
+                alert("Format tanggal tidak valid!"); return;
             }
-        }
-        else if (choice === '7') {
-            let val = prompt("Masukkan Sisa Waktu Pekerjaan dalam satuan JAM (Contoh: ketik 24 untuk 24 jam, atau ketik -5 jika telat 5 jam):");
-            if (val && !isNaN(val)) {
-                let sisaJam = parseInt(val);
-                
+        } 
+    }
+    else if (choice === '6') {
+        let val = prompt("Masukkan Target Deadline Baru dalam satuan JAM (Hanya angka, contoh: 8):");
+        if (val && !isNaN(val)) {
+            let newHours = parseInt(val);
+            updates.deadline = newHours + " jam";
+            
+            let matchedSPP = window.databaseMasterSPP.find(s => s.no === logItem.noSPP);
+            if (matchedSPP && matchedSPP.startTimeObjectMs) {
+                let newDeadlineMs = window.addWorkingHours(matchedSPP.startTimeObjectMs, newHours);
+                let d = new Date(newDeadlineMs);
+                window.dbUpdateSPP(matchedSPP.firebaseKey, {
+                    deadlineRawObjectMs: newDeadlineMs,
+                    formattedDeadline: window.formatDateToString(d)
+                });
+
+                let timeDiff = window.getWorkingTimeDiff(logItem.timestampMs, newDeadlineMs);
                 let sisaHtml = "";
-                if (sisaJam >= 0) {
-                    sisaHtml = `<span style="color:var(--emerald-glow); font-weight:bold;">${sisaJam} Jam 0 Menit</span>`;
+                if (timeDiff > 0) {
+                    const h = Math.floor(timeDiff / (1000 * 60 * 60));
+                    const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                    sisaHtml = `<span style="color:var(--emerald-glow); font-weight:bold;">${h} Jam ${m} Menit</span>`;
                 } else {
-                    sisaHtml = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${Math.abs(sisaJam)} Jam 0 Menit</span>`;
+                    const lateMs = Math.abs(timeDiff);
+                    const h = Math.floor(lateMs / (1000 * 60 * 60));
+                    const m = Math.floor((lateMs % (1000 * 60 * 60)) / (1000 * 60));
+                    sisaHtml = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${h} Jam ${m} Menit</span>`;
                 }
-                
                 updates.sisaWaktuSaved = sisaHtml;
-
-                let matchedSPP = window.databaseMasterSPP.find(s => s.no === logItem.noSPP);
-                if (matchedSPP) {
-                    let newDeadlineMs = window.addWorkingHours(logItem.timestampMs, sisaJam);
-                    let d = new Date(newDeadlineMs);
-                    window.dbUpdateSPP(matchedSPP.firebaseKey, {
-                        deadlineRawObjectMs: newDeadlineMs,
-                        formattedDeadline: window.formatDateToString(d)
-                    });
-                }
-            } else if (val) {
-                alert("Harap masukkan angka yang valid!");
-                return;
             }
-        }
-        
-        if (Object.keys(updates).length > 0) { 
-            db.ref('logOperator/' + firebaseKey).update(updates); 
-            alert("Data log berhasil diperbarui!"); 
+        } else if (val) {
+            alert("Harap masukkan angka yang valid!"); return;
         }
     }
-    window.renderMasterTable = function() {
-        const tbody = document.getElementById('spp-master-body'); 
-        tbody.innerHTML = ''; 
-        let filteredSPP = window.getFilteredNonSPLSPP(); 
-        const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
-        const isAdmin = (window.currentUserRole === "Admin");
-        const showDocCol = (isDev || isAdmin);
-        let cols = 7 + (showDocCol ? 1 : 0) + (isDev ? 1 : 0);
-        
-        if(filteredSPP.length === 0) { 
-            tbody.innerHTML = `<tr><td colspan="${cols}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada data dokumen SPP standar.</td></tr>`; 
-            return; 
-        }
-
-        let filteredLogs = window.getFilteredLogs();
-
-        filteredSPP.forEach(item => {
-            let relatedLogs = filteredLogs.filter(log => log.noSPP === item.no);
-            let uniqueProdNos = [...new Set(relatedLogs.map(l => l.noProd))].filter(n => n && n !== "-");
-            let displayProdNo = uniqueProdNos.length > 0 ? uniqueProdNos.join("<br>") : `<span style="color:var(--text-muted); font-size:11px;">Belum Tersedia</span>`;
-            let uniqueOperators = [...new Set(relatedLogs.map(l => l.operator))].filter(o => o && !o.toLowerCase().includes('dev'));
-            let displayOperators = uniqueOperators.length > 0 ? "• " + uniqueOperators.join("<br>• ") : `<span style="color:var(--text-muted); font-size:11px;">Belum ada tim</span>`;
-
-            let fileLinkHtml = item.fileUrl ? `<a href="${item.fileUrl}" target="_blank" style="background:var(--blue-glow); color:#000; padding:6px 12px; font-size:11px; font-weight:bold; border-radius:6px; text-decoration:none;">📄 Dokumen</a>` : `<span style="color:var(--text-muted); font-size:11px;">Tanpa Lampiran</span>`;
-            let displayStatus = item.isShipped ? '<span class="badge bg-urgent">Digunakan/Terkirim</span>' : window.getStatusBadge(item.status); 
-            let docColHtml = showDocCol ? `<td>${fileLinkHtml}</td>` : '';
-            let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-bottom:5px; width:100%;" onclick="editMasterSPP('${item.firebaseKey}')">✏️ Edit</button><br><button class="btn-delete" style="width:100%;" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button></td>` : '';
+    else if (choice === '7') {
+        let val = prompt("Masukkan Sisa Waktu Pekerjaan dalam satuan JAM (Contoh: ketik 24 untuk 24 jam, atau ketik -5 jika telat 5 jam):");
+        if (val && !isNaN(val)) {
+            let sisaJam = parseInt(val);
             
-            // --- KODE TAMBAHAN UNTUK TARGET JAM ---
-            let targetHoursText = "-";
-            if (item.isSPL && item.deadlineRawObjectMs && item.startTimeObjectMs) {
-                targetHoursText = Math.round((item.deadlineRawObjectMs - item.startTimeObjectMs) / (1000 * 60 * 60)) + " Jam";
-            } else if (PRODUCT_DICTIONARY[item.product]) {
-                targetHoursText = PRODUCT_DICTIONARY[item.product].hours + " Jam";
+            let sisaHtml = "";
+            if (sisaJam >= 0) {
+                sisaHtml = `<span style="color:var(--emerald-glow); font-weight:bold;">${sisaJam} Jam 0 Menit</span>`;
+            } else {
+                sisaHtml = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${Math.abs(sisaJam)} Jam 0 Menit</span>`;
             }
-            // --------------------------------------
+            
+            updates.sisaWaktuSaved = sisaHtml;
 
-            // GANTI ${item.formattedDeadline} MENJADI ${targetHoursText}
-            tbody.innerHTML += `<tr><td><strong>${item.no}</strong><br><span style="font-size: 11px; color: var(--text-muted);">${item.datetime}</span></td><td><code style="color:var(--blue-glow); font-weight:bold;">${displayProdNo}</code></td><td><span class="badge bg-reguler" style="font-size:12px; font-weight:700;">${item.product}</span></td><td style="font-size:12px; font-weight:600; line-height: 1.5;">${displayOperators}</td><td><b style="color:var(--warning-glow)">${targetHoursText}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${docColHtml}${actionBtns}</tr>`;
-        });
+            let matchedSPP = window.databaseMasterSPP.find(s => s.no === logItem.noSPP);
+            if (matchedSPP) {
+                let newDeadlineMs = window.addWorkingHours(logItem.timestampMs, sisaJam);
+                let d = new Date(newDeadlineMs);
+                window.dbUpdateSPP(matchedSPP.firebaseKey, {
+                    deadlineRawObjectMs: newDeadlineMs,
+                    formattedDeadline: window.formatDateToString(d)
+                });
+            }
+        } else if (val) {
+            alert("Harap masukkan angka yang valid!");
+            return;
+        }
+    }
+    else if (choice === '8') {
+        let statusChoice = prompt("Pilih Status Hasil Baru (Ketik Angkanya):\n1. Selesai\n2. Selesai Awal\n3. Telat Selesai\n4. Proses\n5. Pending\n6. Idle Time\n7. Stoppage\n8. Takeover\n9. Lanjutkan Besok");
+        
+        if (statusChoice === '1') updates.status = 'Selesai';
+        else if (statusChoice === '2') updates.status = 'Selesai Awal';
+        else if (statusChoice === '3') updates.status = 'Telat Selesai';
+        else if (statusChoice === '4') updates.status = 'Proses';
+        else if (statusChoice === '5') updates.status = 'Pending';
+        else if (statusChoice === '6') updates.status = 'Idle Time';
+        else if (statusChoice === '7') updates.status = 'Stoppage';
+        else if (statusChoice === '8') updates.status = 'Takeover';
+        else if (statusChoice === '9') updates.status = 'Lanjutkan Besok';
+        else if (statusChoice) {
+            alert("Pilihan tidak valid! Status batal diubah.");
+        }
+    }
+    
+    if (Object.keys(updates).length > 0) { 
+        db.ref('logOperator/' + firebaseKey).update(updates); 
+        alert("Data log berhasil diperbarui!"); 
+    }
+};
+
+window.renderOperatorTable = function() {
+    let toggleBtn = document.getElementById('btn-toggle-log-mode');
+    if (!toggleBtn) {
+        const headerDiv = document.querySelector('#panel-history-prod .header-flex div');
+        if (headerDiv) {
+            toggleBtn = document.createElement('button');
+            toggleBtn.id = 'btn-toggle-log-mode';
+            toggleBtn.className = 'btn-action-trigger';
+            toggleBtn.style.marginRight = '10px';
+            toggleBtn.onclick = window.toggleHistoryLog;
+            headerDiv.insertBefore(toggleBtn, headerDiv.firstChild);
+        }
+    }
+    if (toggleBtn) {
+        toggleBtn.innerHTML = window.modeHistoryLog === 'proses' ? '📂 Buka Riwayat Selesai' : '🔄 Tampilkan On Proses';
+        toggleBtn.style.background = window.modeHistoryLog === 'proses' ? 'var(--blue-glow)' : 'var(--emerald-glow)';
+        toggleBtn.style.color = '#000';
     }
 
-  window.renderOperatorTable = function() {
-        let toggleBtn = document.getElementById('btn-toggle-log-mode');
-        if (!toggleBtn) {
-            const headerDiv = document.querySelector('#panel-history-prod .header-flex div');
-            if (headerDiv) {
-                toggleBtn = document.createElement('button');
-                toggleBtn.id = 'btn-toggle-log-mode';
-                toggleBtn.className = 'btn-action-trigger';
-                toggleBtn.style.marginRight = '10px';
-                toggleBtn.onclick = window.toggleHistoryLog;
-                headerDiv.insertBefore(toggleBtn, headerDiv.firstChild);
-            }
-        }
-        if (toggleBtn) {
-            toggleBtn.innerHTML = window.modeHistoryLog === 'proses' ? '📂 Buka Riwayat Selesai' : '🔄 Tampilkan On Proses';
-            toggleBtn.style.background = window.modeHistoryLog === 'proses' ? 'var(--blue-glow)' : 'var(--emerald-glow)';
-            toggleBtn.style.color = '#000';
-        }
+    const tbody = document.getElementById('operator-history-body'); 
+    tbody.innerHTML = ''; 
+    let rawLogs = window.getFilteredLogs();
+    const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
+    
+    let filteredLogs = rawLogs.filter(log => {
+        let masterSPP = window.databaseMasterSPP.find(s => s.no === log.noSPP);
+        let isSelesai = masterSPP ? (['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(masterSPP.status) || masterSPP.isShipped) : ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(log.status);
+        return window.modeHistoryLog === 'proses' ? !isSelesai : isSelesai;
+    });
 
-        const tbody = document.getElementById('operator-history-body'); 
-        tbody.innerHTML = ''; 
-        let rawLogs = window.getFilteredLogs();
-        const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
+    if(filteredLogs.length === 0) { 
+        tbody.innerHTML = `<tr><td colspan="${isDev ? '10' : '9'}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat laporan pada rentang waktu/mode ini.</td></tr>`; 
+        return; 
+    }
+
+    let groupedLogs = new Map();
+    filteredLogs.forEach((item) => {
+        if (!groupedLogs.has(item.noSPP)) {
+            groupedLogs.set(item.noSPP, []);
+        }
+        groupedLogs.get(item.noSPP).push(item);
+    });
+
+    groupedLogs.forEach((logs, sppNo) => {
+        let masterSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
+        let productName = masterSPP ? masterSPP.product : "Produk Tidak Diketahui";
+        let urgency = masterSPP ? masterSPP.priority : "Reguler";
+        let urgencyClass = urgency === 'Urgent' ? 'bg-urgent' : (urgency === 'Buffer Stok' ? 'bg-buffer' : 'bg-reguler');
+
+        let uniqueProds = [...new Set(logs.map(l => l.noProd))].filter(n => n && n !== "-").join(", ");
+        if (!uniqueProds) uniqueProds = "-";
+
+        tbody.innerHTML += `
+            <tr style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--blue-glow); border-top: 2px solid var(--panel-border);">
+                <td colspan="${isDev ? '10' : '9'}" style="padding: 15px 20px;">
+                    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                        <span style="font-size: 14px; font-weight: 800; color: #f8fafc;">📁 NO. SPP: <span style="color: var(--blue-glow);">${sppNo}</span></span>
+                        <span style="font-size: 14px; font-weight: 700; color: #f8fafc;">🛒 Produk: <span style="color: var(--emerald-glow);">${productName}</span></span>
+                        <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">🏷️ No. Produksi: <span style="color: var(--warning-glow);">${uniqueProds}</span></span>
+                        <span class="badge ${urgencyClass}">${urgency}</span>
+                    </div>
+                </td>
+            </tr>
+        `;
+
+        logs.forEach((item) => {
+            let amanAktivitas = window.sanitizeHTML(item.aktivitas);
+            let amanReason = window.sanitizeHTML(item.reason);
+            let badgeHTML = window.getStatusBadge(item.status);
+            let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
         
-        let filteredLogs = rawLogs.filter(log => {
-            let masterSPP = window.databaseMasterSPP.find(s => s.no === log.noSPP);
-            let isSelesai = masterSPP ? (['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(masterSPP.status) || masterSPP.isShipped) : ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(log.status);
-            return window.modeHistoryLog === 'proses' ? !isSelesai : isSelesai;
-        });
-
-        if(filteredLogs.length === 0) { 
-            tbody.innerHTML = `<tr><td colspan="${isDev ? '10' : '9'}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat laporan pada rentang waktu/mode ini.</td></tr>`; 
-            return; 
-        }
-
-        let groupedLogs = new Map();
-        filteredLogs.forEach((item) => {
-            if (!groupedLogs.has(item.noSPP)) {
-                groupedLogs.set(item.noSPP, []);
-            }
-            groupedLogs.get(item.noSPP).push(item);
-        });
-
-        groupedLogs.forEach((logs, sppNo) => {
-            let masterSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
-            let productName = masterSPP ? masterSPP.product : "Produk Tidak Diketahui";
-            let urgency = masterSPP ? masterSPP.priority : "Reguler";
-            let urgencyClass = urgency === 'Urgent' ? 'bg-urgent' : (urgency === 'Buffer Stok' ? 'bg-buffer' : 'bg-reguler');
-
-            let uniqueProds = [...new Set(logs.map(l => l.noProd))].filter(n => n && n !== "-").join(", ");
-            if (!uniqueProds) uniqueProds = "-";
-
-            tbody.innerHTML += `
-                <tr style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--blue-glow); border-top: 2px solid var(--panel-border);">
-                    <td colspan="${isDev ? '10' : '9'}" style="padding: 15px 20px;">
-                        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-                            <span style="font-size: 14px; font-weight: 800; color: #f8fafc;">📁 NO. SPP: <span style="color: var(--blue-glow);">${sppNo}</span></span>
-                            <span style="font-size: 14px; font-weight: 700; color: #f8fafc;">🛒 Produk: <span style="color: var(--emerald-glow);">${productName}</span></span>
-                            <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">🏷️ No. Produksi: <span style="color: var(--warning-glow);">${uniqueProds}</span></span>
-                            <span class="badge ${urgencyClass}">${urgency}</span>
-                        </div>
-                    </td>
-                </tr>
-            `;
-
-            logs.forEach((item) => {
-                let amanAktivitas = window.sanitizeHTML(item.aktivitas);
-                let amanReason = window.sanitizeHTML(item.reason);
-                let badgeHTML = window.getStatusBadge(item.status);
-                let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
-            
-            
-                let sisaWaktuHtml = "-";
+            let sisaWaktuHtml = item.sisaWaktuSaved; 
+            if (!sisaWaktuHtml) {
                 if (masterSPP && masterSPP.deadlineRawObjectMs) {
                     let timeDiff = window.getWorkingTimeDiff(item.timestampMs, masterSPP.deadlineRawObjectMs);
                     if (timeDiff > 0) {
@@ -4215,32 +4187,33 @@ window.editOperatorLog = function(firebaseKey) {
                         sisaWaktuHtml = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${h} Jam ${m} Menit</span>`;
                     }
                 } else {
-                     sisaWaktuHtml = `<span style="color:var(--text-muted); font-size:11px;">Belum Terkunci</span>`;
+                    sisaWaktuHtml = `<span style="color:var(--text-muted); font-size:11px;">Belum Terkunci</span>`;
                 }
+            }
 
-                tbody.innerHTML += `
-                <tr style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-                    <td><b>${item.operator}</b></td>
-                    <td><span style="color:var(--cyan-glow); font-weight:600;">${amanAktivitas}</span></td>
-                    <td><u>${item.condition}</u></td>
-                    <td><i>${item.stage}</i></td>
-                    <td>${item.time}</td>
-                    <td>${sisaWaktuHtml}</td>
-                    <td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td>
-                    <td>${badgeHTML}</td>
-                    <td>
-
-    <span style="font-weight:700; color:var(--blue-glow);">${amanReason}</span>
-    <br>
-    <span style="color:var(--emerald-glow); font-size:11px; font-weight:800; background:rgba(16,185,129,0.1); padding:2px 6px; border-radius:4px; border:1px solid rgba(16,185,129,0.3);">
-        +${item.processPoints || 0} Poin
-    </span>
-</td>
-                    ${actionBtns}
-                </tr>`;
-            });
+            tbody.innerHTML += `
+            <tr style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <td><b>${item.operator}</b></td>
+                <td><span style="color:var(--cyan-glow); font-weight:600;">${amanAktivitas}</span></td>
+                <td><u>${item.condition}</u></td>
+                <td><i>${item.stage}</i></td>
+                <td>${item.time}</td>
+                <td>${sisaWaktuHtml}</td>
+                <td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td>
+                <td>${badgeHTML}</td>
+                <td>
+                    <span style="font-weight:700; color:var(--blue-glow);">${amanReason}</span>
+                    <br>
+                    <span style="color:var(--emerald-glow); font-size:11px; font-weight:800; background:rgba(16,185,129,0.1); padding:2px 6px; border-radius:4px; border:1px solid rgba(16,185,129,0.3);">
+                        +${item.processPoints || 0} Poin
+                    </span>
+                </td>
+                ${actionBtns}
+            </tr>`;
         });
-    };
+    });
+};
+
 window.renderDevInjectTable = function() {
         const tbody = document.getElementById('dev-inject-body');
         if(!tbody) return;
