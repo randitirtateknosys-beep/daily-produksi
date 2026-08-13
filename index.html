@@ -2174,11 +2174,33 @@ if (prodDateEl._flatpickr) {
             }
         }
     
-        const adminBpmpPanel = document.getElementById('panel-admin-bpmp');
-        if (adminBpmpPanel) {
-            adminBpmpPanel.style.display = (isAdmin || isDev) ? 'block' : 'none';
+// Konfigurasi hak akses panel BPMP & LPBHP untuk Managemen, TV, dan Manager Warehouse
+const adminBpmpPanel = document.getElementById('panel-admin-bpmp');
+if (adminBpmpPanel) {
+    const isAllowedView = [
+        "Admin", 
+        "Septi Utami", 
+        "Randi", 
+        "Febri", 
+        "Managemen", 
+        "TV Mode", 
+        "Manager Warehouse"
+    ].includes(window.currentUserRole);
+
+    // Tampilkan panel utama
+    adminBpmpPanel.style.display = isAllowedView ? 'block' : 'none';
+
+    // Jika login sebagai Managemen, TV Mode, atau Manager Warehouse, sembunyikan form input
+    const formAdmin = document.getElementById('form-admin-dokumen');
+    if (formAdmin) {
+        if (["Managemen", "TV Mode", "Manager Warehouse"].includes(window.currentUserRole)) {
+            formAdmin.style.display = 'none';
+        } else {
+            formAdmin.style.display = 'block';
         }
-    
+    }
+}        
+
         window.updateConditionDropdown(null);
 
         document.getElementById('spl-history-head').innerHTML = `<th>No. SPL</th><th>Tanggal Rilis</th><th>Nama Produk</th><th>Penanggung Jawab</th><th>Penerima Tugas</th><th>Target Terkunci</th><th>Urgensi</th><th>Status Terkini</th>${isDev ? '<th>Aksi</th>' : ''}`;
