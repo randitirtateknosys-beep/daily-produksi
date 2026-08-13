@@ -4404,10 +4404,19 @@ window.printPDF = function(tableId, title) {
     };
 
 window.editMasterSPP = function(firebaseKey) {
-    let choice = prompt("Pilih data SPP/SPL yang ingin diedit:\n1. Status Terkini\n2. Nama Produk\n3. Urgensi Prioritas\n4. Reset Deadline\n5. Tanggal & Jam Keluar\n6. Edit Target Deadline (Jam)");
+    const isDev = (window.currentUserRole.toUpperCase() === "RANDI" || window.currentUserRole.toUpperCase() === "FEBRI");
+    let promptText = "Pilih data SPP/SPL yang ingin diedit:\n1. Status Terkini\n2. Nama Produk\n3. Urgensi Prioritas\n4. Reset Deadline\n5. Tanggal & Jam Keluar\n6. Edit Target Deadline (Jam)";
+    
+    // Tambahkan opsi 7 khusus untuk Developer
+    if (isDev) {
+        promptText += "\n7. Edit No. SPP (Khusus Dev)";
+    }
+
+    let choice = prompt(promptText);
     if (!choice) return;
     
     let updates = {};
+    let matchedSPP = window.databaseMasterSPP.find(s => s.firebaseKey === firebaseKey);
     
     if (choice === '1') { let val = prompt("Status Baru:"); if(val) updates.status = val.trim(); }
     else if (choice === '2') { let val = prompt("Nama Produk Baru:"); if(val) updates.product = val.trim(); }
@@ -4433,8 +4442,6 @@ window.editMasterSPP = function(firebaseKey) {
         let val = prompt("Masukkan Target Deadline Baru dalam satuan JAM (Hanya angka, contoh: 8):");
         if (val && !isNaN(val)) {
             let newHours = parseInt(val);
-            let matchedSPP = window.databaseMasterSPP.find(s => s.firebaseKey === firebaseKey);
-            
             if (matchedSPP && matchedSPP.startTimeObjectMs) {
                 let newDeadlineMs = window.addWorkingHours(matchedSPP.startTimeObjectMs, newHours);
                 let d = new Date(newDeadlineMs);
@@ -4448,69 +4455,48 @@ window.editMasterSPP = function(firebaseKey) {
             alert("Harap masukkan angka yang valid!"); return;
         }
     }
+    else if (choice === '7') {
+        if (!isDev) {
+            alert("Akses ditolak! Hanya Developer yang dapat mengedit No. SPP.");
+            return;
+        }
+        if (matchedSPP) {
+            let val = prompt("Masukkan No. SPP yang baru:", matchedSPP.no);
+            if (val && val.trim() !== "") {
+                let newNo = val.trim();
+                if (newNo === matchedSPP.no) return; // Tidak ada perubahan
+                
+                // Cegah duplikasi No SPP
+                if (window.databaseMasterSPP.some(s => s.no === newNo)) {
+                    alert("Gagal! No SPP tersebut sudah digunakan di sistem.");
+                    return;
+                }
+                
+                updates.no = newNo;
+                let oldNo = matchedSPP.no;
+                
+                // SINKRONISASI OTOMATIS: Update semua data historis agar tidak terputus (Log, Pengiriman, Internal, Rekap)
+                window.databaseLogOperator.filter(l => l.noSPP === oldNo).forEach(log => {
+                    db.ref('logOperator/' + log.firebaseKey).update({ noSPP: newNo });
+                });
+                window.databaseShipment.filter(sh => sh.spp === oldNo).forEach(sh => {
+                    db.ref('shipments/' + sh.firebaseKey).update({ spp: newNo });
+                });
+                window.databaseInternalOut.filter(io => io.spp === oldNo).forEach(io => {
+                    db.ref('internalOuts/' + io.firebaseKey).update({ spp: newNo });
+                });
+                window.databaseRekapAdmin.filter(rekap => rekap.spp === oldNo).forEach(rekap => {
+                    db.ref('rekapDokumen/' + rekap.firebaseKey).update({ spp: newNo });
+                });
+            }
+        }
+    }
     
     if (Object.keys(updates).length > 0) { 
         db.ref('masterSPP/' + firebaseKey).update(updates); 
         alert("Data SPP/SPL berhasil diperbarui!"); 
     }
 }
-    window.editShipment = function(firebaseKey) {
-        let choice = prompt("Pilih data Pengiriman yang ingin diedit:\n1. Operator Logistik (Kurir)\n2. Customer (Tujuan)\n3. Waktu Keberangkatan");
-        if (!choice) return;
-        let updates = {};
-        if (choice === '1') { let val = prompt("Nama Operator Logistik/Kurir Baru:"); if(val) updates.carrier = val.trim(); }
-        else if (choice === '2') { let val = prompt("Nama Customer (Tujuan) Baru:"); if(val) updates.customer = val.trim(); }
-        else if (choice === '3') { 
-            let val = prompt("Format Waktu (YYYY-MM-DD HH:MM):"); 
-            if(val) { 
-                let d = new Date(val); 
-                if (!isNaN(d.getTime())) {
-                    updates.time = window.formatDateToString(d); 
-                    updates.rawTimestampMs = d.getTime(); 
-                } else {
-                    alert("Format tanggal tidak valid!"); return;
-                }
-            } 
-        }
-        if (Object.keys(updates).length > 0) { db.ref('shipments/' + firebaseKey).update(updates); alert("Data pengiriman berhasil diperbarui!"); }
-    }
-
-    window.editInternalOut = function(firebaseKey) {
-        let choice = prompt("Pilih data Penarikan Internal yang ingin diedit:\n1. Tujuan Produk Final\n2. Waktu Pengambilan");
-        if (!choice) return;
-        let updates = {};
-        if (choice === '1') { let val = prompt("Tujuan Produk Baru:"); if(val) updates.targetProduct = val.trim(); }
-        else if (choice === '2') { 
-            let val = prompt("Format Waktu (YYYY-MM-DD HH:MM):"); 
-            if(val) { 
-                let d = new Date(val); 
-                if (!isNaN(d.getTime())) {
-                    updates.time = window.formatDateToString(d); 
-                    updates.rawTimestampMs = d.getTime(); 
-                } else {
-                    alert("Format tanggal tidak valid!"); return;
-                }
-            } 
-        }
-        if (Object.keys(updates).length > 0) { db.ref('internalOuts/' + firebaseKey).update(updates); alert("Data penarikan internal berhasil diperbarui!"); }
-    }
-
-    window.editAdminDokumen = function(firebaseKey) {
-        let choice = prompt("Pilih data Rekap yang ingin diedit:\n1. Tgl BPMP\n2. No BPMP\n3. Tgl LPBHP\n4. No LPBHP\n5. QTY");
-        if (!choice) return;
-        let updates = {};
-        if (choice === '1') { let val = prompt("Tanggal BPMP Baru (YYYY-MM-DD):"); if(val) updates.tglBPMP = val.trim(); }
-        else if (choice === '2') { let val = prompt("No BPMP Baru:"); if(val) updates.noBPMP = val.trim(); }
-        else if (choice === '3') { let val = prompt("Tanggal LPBHP Baru (YYYY-MM-DD):"); if(val) updates.tglLPBHP = val.trim(); }
-        else if (choice === '4') { let val = prompt("No LPBHP Baru:"); if(val) updates.noLPBHP = val.trim(); }
-        else if (choice === '5') { let val = prompt("QTY Baru:"); if(val && !isNaN(val)) updates.qty = parseInt(val); }
-        
-        if (Object.keys(updates).length > 0) {
-            firebase.database().ref('rekapDokumen/' + firebaseKey).update(updates);
-            alert("Data rekap berhasil diperbarui!");
-        }
-    }
-
 
     window.autoFillAdminDokumen = function() {
         const sppNo = document.getElementById('admin-select-selesai').value;
@@ -4699,11 +4685,10 @@ window.editMasterSPP = function(firebaseKey) {
     window.modeHistorySPP = 'proses';
     window.toggleHistorySPP = function() {
         window.modeHistorySPP = window.modeHistorySPP === 'proses' ? 'riwayat' : 'proses';
-        
-    };
-
-    window.renderMasterTable = function() {
-  
+        window.renderMasterTable(); // <-- Tambahkan baris ini untuk memaksa tabel refresh
+    };    
+window.renderMasterTable = function() {
+        // 1. Logika Tombol Toggle History
         let toggleBtn = document.getElementById('btn-toggle-spp-mode');
         if (!toggleBtn) {
             const headerDiv = document.querySelector('#panel-history-spp .header-flex div');
@@ -4723,12 +4708,12 @@ window.editMasterSPP = function(firebaseKey) {
         }
 
         const tbody = document.getElementById('spp-master-body'); 
-        tbody.innerHTML = ''; 
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI" || window.currentUserRole.toUpperCase() === "FEBRI");
         const isAdmin = (window.currentUserRole === "Admin");
         const showDocCol = (isDev || isAdmin);
         let cols = 7 + (showDocCol ? 1 : 0) + (isDev ? 1 : 0);
         
+        // 2. Mengambil dan Menyaring Data Master SPP
         let rawSPP = window.getFilteredNonSPLSPP(); 
         let filteredSPP = rawSPP.filter(item => {
             let isSelesai = ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(item.status) || item.isShipped;
@@ -4740,9 +4725,28 @@ window.editMasterSPP = function(firebaseKey) {
             return; 
         }
 
+        // =========================================================
+        // 🔥 OPTIMASI 1: PENGELOMPOKAN DATA LOG (MENCEGAH LAG)
+        // =========================================================
         let filteredLogs = window.getFilteredLogs();
+        let logMap = {}; // Memori penampungan
+        
+        filteredLogs.forEach(log => {
+            if (!logMap[log.noSPP]) {
+                logMap[log.noSPP] = [];
+            }
+            logMap[log.noSPP].push(log); // Dikelompokkan berdasarkan No SPP
+        });
+
+        // =========================================================
+        // 🔥 OPTIMASI 2: PENGGABUNGAN HTML (MENCEGAH DOM OVERLOAD)
+        // =========================================================
+        let htmlRows = ''; // Variabel penampung teks HTML
+
         filteredSPP.forEach(item => {
-            let relatedLogs = filteredLogs.filter(log => log.noSPP === item.no);
+            // Ambil log yang cocok secara INSTAN dari memori (tanpa perlu loop .filter() ribuan kali)
+            let relatedLogs = logMap[item.no] || []; 
+            
             let uniqueProdNos = [...new Set(relatedLogs.map(l => l.noProd))].filter(n => n && n !== "-");
             let displayProdNo = uniqueProdNos.length > 0 ? uniqueProdNos.join("<br>") : `<span style="color:var(--text-muted); font-size:11px;">Belum Tersedia</span>`;
             let uniqueOperators = [...new Set(relatedLogs.map(l => l.operator))].filter(o => o && !o.toLowerCase().includes('dev'));
@@ -4753,8 +4757,12 @@ window.editMasterSPP = function(firebaseKey) {
             let docColHtml = showDocCol ? `<td>${fileLinkHtml}</td>` : '';
             let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-bottom:5px; width:100%;" onclick="editMasterSPP('${item.firebaseKey}')">✏️ Edit</button><br><button class="btn-delete" style="width:100%;" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button></td>` : '';
             
-            tbody.innerHTML += `<tr><td><strong>${item.no}</strong><br><span style="font-size: 11px; color: var(--text-muted);">${item.datetime}</span></td><td><code style="color:var(--blue-glow); font-weight:bold;">${displayProdNo}</code></td><td><span class="badge bg-reguler" style="font-size:12px; font-weight:700;">${item.product}</span></td><td style="font-size:12px; font-weight:600; line-height: 1.5;">${displayOperators}</td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${docColHtml}${actionBtns}</tr>`;
+            // Simpan baris baru ke penampung (TIDAK langsung di-render ke layar)
+            htmlRows += `<tr><td><strong>${item.no}</strong><br><span style="font-size: 11px; color: var(--text-muted);">${item.datetime}</span></td><td><code style="color:var(--blue-glow); font-weight:bold;">${displayProdNo}</code></td><td><span class="badge bg-reguler" style="font-size:12px; font-weight:700;">${item.product}</span></td><td style="font-size:12px; font-weight:600; line-height: 1.5;">${displayOperators}</td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${docColHtml}${actionBtns}</tr>`;
         });
+        
+        // Cetak ke layar HANYA 1 KALI di bagian paling akhir
+        tbody.innerHTML = htmlRows;
     };
 	
     window.modeHistoryLog = 'proses';
