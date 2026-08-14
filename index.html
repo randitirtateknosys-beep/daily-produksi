@@ -4029,7 +4029,8 @@ window.editOperatorLog = function(firebaseKey) {
     let logItem = window.databaseLogOperator.find(l => l.firebaseKey === firebaseKey);
     if (!logItem) return;
 
-    let choice = prompt("Pilih data Log Aktual yang ingin diedit:\n1. Aktivitas\n2. Kondisi\n3. Tahap Produksi\n4. No. Produksi\n5. Waktu Input\n6. Target Deadline\n7. Sisa Waktu Pekerjaan\n8. Status Hasil");
+    // FITUR BARU: Tambahan Opsi 9 untuk kembalikan data ke PROSES
+    let choice = prompt("Pilih data Log Aktual yang ingin diedit:\n1. Aktivitas\n2. Kondisi\n3. Tahap Produksi\n4. No. Produksi\n5. Waktu Input\n6. Target Deadline\n7. Sisa Waktu Pekerjaan\n8. Status Hasil\n9. 🔄 KEMBALIKAN KE PROSES (Revert)");
     if (!choice) return;
     
     let updates = {};
@@ -4066,6 +4067,19 @@ window.editOperatorLog = function(firebaseKey) {
                 });
 
                 let timeDiff = window.getWorkingTimeDiff(logItem.timestampMs, newDeadlineMs);
+                
+                // --- FITUR BARU: AUTO SYNC KONDISI & STATUS SAAT WAKTU DIEDIT ---
+                if (['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(logItem.status) || logItem.condition.includes("Selesai")) {
+                    if (timeDiff >= 0) {
+                        updates.status = 'Selesai Awal';
+                        updates.condition = 'Pekerjaan Selesai Awal';
+                    } else {
+                        updates.status = 'Telat Selesai';
+                        updates.condition = 'Pekerjaan Selesai Telat';
+                    }
+                }
+                // ---------------------------------------------------------------
+                
                 let sisaHtml = "";
                 if (timeDiff > 0) {
                     const h = Math.floor(timeDiff / (1000 * 60 * 60));
@@ -4078,6 +4092,7 @@ window.editOperatorLog = function(firebaseKey) {
                     sisaHtml = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${h} Jam ${m} Menit</span>`;
                 }
                 updates.sisaWaktuSaved = sisaHtml;
+                updates.msTerlambat = -timeDiff;
             }
         } else if (val) {
             alert("Harap masukkan angka yang valid!"); return;
@@ -4094,8 +4109,19 @@ window.editOperatorLog = function(firebaseKey) {
             } else {
                 sisaHtml = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${Math.abs(sisaJam)} Jam 0 Menit</span>`;
             }
-            
             updates.sisaWaktuSaved = sisaHtml;
+
+            // --- FITUR BARU: AUTO SYNC KONDISI & STATUS SAAT WAKTU DIEDIT ---
+            if (['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(logItem.status) || logItem.condition.includes("Selesai")) {
+                if (sisaJam >= 0) {
+                    updates.status = 'Selesai Awal';
+                    updates.condition = 'Pekerjaan Selesai Awal';
+                } else {
+                    updates.status = 'Telat Selesai';
+                    updates.condition = 'Pekerjaan Selesai Telat';
+                }
+            }
+            // ---------------------------------------------------------------
 
             let matchedSPP = window.databaseMasterSPP.find(s => s.no === logItem.noSPP);
             if (matchedSPP) {
@@ -4125,6 +4151,22 @@ window.editOperatorLog = function(firebaseKey) {
         else if (statusChoice === '9') updates.status = 'Lanjutkan Besok';
         else if (statusChoice) {
             alert("Pilihan tidak valid! Status batal diubah.");
+        }
+    }
+    else if (choice === '9') {
+        // FITUR BARU: Eksekusi kembalikan ke proses
+        if (confirm("Yakin ingin mengembalikan laporan ini menjadi PROSES? Tindakan ini akan mengembalikan Log Aktual dan Master SPP terkait ke status Proses berjalan.")) {
+            updates.status = 'Proses';
+            updates.condition = 'Normal';
+            
+            // Sinkronisasi sinkron ke Master SPP agar di dashboard juga kembali berjalan
+            let matchedSPP = window.databaseMasterSPP.find(s => s.no === logItem.noSPP);
+            if (matchedSPP) {
+                window.dbUpdateSPP(matchedSPP.firebaseKey, {
+                    status: 'Proses',
+                    isShipped: false
+                });
+            }
         }
     }
     
