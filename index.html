@@ -2084,7 +2084,7 @@ document.getElementById('bee-boot-container').style.display = 'flex';
         }
     };
 
-    window.updateConditionDropdown = function(matchedSPP) {
+window.updateConditionDropdown = function(matchedSPP) {
         const conditionSelect = document.getElementById('prod-condition');
         if (!conditionSelect) return;
 
@@ -2117,21 +2117,24 @@ document.getElementById('bee-boot-container').style.display = 'flex';
 
         if (currentHour >= 16) { showLembur = true; }
 
+        // --- PERBAIKAN LOGIKA WAKTU HABIS (SINKRON DENGAN TAMPILAN COUNTDOWN) ---
         if (matchedSPP && matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
-            if (nowMs > matchedSPP.deadlineRawObjectMs) { isPastDeadline = true; }
+            const isPaused = ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(matchedSPP.status);
+            const timeToCalculate = isPaused ? matchedSPP.lastInputTimeMs : nowMs;
+            
+            // Hitung sisa waktu kerjanya
+            const timeDiff = window.getWorkingTimeDiff(timeToCalculate, matchedSPP.deadlineRawObjectMs);
+
+            // Jika <= 0 berarti waktu kerja sebenarnya sudah benar-benar habis
+            if (timeDiff <= 0) { 
+                isPastDeadline = true; 
+            }
         }
 
+        // Jika waktu memang sudah habis, matikan opsi Selesai Awal & Tepat Waktu
         if (isPastDeadline) {
-            allOptions.forEach(opt => {
-                if (opt.isSelesaiTelat) {
-                    const optionEl = document.createElement('option');
-                    optionEl.value = opt.val;
-                    optionEl.textContent = opt.text;
-                    conditionSelect.appendChild(optionEl);
-                }
-            });
-            conditionSelect.value = "Pekerjaan Selesai Telat";
-            return; 
+            showSelesaiAwal = false;
+            showSelesaiTepat = false;
         }
 
         if (window.currentUserAccess === "produksi") {
@@ -2143,13 +2146,18 @@ document.getElementById('bee-boot-container').style.display = 'flex';
                 const elapsedTimeMs = nowMs - matchedSPP.startTimeObjectMs;
                 const remainingTimeMs = matchedSPP.deadlineRawObjectMs - nowMs;
 
-                if (elapsedTimeMs >= (targetDurationMs / 2)) { showSelesaiAwal = true; }
-                if (remainingTimeMs <= (2 * 60 * 60 * 1000) && elapsedTimeMs >= (targetDurationMs / 2)) { showSelesaiTepat = true; }
+                // Jangan tampilkan opsi selesai awal/tepat jika memang sudah telat
+                if (!isPastDeadline) {
+                    if (elapsedTimeMs >= (targetDurationMs / 2)) { showSelesaiAwal = true; }
+                    if (remainingTimeMs <= (2 * 60 * 60 * 1000) && elapsedTimeMs >= (targetDurationMs / 2)) { showSelesaiTepat = true; }
+                }
             }
         }
 
         allOptions.forEach(opt => {
-            if (opt.isSelesaiTelat) return; 
+            // Tampilkan Selesai Telat HANYA jika isPastDeadline = true
+            if (opt.isSelesaiTelat && !isPastDeadline) return;
+            
             if (opt.isSelesaiAwal && !showSelesaiAwal) return;
             if (opt.isSelesaiTepat && !showSelesaiTepat) return;
             if (opt.isLanjut && !showLanjutBesok) return;
@@ -2161,10 +2169,13 @@ document.getElementById('bee-boot-container').style.display = 'flex';
             conditionSelect.appendChild(optionEl);
         });
 
-        if (Array.from(conditionSelect.options).some(o => o.value === currentVal)) {
+        // Set default value: utamakan "Normal" agar operator bisa melanjutkan input awal
+        if (Array.from(conditionSelect.options).some(o => o.value === currentVal) && currentVal !== "Pekerjaan Selesai Telat") {
             conditionSelect.value = currentVal;
-        } else { conditionSelect.value = "Normal"; }
-    };
+        } else { 
+            conditionSelect.value = "Normal"; 
+        }
+    };    
     
     document.getElementById('prod-condition').addEventListener('change', function() {
         const val = this.value;
@@ -3918,7 +3929,13 @@ let processPoints = 10;
         let sisaWaktuSavedHTML = "-";
         let delayMs = 0;
         if (matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
-            let timeDiff = window.getWorkingTimeDiff(timeMs, matchedSPP.deadlineRawObjectMs);
+            
+            // [PERBAIKAN] Cek apakah SPP sedang beku/terjeda sebelumnya, agar sisa waktu di tabel Log akurat
+            const isPausedBefore = ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(matchedSPP.status);
+            const timeToCalculateLog = isPausedBefore ? matchedSPP.lastInputTimeMs : timeMs;
+            
+            let timeDiff = window.getWorkingTimeDiff(timeToCalculateLog, matchedSPP.deadlineRawObjectMs);
+            
             if (timeDiff > 0) {
                 const h = Math.floor(timeDiff / (1000 * 60 * 60));
                 const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
