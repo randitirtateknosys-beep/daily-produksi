@@ -417,26 +417,123 @@
 <div id="main-app">
     <div class="container">
         
-        <header id="main-header" style="display: flex; justify-content: space-between; align-items: center; padding: 25px; background: linear-gradient(135deg, #111827, #0f172a); border: 1px solid var(--panel-border); border-radius: 12px; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.1); position: relative;">
+<!-- ======================================================= -->
+        <!-- HEADER SPESIAL KEMERDEKAAN 17 AGUSTUS (100% ANTI BUG) -->
+        <!-- ======================================================= -->
+        <style>
+            .header-17an {
+                position: relative;
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                padding: 25px; 
+                border: 1px solid #f43f5e !important; 
+                border-radius: 12px; 
+                box-shadow: 0 4px 30px rgba(244, 63, 94, 0.4) !important; 
+                overflow: hidden;
+                /* Background Merah Putih Langsung di Header */
+                background: linear-gradient(to bottom, #d30000 50%, #ffffff 50%) !important;
+            }
+
+            /* --- PERLINDUNGAN KHUSUS UNTUK MODE TERANG --- */
+            body.light-theme #main-header.header-17an {
+                background: linear-gradient(to bottom, #d30000 50%, #ffffff 50%) !important;
+                border-color: #f43f5e !important;
+            }
+            body.light-theme #main-header.header-17an h2,
+            body.light-theme #main-header.header-17an p,
+            body.light-theme #main-header.header-17an span {
+                color: #ffffff !important;
+                text-shadow: 0 0 10px rgba(0,0,0,0.8) !important;
+            }
+            body.light-theme #main-header.header-17an .kemerdekaan-teks {
+                text-shadow: 0 0 10px #f43f5e, 0 0 20px #f43f5e !important;
+            }
+            /* ---------------------------------------------- */
+
+            /* Efek Kain Berkibar Menutupi Background */
+            .header-17an::before {
+                content: "";
+                position: absolute;
+                top: 0; left: 0; width: 200%; height: 100%;
+                background: repeating-linear-gradient(
+                    90deg, 
+                    rgba(0, 0, 0, 0.5) 0%, 
+                    rgba(255, 255, 255, 0.1) 10%, 
+                    rgba(0, 0, 0, 0.5) 20%
+                );
+                background-size: 50% 100%;
+                animation: benderaKibar 4s infinite linear;
+                z-index: 1;
+                pointer-events: none;
+            }
+
+            @keyframes benderaKibar {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-25%); }
+            }
+
+            /* Kotak Kaca Transparan untuk Teks & Logo */
+            .kaca-panel {
+                position: relative;
+                z-index: 5;
+                background: rgba(17, 24, 39, 0.85) !important; 
+                padding: 15px 25px;
+                border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+                border: 1px solid rgba(255,255,255,0.1);
+                backdrop-filter: blur(4px);
+            }
             
-            <div style="display:flex; align-items:center; justify-content:center;">
+            .kemerdekaan-teks {
+                margin: 12px 0 0 0 !important;
+                color: #ffffff !important;
+                font-size: 16px !important;
+                font-weight: 900 !important;
+                letter-spacing: 2px;
+                text-shadow: 0 0 10px #f43f5e, 0 0 20px #f43f5e;
+                animation: nyalaKemerdekaan 1.5s infinite alternate;
+            }
+
+            @keyframes nyalaKemerdekaan {
+                from { text-shadow: 0 0 10px #f43f5e; transform: scale(1); }
+                to { text-shadow: 0 0 20px #f43f5e, 0 0 30px #d30000 !important; transform: scale(1.05); }
+            }
+
+            /* Responsif Mobile */
+            @media (max-width: 768px) {
+                .header-17an { flex-direction: column; gap: 15px; text-align: center; }
+                .kaca-panel { width: 100%; }
+            }
+        </style>
+
+        <header id="main-header" class="header-17an">
+            
+            <!-- Bagian Kiri (Logo) -->
+            <div class="kaca-panel" style="display:flex; align-items:center; justify-content:center; padding: 10px;">
                 <img src="https://i.ibb.co.com/4RWMGX0P/logo-tanpa-background-png.png" alt="PT Tirta Teknosys" style="height: 65px; width: auto; object-fit: contain; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));" onerror="this.style.display='none';">
             </div>
             
-            <div style="text-align: center; flex: 1; margin:0 15px;">
-                <h2 style="margin: 0; color: #fff; font-size: 28px; font-weight: 800; text-transform: uppercase; text-shadow: 0 0 15px rgba(56, 189, 248, 0.5);">Daily Report Produksi</h2>
-                <p style="margin: 8px 0 0 0; color: var(--blue-glow); font-size: 16px; font-weight: bold; letter-spacing: 1px;">PT. TIRTA TEKNOSYS | Water Treatment Specialist</p>
-                <p style="margin: 6px 0 0 0; color: var(--emerald-glow); font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">Sistem Monitoring Terintegrasi Real-time Analytics & Manajemen KPI Operator</p>
+            <!-- Bagian Tengah (Teks) -->
+            <div class="kaca-panel" style="text-align: center; flex: 1; margin:0 15px;">
+                <h2 style="margin: 0; color: #fff; font-size: 28px; font-weight: 800; text-transform: uppercase;">Daily Report Produksi</h2>
+                <p style="margin: 8px 0 0 0; color: #e0f2fe; font-size: 16px; font-weight: bold; letter-spacing: 1px;">PT. TIRTA TEKNOSYS | Water Treatment Specialist</p>
+                <p style="margin: 6px 0 0 0; color: #6ee7b7; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">Sistem Monitoring Terintegrasi Real-time Analytics & Manajemen KPI Operator</p>
                 
-                <div class="live-indicator-container">
+                <p class="kemerdekaan-teks">Dirgahayu Republik Indonesia ke-81! Merdeka!</p>
+                
+                <div class="live-indicator-container" style="background: rgba(0,0,0,0.5); border-color: #34d399; margin-top: 15px;">
                     <div class="live-dot"></div>
                     <span id="realtime-clock" style="color:var(--emerald-glow); font-weight:700; font-size:13px; letter-spacing:1px;">Loading Time...</span>
                 </div>
             </div>
             
-            <img src="https://upload.wikimedia.org/wikipedia/commons/9/9f/Flag_of_Indonesia.svg" alt="Bendera Indonesia" style="height: 40px; border-radius: 4px; box-shadow: 0 0 10px rgba(255,255,255,0.2);">
+            <!-- Bagian Kanan (Bendera SVG) -->
+            <div class="kaca-panel" style="display:flex; align-items:center; justify-content:center; padding: 15px;">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/9/9f/Flag_of_Indonesia.svg" alt="Bendera Indonesia" style="height: 40px; border-radius: 4px; box-shadow: 0 0 15px rgba(0,0,0,0.8);">
+            </div>
         </header>
-
+        <!-- ======================================================= -->        
         <div class="global-filter-bar" id="top-nav">
             <div class="user-identity">
                 <span>Login sebagai: <b id="current-user-role">Guest</b></span>
@@ -4176,118 +4273,6 @@ window.editOperatorLog = function(firebaseKey) {
     }
 };
 
-window.renderOperatorTable = function() {
-    let toggleBtn = document.getElementById('btn-toggle-log-mode');
-    if (!toggleBtn) {
-        const headerDiv = document.querySelector('#panel-history-prod .header-flex div');
-        if (headerDiv) {
-            toggleBtn = document.createElement('button');
-            toggleBtn.id = 'btn-toggle-log-mode';
-            toggleBtn.className = 'btn-action-trigger';
-            toggleBtn.style.marginRight = '10px';
-            toggleBtn.onclick = window.toggleHistoryLog;
-            headerDiv.insertBefore(toggleBtn, headerDiv.firstChild);
-        }
-    }
-    if (toggleBtn) {
-        toggleBtn.innerHTML = window.modeHistoryLog === 'proses' ? '📂 Buka Riwayat Selesai' : '🔄 Tampilkan On Proses';
-        toggleBtn.style.background = window.modeHistoryLog === 'proses' ? 'var(--blue-glow)' : 'var(--emerald-glow)';
-        toggleBtn.style.color = '#000';
-    }
-
-    const tbody = document.getElementById('operator-history-body'); 
-    tbody.innerHTML = ''; 
-    let rawLogs = window.getFilteredLogs();
-    const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
-    
-    let filteredLogs = rawLogs.filter(log => {
-        let masterSPP = window.databaseMasterSPP.find(s => s.no === log.noSPP);
-        let isSelesai = masterSPP ? (['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(masterSPP.status) || masterSPP.isShipped) : ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(log.status);
-        return window.modeHistoryLog === 'proses' ? !isSelesai : isSelesai;
-    });
-
-    if(filteredLogs.length === 0) { 
-        tbody.innerHTML = `<tr><td colspan="${isDev ? '10' : '9'}" style="text-align:center; color:var(--text-muted); padding:30px;">Belum ada riwayat laporan pada rentang waktu/mode ini.</td></tr>`; 
-        return; 
-    }
-
-    let groupedLogs = new Map();
-    filteredLogs.forEach((item) => {
-        if (!groupedLogs.has(item.noSPP)) {
-            groupedLogs.set(item.noSPP, []);
-        }
-        groupedLogs.get(item.noSPP).push(item);
-    });
-
-    groupedLogs.forEach((logs, sppNo) => {
-        let masterSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
-        let productName = masterSPP ? masterSPP.product : "Produk Tidak Diketahui";
-        let urgency = masterSPP ? masterSPP.priority : "Reguler";
-        let urgencyClass = urgency === 'Urgent' ? 'bg-urgent' : (urgency === 'Buffer Stok' ? 'bg-buffer' : 'bg-reguler');
-
-        let uniqueProds = [...new Set(logs.map(l => l.noProd))].filter(n => n && n !== "-").join(", ");
-        if (!uniqueProds) uniqueProds = "-";
-
-        tbody.innerHTML += `
-            <tr style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--blue-glow); border-top: 2px solid var(--panel-border);">
-                <td colspan="${isDev ? '10' : '9'}" style="padding: 15px 20px;">
-                    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-                        <span style="font-size: 14px; font-weight: 800; color: #f8fafc;">📁 NO. SPP: <span style="color: var(--blue-glow);">${sppNo}</span></span>
-                        <span style="font-size: 14px; font-weight: 700; color: #f8fafc;">🛒 Produk: <span style="color: var(--emerald-glow);">${productName}</span></span>
-                        <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">🏷️ No. Produksi: <span style="color: var(--warning-glow);">${uniqueProds}</span></span>
-                        <span class="badge ${urgencyClass}">${urgency}</span>
-                    </div>
-                </td>
-            </tr>
-        `;
-
-        logs.forEach((item) => {
-            let amanAktivitas = window.sanitizeHTML(item.aktivitas);
-            let amanReason = window.sanitizeHTML(item.reason);
-            let badgeHTML = window.getStatusBadge(item.status);
-            let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
-        
-            let sisaWaktuHtml = item.sisaWaktuSaved; 
-            if (!sisaWaktuHtml) {
-                if (masterSPP && masterSPP.deadlineRawObjectMs) {
-                    let timeDiff = window.getWorkingTimeDiff(item.timestampMs, masterSPP.deadlineRawObjectMs);
-                    if (timeDiff > 0) {
-                        const h = Math.floor(timeDiff / (1000 * 60 * 60));
-                        const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-                        sisaWaktuHtml = `<span style="color:var(--emerald-glow); font-weight:bold;">${h} Jam ${m} Menit</span>`;
-                    } else {
-                        const lateMs = Math.abs(timeDiff);
-                        const h = Math.floor(lateMs / (1000 * 60 * 60));
-                        const m = Math.floor((lateMs % (1000 * 60 * 60)) / (1000 * 60));
-                        sisaWaktuHtml = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${h} Jam ${m} Menit</span>`;
-                    }
-                } else {
-                    sisaWaktuHtml = `<span style="color:var(--text-muted); font-size:11px;">Belum Terkunci</span>`;
-                }
-            }
-
-            tbody.innerHTML += `
-            <tr style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-                <td><b>${item.operator}</b></td>
-                <td><span style="color:var(--cyan-glow); font-weight:600;">${amanAktivitas}</span></td>
-                <td><u>${item.condition}</u></td>
-                <td><i>${item.stage}</i></td>
-                <td>${item.time}</td>
-                <td>${sisaWaktuHtml}</td>
-                <td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td>
-                <td>${badgeHTML}</td>
-                <td>
-                    <span style="font-weight:700; color:var(--blue-glow);">${amanReason}</span>
-                    <br>
-                    <span style="color:var(--emerald-glow); font-size:11px; font-weight:800; background:rgba(16,185,129,0.1); padding:2px 6px; border-radius:4px; border:1px solid rgba(16,185,129,0.3);">
-                        +${item.processPoints || 0} Poin
-                    </span>
-                </td>
-                ${actionBtns}
-            </tr>`;
-        });
-    });
-};
 
 window.renderDevInjectTable = function() {
         const tbody = document.getElementById('dev-inject-body');
@@ -4417,8 +4402,6 @@ window.printPDF = function(tableId, title) {
                     font-weight: bold; 
                     text-transform: uppercase; 
                 } 
-                
-            
                 td *, th * { 
                     color: #000 !important; 
                     background: transparent !important; 
@@ -4833,11 +4816,10 @@ window.renderMasterTable = function() {
         }
 
         const tbody = document.getElementById('operator-history-body'); 
-        tbody.innerHTML = ''; 
+        
         let rawLogs = window.getFilteredLogs();
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
         
-      
         let filteredLogs = rawLogs.filter(log => {
             let masterSPP = window.databaseMasterSPP.find(s => s.no === log.noSPP);
             let isSelesai = masterSPP ? (['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(masterSPP.status) || masterSPP.isShipped) : ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(log.status);
@@ -4857,6 +4839,9 @@ window.renderMasterTable = function() {
             groupedLogs.get(item.noSPP).push(item);
         });
 
+        // 🔥 OPTIMASI: Variabel penampung teks HTML agar tidak membebani render browser
+        let htmlRows = '';
+
         groupedLogs.forEach((logs, sppNo) => {
             let masterSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
             let productName = masterSPP ? masterSPP.product : "Produk Tidak Diketahui";
@@ -4866,7 +4851,7 @@ window.renderMasterTable = function() {
             let uniqueProds = [...new Set(logs.map(l => l.noProd))].filter(n => n && n !== "-").join(", ");
             if (!uniqueProds) uniqueProds = "-";
 
-            tbody.innerHTML += `
+            htmlRows += `
                 <tr style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--blue-glow); border-top: 2px solid var(--panel-border);">
                     <td colspan="${isDev ? '10' : '9'}" style="padding: 15px 20px;">
                         <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
@@ -4885,7 +4870,7 @@ window.renderMasterTable = function() {
                 let badgeHTML = window.getStatusBadge(item.status);
                 let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editOperatorLog('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteOperatorLog('${item.firebaseKey}')">Hapus</button></td>` : '';
             
-              let sisaWaktuHtml = item.sisaWaktuSaved; 
+                let sisaWaktuHtml = item.sisaWaktuSaved; 
                 if (!sisaWaktuHtml) {
                     if (masterSPP && masterSPP.deadlineRawObjectMs) {
                         let timeDiff = window.getWorkingTimeDiff(item.timestampMs, masterSPP.deadlineRawObjectMs);
@@ -4904,7 +4889,7 @@ window.renderMasterTable = function() {
                     }
                 }
 
-                tbody.innerHTML += `
+                htmlRows += `
                 <tr style="background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
                     <td><b>${item.operator}</b></td>
                     <td><span style="color:var(--cyan-glow); font-weight:600;">${amanAktivitas}</span></td>
@@ -4914,13 +4899,21 @@ window.renderMasterTable = function() {
                     <td>${sisaWaktuHtml}</td>
                     <td><span style="font-weight:600; color:var(--text-muted);">${item.deadline}</span></td>
                     <td>${badgeHTML}</td>
-                    <td><span style="font-weight:700; color:var(--blue-glow);">${amanReason}</span></td>
+                    <td>
+                        <span style="font-weight:700; color:var(--blue-glow);">${amanReason}</span>
+                        <br>
+                        <span style="color:var(--emerald-glow); font-size:11px; font-weight:800; background:rgba(16,185,129,0.1); padding:2px 6px; border-radius:4px; border:1px solid rgba(16,185,129,0.3);">
+                            +${item.processPoints || 0} Poin
+                        </span>
+                    </td>
                     ${actionBtns}
                 </tr>`;
             });
         });
-    };
 
+        // 🔥 Cetak sekaligus ke layar 1 kali eksekusi
+        tbody.innerHTML = htmlRows;
+    };
     window.modeHistorySPL = 'proses';
     window.toggleHistorySPL = function() {
         window.modeHistorySPL = window.modeHistorySPL === 'proses' ? 'riwayat' : 'proses';
