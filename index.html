@@ -4757,6 +4757,74 @@ window.editMasterSPP = function(firebaseKey) {
             });
         }
     };
+
+window.editAdminDokumen = function(firebaseKey) {
+        // 1. Proteksi Hak Akses
+        const allowedRoles = ["Admin", "Septi Utami", "Randi", "Febri"];
+        const currentRole = window.currentUserRole || "";
+        
+        const isAuthorized = allowedRoles.some(role => role.toUpperCase() === currentRole.toUpperCase());
+        if (!isAuthorized) {
+            alert("Akses Ditolak! Fitur edit dokumen ini khusus untuk Admin dan Developer.");
+            return;
+        }
+
+        // 2. Cari data di memori lokal berdasarkan firebaseKey
+        let record = window.databaseRekapAdmin.find(r => r.firebaseKey === firebaseKey);
+        if (!record) {
+            alert("Data tidak ditemukan! Coba refresh (F5) halaman Anda.");
+            return;
+        }
+
+        // 3. Menu Pilihan Edit (Menampilkan data saat ini agar admin tahu)
+        let promptText = "KETIK ANGKA (1 / 2 / 3 / 4) dari data yang ingin diedit:\n\n" +
+                         "1. Tgl BPMP (Data saat ini: " + (record.tglBPMP || "-") + ")\n" +
+                         "2. No BPMP (Data saat ini: " + (record.noBPMP || "-") + ")\n" +
+                         "3. Tgl LPBHP (Data saat ini: " + (record.tglLPBHP || "-") + ")\n" +
+                         "4. No LPBHP (Data saat ini: " + (record.noLPBHP || "-") + ")";
+                         
+        let choice = prompt(promptText);
+        if (!choice) return;
+        
+        choice = choice.trim(); // Mencegah spasi yang tidak sengaja terketik
+
+        let updates = {};
+        
+        // 4. Proses Input & Penampungan Data Baru
+        if (choice === '1') {
+            let val = prompt("Edit Tgl BPMP (Format YYYY-MM-DD):", record.tglBPMP || "");
+            if (val !== null) updates.tglBPMP = val.trim();
+        } 
+        else if (choice === '2') {
+            let val = prompt("Edit No BPMP:", record.noBPMP || "");
+            if (val !== null) updates.noBPMP = val.trim();
+        } 
+        else if (choice === '3') {
+            let val = prompt("Edit Tgl LPBHP (Format YYYY-MM-DD):", record.tglLPBHP || "");
+            if (val !== null) updates.tglLPBHP = val.trim();
+        } 
+        else if (choice === '4') {
+            let val = prompt("Edit No LPBHP:", record.noLPBHP || "");
+            if (val !== null) updates.noLPBHP = val.trim();
+        } 
+        else {
+            alert("Pilihan tidak valid! Harap hanya mengetik angka 1, 2, 3, atau 4.");
+            return;
+        }
+
+        // 5. Eksekusi ke Firebase
+        if (Object.keys(updates).length > 0) {
+            db.ref('rekapDokumen/' + firebaseKey).update(updates)
+                .then(() => {
+                    alert("✅ Data dokumen berhasil diperbarui!");
+                })
+                .catch((error) => {
+                    alert("❌ Gagal mengupdate data: " + error.message);
+                });
+        } else {
+            alert("Tidak ada perubahan data yang disimpan.");
+        }
+    };
 	
     window.modeHistorySPP = 'proses';
     window.toggleHistorySPP = function() {
