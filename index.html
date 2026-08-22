@@ -15,9 +15,9 @@
     <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www-d-gstatic-d-com-s-gmn.pixivcn.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     
     <style>
         :root {
@@ -769,7 +769,7 @@
             <form id="prod-form">
                 <div class="unified-grid">
                     <div class="form-group"><label>Pilih No. SPP Aktif</label><select id="prod-spp-select" onchange="handleSppSelection()" required><option value="">-- Pilih SPP --</option></select></div>
-                    <div class="form-group"><label>No. Produksi (Opsional)</label><input type="text" id="prod-number" placeholder="Mulai ketik (misal: PROD-102)"></div>
+                    <div class="form-group"><label>No. Produksi (Wajib Diisi)</label><input type="text" id="prod-number" placeholder="Mulai ketik (misal: PROD-102)" required></div>
                     <div class="form-group">
                         <label>Nama Operator Lapangan</label>
                         <select id="prod-operator" required>
@@ -3884,8 +3884,7 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
         e.preventDefault();
         
         const sppNo = document.getElementById('prod-spp-select').value;
-        let noProd = document.getElementById('prod-number').value.trim();
-        if (!noProd) noProd = "-"; // Beri nilai default jika dikosongkan
+        const noProd = document.getElementById('prod-number').value;
         const operator = document.getElementById('prod-operator').value;
         const condition = document.getElementById('prod-condition').value;
         let stage = document.getElementById('prod-stage').value;
@@ -3894,11 +3893,11 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
         const targetVal = document.getElementById('prod-deadline-val').value;
         const targetUnit = document.getElementById('prod-deadline-unit').value;
 
-        // Hapus !noProd dari pengecekan agar form bisa di-submit meski kosong
-        if (!sppNo || !operator || !condition) {
+        if (!sppNo || !noProd || !operator || !condition) {
             alert("Harap lengkapi semua data laporan yang wajib!");
             return;
         }
+
         const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
         if (!matchedSPP) return;
 
@@ -4481,14 +4480,11 @@ window.printPDF = function(tableId, title) {
 
 window.editMasterSPP = function(firebaseKey) {
     const isDev = (window.currentUserRole.toUpperCase() === "RANDI" || window.currentUserRole.toUpperCase() === "FEBRI");
-    const isAdmin = (window.currentUserRole === "Admin" || window.currentUserRole === "Septi Utami");
-    const canEditSPP = (isDev || isAdmin);
-    
     let promptText = "Pilih data SPP/SPL yang ingin diedit:\n1. Status Terkini\n2. Nama Produk\n3. Urgensi Prioritas\n4. Reset Deadline\n5. Tanggal & Jam Keluar\n6. Edit Target Deadline (Jam)";
     
-    // Tambahkan opsi 7 khusus untuk Developer & Admin
-    if (canEditSPP) {
-        promptText += "\n7. Edit No. SPP (Khusus Dev & Admin)";
+    // Tambahkan opsi 7 khusus untuk Developer
+    if (isDev) {
+        promptText += "\n7. Edit No. SPP (Khusus Dev)";
     }
 
     let choice = prompt(promptText);
@@ -4535,8 +4531,8 @@ window.editMasterSPP = function(firebaseKey) {
         }
     }
     else if (choice === '7') {
-        if (!canEditSPP) {
-            alert("Akses ditolak! Hanya Developer dan Admin yang dapat mengedit No. SPP.");
+        if (!isDev) {
+            alert("Akses ditolak! Hanya Developer yang dapat mengedit No. SPP.");
             return;
         }
         if (matchedSPP) {
