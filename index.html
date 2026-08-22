@@ -2,11 +2,6 @@
 <html lang="id">
 <head>
     <script>
-// Detektor sinkronisasi waktu antara PC lokal dengan Server Firebase
-    window.serverTimeOffset = 0;
-    firebase.database().ref('.info/serverTimeOffset').on('value', function(snap) {
-        window.serverTimeOffset = snap.val() || 0;
-    });
         window.loginSelesai = false;
     </script>
     <meta charset="UTF-8">
@@ -363,16 +358,10 @@
             header { flex-direction: column; gap: 15px; text-align: center; }
             .live-indicator-container { margin-top: 10px; }
         }
-  </style>
+    </style>
 </head>
 <body>
 
-<!-- BANNER HITUNG MUNDUR -->
-<div id="maintenance-warning-banner" style="display:none; position:fixed; top:0; left:0; width:100%; background:rgba(225, 29, 72, 0.95); backdrop-filter:blur(5px); color:#fff; text-align:center; padding:12px; font-size:14px; font-weight:800; z-index:10001; box-shadow:0 4px 15px rgba(244, 63, 94, 0.5); border-bottom: 2px solid #fda4af;">
-    ⚠️ PERINGATAN: Sistem akan memasuki mode Maintenance dan DIKUNCI dalam <span id="maintenance-timer" style="font-size:18px; color:#ffd700; background:rgba(0,0,0,0.3); padding:2px 8px; border-radius:4px; margin:0 5px;">05:00</span>. Harap segera simpan pekerjaan Anda!
-</div>
-
-<!-- LAYAR MAINTENANCE UTAMA (YANG SEBELUMNYA TIDAK SENGAJA TERHAPUS) -->
 <div id="maintenance-screen">
     <div class="maintenance-box">
         <div class="maintenance-icon">🛠️</div>
@@ -382,7 +371,6 @@
 </div>
 
 <div id="login-screen">
-
     <div class="login-box">
         <div class="login-robot-container">
             <div class="login-robot-avatar">🤖</div>
@@ -1633,50 +1621,7 @@ body.light-theme .welcome-box {
         });
     }
 
-window.maintenanceCountdownInterval = null;
-
-    window.manageMaintenanceCountdown = function() {
-        if (window.maintenanceCountdownInterval) clearInterval(window.maintenanceCountdownInterval);
-        const warningBanner = document.getElementById('maintenance-warning-banner');
-
-        if (window.isMaintenanceActive) {
-            // Jika ada target waktu kunci (5 Menit)
-            if (window.maintenanceLockTimeMs) {
-                const checkTime = () => {
-                    const timeLeft = window.maintenanceLockTimeMs - Date.now();
-                    
-                    if (timeLeft <= 0) {
-                        // WAKTU HABIS -> KUNCI LAYAR
-                        clearInterval(window.maintenanceCountdownInterval);
-                        if (warningBanner) warningBanner.style.display = 'none';
-                        window.evaluateMaintenance(true); 
-                    } else {
-                        // WAKTU TENGGANG -> BUKA LAYAR DAN TAMPILKAN BANNER
-                        if (warningBanner) warningBanner.style.display = 'block';
-                        window.evaluateMaintenance(false); // Paksa layar TETAP TERBUKA
-                        
-                        const minutes = Math.floor(timeLeft / (1000 * 60));
-                        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-                        const timerEl = document.getElementById('maintenance-timer');
-                        if (timerEl) timerEl.innerText = `${("0" + minutes).slice(-2)}:${("0" + seconds).slice(-2)}`;
-                    }
-                };
-
-                checkTime(); // Jalankan sekali di awal agar tidak delay
-                window.maintenanceCountdownInterval = setInterval(checkTime, 1000);
-            } else {
-                // Trigger mode lama / tanpa waktu (langsung kunci)
-                if (warningBanner) warningBanner.style.display = 'none';
-                window.evaluateMaintenance(true);
-            }
-        } else {
-            // Maintenance dimatikan
-            if (warningBanner) warningBanner.style.display = 'none';
-            window.evaluateMaintenance(false);
-        }
-    };
-
-    window.evaluateMaintenance = function(isHardLocked) {
+    window.evaluateMaintenance = function() {
         const mtScreen = document.getElementById('maintenance-screen');
         const mtMsg = document.getElementById('maintenance-msg-text');
         const mainApp = document.getElementById('main-app');
@@ -1685,20 +1630,11 @@ window.maintenanceCountdownInterval = null;
 
         mtMsg.innerText = window.maintenanceMessage;
 
-        // Jika fungsi dipanggil sistem (bukan dari timer), cocokan waktunya
-        if (typeof isHardLocked !== 'boolean') {
-            if (window.isMaintenanceActive && window.maintenanceLockTimeMs) {
-                isHardLocked = Date.now() >= window.maintenanceLockTimeMs;
-            } else {
-                isHardLocked = window.isMaintenanceActive;
-            }
-        }
-
         if (window.currentUserRole === "Guest") {
             mtScreen.style.display = 'none';
             loginScreen.style.display = 'flex';
             
-            if (isHardLocked) {
+            if (window.isMaintenanceActive) {
                 document.getElementById('login-robot-text').innerHTML = "<span style='color:#f43f5e; font-size:16px; font-weight:900;'>🚧 SISTEM TERKUNCI (MAINTENANCE) 🚧</span><br><br>Operator tidak bisa masuk. Hanya <b>Developer</b> yang diizinkan login saat ini.";
                 document.querySelector('.login-box').style.borderColor = "#f43f5e";
                 document.querySelector('.login-box').style.boxShadow = "0 0 40px rgba(244, 63, 94, 0.4)";
@@ -1709,12 +1645,13 @@ window.maintenanceCountdownInterval = null;
                 document.querySelector('.login-box').style.boxShadow = "0 0 40px rgba(56, 189, 248, 0.3)";
                 document.querySelector('.login-robot-bubble').style.borderColor = "var(--blue-glow)";
                 document.querySelector('.login-robot-bubble').style.boxShadow = "0 0 20px rgba(56, 189, 248, 0.4)";
+                
                 if (document.getElementById('login-robot-text').innerHTML === "" || document.getElementById('login-robot-text').innerHTML.includes("SISTEM TERKUNCI")) {
                     window.setLoginGreeting();
                 }
             }
         } else {
-           if (isHardLocked && window.currentUserRole.toUpperCase() !== "RANDI" && window.currentUserRole.toUpperCase() !== "FEBRI") {
+           if (window.isMaintenanceActive && window.currentUserRole.toUpperCase() !== "RANDI" && window.currentUserRole.toUpperCase() !== "FEBRI") {
                 mtScreen.style.display = 'flex';
                 mainApp.style.display = 'none';
                 welcomePopup.style.display = 'none';
@@ -1725,7 +1662,7 @@ window.maintenanceCountdownInterval = null;
                     (welcomePopup.style.display === 'none' || welcomePopup.style.display === '')) {
                     mainApp.style.display = 'block';
                     document.getElementById('chat-fab').style.display = 'flex';
-                    document.getElementById('bee-boot-container').style.display = 'flex';
+document.getElementById('bee-boot-container').style.display = 'flex';
                 }
             }
         }
@@ -1795,20 +1732,17 @@ window.maintenanceCountdownInterval = null;
 
             startRealtimeListeners();
             
-db.ref('appSettings/maintenance').on('value', snap => {
+            db.ref('appSettings/maintenance').on('value', snap => {
                 let data = snap.val();
                 if (data) {
                     window.isMaintenanceActive = data.isActive === true;
-                    window.maintenanceMessage = data.message || "Sistem sedang ditutup untuk perbaikan oleh tim Developer.";
-                    // Mengambil target waktu hitung mundur
-                    window.maintenanceLockTimeMs = data.lockTimeMs || null;
+                    window.maintenanceMessage = data.message || "Mohon maaf, sistem saat ini sedang ditutup untuk perbaikan oleh tim Developer. Silakan kembali beberapa saat lagi.";
                 } else {
                     window.isMaintenanceActive = false;
-                    window.maintenanceLockTimeMs = null;
                 }
-                window.manageMaintenanceCountdown(); 
-            });                    
-
+                window.evaluateMaintenance();
+            });
+            
         } else {
             const loginScreen = document.getElementById('login-screen');
             loginScreen.style.display = 'flex';
@@ -3965,7 +3899,6 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
             alert("Harap lengkapi semua data laporan yang wajib!");
             return;
         }
-
         const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
         if (!matchedSPP) return;
 
@@ -5151,29 +5084,24 @@ window.renderMasterTable = function() {
         });
     }; 
 
-window.setMaintenanceStatus = function(isActive) {
-        const msgInput = document.getElementById('dev-maintenance-msg').value.trim();
-        const message = msgInput !== "" ? msgInput : "Mohon maaf, sistem saat ini sedang ditutup untuk perbaikan oleh tim Developer. Silakan kembali beberapa saat lagi.";
+    window.setMaintenanceStatus = function(isActive) {
         
-        // Buat kalkulasi 5 menit absolut murni menggunakan Date.now()
-        const targetWaktu = isActive ? (Date.now() + (5 * 60 * 1000)) : null;
-
+        const msgInput = document.getElementById('dev-maintenance-msg').value.trim();
+        const message = msgInput !== "" ? msgInput : "Mohon maaf, sistem saat ini sedang ditutup untuk sementara waktu karena ada pemeliharaan rutin oleh tim Developer. Silakan kembali beberapa saat lagi.";
+        
         firebase.database().ref('appSettings/maintenance').set({
             isActive: isActive,
-            message: message,
-            lockTimeMs: targetWaktu // Murni mengandalkan Date.now() lokal
+            message: message
         }).then(() => {
             if(isActive) {
-                alert("🔴 Peringatan 5 Menit DIMULAI! Seluruh operator akan melihat hitung mundur di layar mereka.");
+                alert("🔴 Sistem berhasil DIKUNCI (Maintenance Mode Aktif)!");
             } else {
                 alert("🟢 Sistem berhasil DIBUKA kembali (Maintenance Mode Nonaktif)!");
-                document.getElementById('dev-maintenance-msg').value = "";             
-            }
+                document.getElementById('dev-maintenance-msg').value = "";             }
         }).catch(err => {
             alert("Gagal mengubah status maintenance: " + err.message);
         });
     };
-
     window.exportDokumenAdminCSV = function() {
         window.exportTableToCSV('admin-dokumen-table', 'Rekap_Dokumen_BPMP_LPBHP.csv');
     };
