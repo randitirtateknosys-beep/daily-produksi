@@ -367,13 +367,22 @@
 </head>
 <body>
 
-<!-- BANNER HITUNG MUNDUR (PASTE DI SINI) -->
+<!-- BANNER HITUNG MUNDUR -->
 <div id="maintenance-warning-banner" style="display:none; position:fixed; top:0; left:0; width:100%; background:rgba(225, 29, 72, 0.95); backdrop-filter:blur(5px); color:#fff; text-align:center; padding:12px; font-size:14px; font-weight:800; z-index:10001; box-shadow:0 4px 15px rgba(244, 63, 94, 0.5); border-bottom: 2px solid #fda4af;">
     ⚠️ PERINGATAN: Sistem akan memasuki mode Maintenance dan DIKUNCI dalam <span id="maintenance-timer" style="font-size:18px; color:#ffd700; background:rgba(0,0,0,0.3); padding:2px 8px; border-radius:4px; margin:0 5px;">05:00</span>. Harap segera simpan pekerjaan Anda!
 </div>
 
+<!-- LAYAR MAINTENANCE UTAMA (YANG SEBELUMNYA TIDAK SENGAJA TERHAPUS) -->
 <div id="maintenance-screen">
+    <div class="maintenance-box">
+        <div class="maintenance-icon">🛠️</div>
+        <h1>Sistem Sedang Perbaikan</h1>
+        <p id="maintenance-msg-text">Mohon maaf, sistem saat ini sedang ditutup untuk sementara waktu karena ada pemeliharaan rutin oleh tim Developer. Silakan kembali beberapa saat lagi.</p>
+    </div>
+</div>
+
 <div id="login-screen">
+
     <div class="login-box">
         <div class="login-robot-container">
             <div class="login-robot-avatar">🤖</div>
