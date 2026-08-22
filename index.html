@@ -2,6 +2,11 @@
 <html lang="id">
 <head>
     <script>
+// Detektor sinkronisasi waktu antara PC lokal dengan Server Firebase
+    window.serverTimeOffset = 0;
+    firebase.database().ref('.info/serverTimeOffset').on('value', function(snap) {
+        window.serverTimeOffset = snap.val() || 0;
+    });
         window.loginSelesai = false;
     </script>
     <meta charset="UTF-8">
@@ -358,18 +363,16 @@
             header { flex-direction: column; gap: 15px; text-align: center; }
             .live-indicator-container { margin-top: 10px; }
         }
-    </style>
+  </style>
 </head>
 <body>
 
-<div id="maintenance-screen">
-    <div class="maintenance-box">
-        <div class="maintenance-icon">🛠️</div>
-        <h1>Sistem Sedang Perbaikan</h1>
-        <p id="maintenance-msg-text">Mohon maaf, sistem saat ini sedang ditutup untuk sementara waktu karena ada pemeliharaan rutin oleh tim Developer. Silakan kembali beberapa saat lagi.</p>
-    </div>
+<!-- BANNER HITUNG MUNDUR (PASTE DI SINI) -->
+<div id="maintenance-warning-banner" style="display:none; position:fixed; top:0; left:0; width:100%; background:rgba(225, 29, 72, 0.95); backdrop-filter:blur(5px); color:#fff; text-align:center; padding:12px; font-size:14px; font-weight:800; z-index:10001; box-shadow:0 4px 15px rgba(244, 63, 94, 0.5); border-bottom: 2px solid #fda4af;">
+    ⚠️ PERINGATAN: Sistem akan memasuki mode Maintenance dan DIKUNCI dalam <span id="maintenance-timer" style="font-size:18px; color:#ffd700; background:rgba(0,0,0,0.3); padding:2px 8px; border-radius:4px; margin:0 5px;">05:00</span>. Harap segera simpan pekerjaan Anda!
 </div>
 
+<div id="maintenance-screen">
 <div id="login-screen">
     <div class="login-box">
         <div class="login-robot-container">
@@ -769,7 +772,7 @@
             <form id="prod-form">
                 <div class="unified-grid">
                     <div class="form-group"><label>Pilih No. SPP Aktif</label><select id="prod-spp-select" onchange="handleSppSelection()" required><option value="">-- Pilih SPP --</option></select></div>
-                    <div class="form-group"><label>No. Produksi (Wajib Diisi)</label><input type="text" id="prod-number" placeholder="Mulai ketik (misal: PROD-102)" required></div>
+                    <div class="form-group"><label>No. Produksi (Opsional)</label><input type="text" id="prod-number" placeholder="Mulai ketik (misal: PROD-102)"></div>
                     <div class="form-group">
                         <label>Nama Operator Lapangan</label>
                         <select id="prod-operator" required>
@@ -1621,7 +1624,50 @@ body.light-theme .welcome-box {
         });
     }
 
-    window.evaluateMaintenance = function() {
+window.maintenanceCountdownInterval = null;
+
+    window.manageMaintenanceCountdown = function() {
+        if (window.maintenanceCountdownInterval) clearInterval(window.maintenanceCountdownInterval);
+        const warningBanner = document.getElementById('maintenance-warning-banner');
+
+        if (window.isMaintenanceActive) {
+            // Jika ada target waktu kunci (5 Menit)
+            if (window.maintenanceLockTimeMs) {
+                const checkTime = () => {
+                    const timeLeft = window.maintenanceLockTimeMs - Date.now();
+                    
+                    if (timeLeft <= 0) {
+                        // WAKTU HABIS -> KUNCI LAYAR
+                        clearInterval(window.maintenanceCountdownInterval);
+                        if (warningBanner) warningBanner.style.display = 'none';
+                        window.evaluateMaintenance(true); 
+                    } else {
+                        // WAKTU TENGGANG -> BUKA LAYAR DAN TAMPILKAN BANNER
+                        if (warningBanner) warningBanner.style.display = 'block';
+                        window.evaluateMaintenance(false); // Paksa layar TETAP TERBUKA
+                        
+                        const minutes = Math.floor(timeLeft / (1000 * 60));
+                        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                        const timerEl = document.getElementById('maintenance-timer');
+                        if (timerEl) timerEl.innerText = `${("0" + minutes).slice(-2)}:${("0" + seconds).slice(-2)}`;
+                    }
+                };
+
+                checkTime(); // Jalankan sekali di awal agar tidak delay
+                window.maintenanceCountdownInterval = setInterval(checkTime, 1000);
+            } else {
+                // Trigger mode lama / tanpa waktu (langsung kunci)
+                if (warningBanner) warningBanner.style.display = 'none';
+                window.evaluateMaintenance(true);
+            }
+        } else {
+            // Maintenance dimatikan
+            if (warningBanner) warningBanner.style.display = 'none';
+            window.evaluateMaintenance(false);
+        }
+    };
+
+    window.evaluateMaintenance = function(isHardLocked) {
         const mtScreen = document.getElementById('maintenance-screen');
         const mtMsg = document.getElementById('maintenance-msg-text');
         const mainApp = document.getElementById('main-app');
@@ -1630,11 +1676,20 @@ body.light-theme .welcome-box {
 
         mtMsg.innerText = window.maintenanceMessage;
 
+        // Jika fungsi dipanggil sistem (bukan dari timer), cocokan waktunya
+        if (typeof isHardLocked !== 'boolean') {
+            if (window.isMaintenanceActive && window.maintenanceLockTimeMs) {
+                isHardLocked = Date.now() >= window.maintenanceLockTimeMs;
+            } else {
+                isHardLocked = window.isMaintenanceActive;
+            }
+        }
+
         if (window.currentUserRole === "Guest") {
             mtScreen.style.display = 'none';
             loginScreen.style.display = 'flex';
             
-            if (window.isMaintenanceActive) {
+            if (isHardLocked) {
                 document.getElementById('login-robot-text').innerHTML = "<span style='color:#f43f5e; font-size:16px; font-weight:900;'>🚧 SISTEM TERKUNCI (MAINTENANCE) 🚧</span><br><br>Operator tidak bisa masuk. Hanya <b>Developer</b> yang diizinkan login saat ini.";
                 document.querySelector('.login-box').style.borderColor = "#f43f5e";
                 document.querySelector('.login-box').style.boxShadow = "0 0 40px rgba(244, 63, 94, 0.4)";
@@ -1645,13 +1700,12 @@ body.light-theme .welcome-box {
                 document.querySelector('.login-box').style.boxShadow = "0 0 40px rgba(56, 189, 248, 0.3)";
                 document.querySelector('.login-robot-bubble').style.borderColor = "var(--blue-glow)";
                 document.querySelector('.login-robot-bubble').style.boxShadow = "0 0 20px rgba(56, 189, 248, 0.4)";
-                
                 if (document.getElementById('login-robot-text').innerHTML === "" || document.getElementById('login-robot-text').innerHTML.includes("SISTEM TERKUNCI")) {
                     window.setLoginGreeting();
                 }
             }
         } else {
-           if (window.isMaintenanceActive && window.currentUserRole.toUpperCase() !== "RANDI" && window.currentUserRole.toUpperCase() !== "FEBRI") {
+           if (isHardLocked && window.currentUserRole.toUpperCase() !== "RANDI" && window.currentUserRole.toUpperCase() !== "FEBRI") {
                 mtScreen.style.display = 'flex';
                 mainApp.style.display = 'none';
                 welcomePopup.style.display = 'none';
@@ -1662,7 +1716,7 @@ body.light-theme .welcome-box {
                     (welcomePopup.style.display === 'none' || welcomePopup.style.display === '')) {
                     mainApp.style.display = 'block';
                     document.getElementById('chat-fab').style.display = 'flex';
-document.getElementById('bee-boot-container').style.display = 'flex';
+                    document.getElementById('bee-boot-container').style.display = 'flex';
                 }
             }
         }
@@ -1732,17 +1786,20 @@ document.getElementById('bee-boot-container').style.display = 'flex';
 
             startRealtimeListeners();
             
-            db.ref('appSettings/maintenance').on('value', snap => {
+db.ref('appSettings/maintenance').on('value', snap => {
                 let data = snap.val();
                 if (data) {
                     window.isMaintenanceActive = data.isActive === true;
-                    window.maintenanceMessage = data.message || "Mohon maaf, sistem saat ini sedang ditutup untuk perbaikan oleh tim Developer. Silakan kembali beberapa saat lagi.";
+                    window.maintenanceMessage = data.message || "Sistem sedang ditutup untuk perbaikan oleh tim Developer.";
+                    // Mengambil target waktu hitung mundur
+                    window.maintenanceLockTimeMs = data.lockTimeMs || null;
                 } else {
                     window.isMaintenanceActive = false;
+                    window.maintenanceLockTimeMs = null;
                 }
-                window.evaluateMaintenance();
-            });
-            
+                window.manageMaintenanceCountdown(); 
+            });                    
+
         } else {
             const loginScreen = document.getElementById('login-screen');
             loginScreen.style.display = 'flex';
@@ -2340,8 +2397,7 @@ if (adminBpmpPanel) {
 
         document.getElementById('operator-history-head').innerHTML = `<th>Nama Operator</th><th>Aktivitas Kegiatan</th><th>Kondisi Progres</th><th>Tahap Produksi</th><th>Waktu Input</th><th>Sisa Waktu Pekerjaan</th><th>Target Deadline</th><th>Status Hasil</th><th>Keterangan / Poin Tambahan</th>${isDev ? '<th>Aksi</th>' : ''}`;
         document.getElementById('internal-history-head').innerHTML = `<th>Waktu Pengambilan</th><th>Komponen</th><th>No. SPP Asal</th><th>Tujuan Produk</th><th>Status</th>${isDev ? '<th>Aksi</th>' : ''}`;
-        document.getElementById('spp-master-head').innerHTML = `<th>No. SPP & Tgl Rilis</th><th>No. Produksi</th><th>Nama Produk</th><th>Tim Operator</th><th>Target Waktu</th><th>Urgensi</th><th>Status Terkini</th>${showDocCol ? '<th>Dokumen</th>' : ''}${isDev ? '<th>Aksi</th>' : ''}`;
-    
+        document.getElementById('spp-master-head').innerHTML = `<th>No. SPP & Tgl Rilis</th><th>No. Produksi</th><th>Nama Produk</th><th>Tim Operator</th><th>Target Waktu</th><th>Urgensi</th><th>Status Terkini</th>${showDocCol ? '<th>Dokumen</th>' : ''}${(isDev || isAdmin) ? '<th>Aksi</th>' : ''}`;    
     
         let deadlineVal = document.getElementById('prod-deadline-val');
         let deadlineUnit = document.getElementById('prod-deadline-unit');
@@ -3885,7 +3941,8 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
         e.preventDefault();
         
         const sppNo = document.getElementById('prod-spp-select').value;
-        const noProd = document.getElementById('prod-number').value;
+        let noProd = document.getElementById('prod-number').value.trim();
+        if (!noProd) noProd = "-"; // Beri nilai default jika dikosongkan
         const operator = document.getElementById('prod-operator').value;
         const condition = document.getElementById('prod-condition').value;
         let stage = document.getElementById('prod-stage').value;
@@ -3894,7 +3951,8 @@ document.getElementById('prod-form').addEventListener('submit', function(e) {
         const targetVal = document.getElementById('prod-deadline-val').value;
         const targetUnit = document.getElementById('prod-deadline-unit').value;
 
-        if (!sppNo || !noProd || !operator || !condition) {
+        // Hapus !noProd dari pengecekan agar form bisa di-submit meski kosong
+        if (!sppNo || !operator || !condition) {
             alert("Harap lengkapi semua data laporan yang wajib!");
             return;
         }
@@ -4481,11 +4539,14 @@ window.printPDF = function(tableId, title) {
 
 window.editMasterSPP = function(firebaseKey) {
     const isDev = (window.currentUserRole.toUpperCase() === "RANDI" || window.currentUserRole.toUpperCase() === "FEBRI");
+    const isAdmin = (window.currentUserRole === "Admin" || window.currentUserRole === "Septi Utami");
+    const canEditSPP = (isDev || isAdmin);
+    
     let promptText = "Pilih data SPP/SPL yang ingin diedit:\n1. Status Terkini\n2. Nama Produk\n3. Urgensi Prioritas\n4. Reset Deadline\n5. Tanggal & Jam Keluar\n6. Edit Target Deadline (Jam)";
     
-    // Tambahkan opsi 7 khusus untuk Developer
-    if (isDev) {
-        promptText += "\n7. Edit No. SPP (Khusus Dev)";
+    // Tambahkan opsi 7 khusus untuk Developer & Admin
+    if (canEditSPP) {
+        promptText += "\n7. Edit No. SPP (Khusus Dev & Admin)";
     }
 
     let choice = prompt(promptText);
@@ -4532,8 +4593,8 @@ window.editMasterSPP = function(firebaseKey) {
         }
     }
     else if (choice === '7') {
-        if (!isDev) {
-            alert("Akses ditolak! Hanya Developer yang dapat mengedit No. SPP.");
+        if (!canEditSPP) {
+            alert("Akses ditolak! Hanya Developer dan Admin yang dapat mengedit No. SPP.");
             return;
         }
         if (matchedSPP) {
@@ -4853,9 +4914,10 @@ window.renderMasterTable = function() {
 
         const tbody = document.getElementById('spp-master-body'); 
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI" || window.currentUserRole.toUpperCase() === "FEBRI");
-        const isAdmin = (window.currentUserRole === "Admin");
+        const isAdmin = (window.currentUserRole === "Admin" || window.currentUserRole === "Septi Utami");
         const showDocCol = (isDev || isAdmin);
-        let cols = 7 + (showDocCol ? 1 : 0) + (isDev ? 1 : 0);
+        const canEdit = (isDev || isAdmin);
+        let cols = 7 + (showDocCol ? 1 : 0) + (canEdit ? 1 : 0);
         
         // 2. Mengambil dan Menyaring Data Master SPP
         let rawSPP = window.getFilteredNonSPLSPP(); 
@@ -4899,8 +4961,7 @@ window.renderMasterTable = function() {
             let fileLinkHtml = item.fileUrl ? `<a href="${item.fileUrl}" target="_blank" style="background:var(--blue-glow); color:#000; padding:6px 12px; font-size:11px; font-weight:bold; border-radius:6px; text-decoration:none;">📄 Dokumen</a>` : `<span style="color:var(--text-muted); font-size:11px;">Tanpa Lampiran</span>`;
             let displayStatus = item.isShipped ? '<span class="badge bg-urgent">Digunakan/Terkirim</span>' : window.getStatusBadge(item.status); 
             let docColHtml = showDocCol ? `<td>${fileLinkHtml}</td>` : '';
-            let actionBtns = isDev ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-bottom:5px; width:100%;" onclick="editMasterSPP('${item.firebaseKey}')">✏️ Edit</button><br><button class="btn-delete" style="width:100%;" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button></td>` : '';
-            
+            let actionBtns = canEdit ? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-bottom:5px; width:100%;" onclick="editMasterSPP('${item.firebaseKey}')">✏️ Edit</button>${isDev ? `<br><button class="btn-delete" style="width:100%;" onclick="deleteMasterSPP('${item.firebaseKey}')">Hapus</button>` : ''}</td>` : '';            
             // Simpan baris baru ke penampung (TIDAK langsung di-render ke layar)
             htmlRows += `<tr><td><strong>${item.no}</strong><br><span style="font-size: 11px; color: var(--text-muted);">${item.datetime}</span></td><td><code style="color:var(--blue-glow); font-weight:bold;">${displayProdNo}</code></td><td><span class="badge bg-reguler" style="font-size:12px; font-weight:700;">${item.product}</span></td><td style="font-size:12px; font-weight:600; line-height: 1.5;">${displayOperators}</td><td><b style="color:var(--warning-glow)">${item.formattedDeadline}</b></td><td><span class="badge bg-reguler">${item.priority}</span></td><td>${displayStatus}</td>${docColHtml}${actionBtns}</tr>`;
         });
@@ -5081,24 +5142,29 @@ window.renderMasterTable = function() {
         });
     }; 
 
-    window.setMaintenanceStatus = function(isActive) {
-        
+window.setMaintenanceStatus = function(isActive) {
         const msgInput = document.getElementById('dev-maintenance-msg').value.trim();
-        const message = msgInput !== "" ? msgInput : "Mohon maaf, sistem saat ini sedang ditutup untuk sementara waktu karena ada pemeliharaan rutin oleh tim Developer. Silakan kembali beberapa saat lagi.";
+        const message = msgInput !== "" ? msgInput : "Mohon maaf, sistem saat ini sedang ditutup untuk perbaikan oleh tim Developer. Silakan kembali beberapa saat lagi.";
         
+        // Buat kalkulasi 5 menit absolut murni menggunakan Date.now()
+        const targetWaktu = isActive ? (Date.now() + (5 * 60 * 1000)) : null;
+
         firebase.database().ref('appSettings/maintenance').set({
             isActive: isActive,
-            message: message
+            message: message,
+            lockTimeMs: targetWaktu // Murni mengandalkan Date.now() lokal
         }).then(() => {
             if(isActive) {
-                alert("🔴 Sistem berhasil DIKUNCI (Maintenance Mode Aktif)!");
+                alert("🔴 Peringatan 5 Menit DIMULAI! Seluruh operator akan melihat hitung mundur di layar mereka.");
             } else {
                 alert("🟢 Sistem berhasil DIBUKA kembali (Maintenance Mode Nonaktif)!");
-                document.getElementById('dev-maintenance-msg').value = "";             }
+                document.getElementById('dev-maintenance-msg').value = "";             
+            }
         }).catch(err => {
             alert("Gagal mengubah status maintenance: " + err.message);
         });
     };
+
     window.exportDokumenAdminCSV = function() {
         window.exportTableToCSV('admin-dokumen-table', 'Rekap_Dokumen_BPMP_LPBHP.csv');
     };
