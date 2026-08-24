@@ -1848,10 +1848,17 @@ document.getElementById('bee-boot-container').style.display = 'flex';
                 window.evaluateMaintenance();
             });
             
-        } else {
+       } else {
             const loginScreen = document.getElementById('login-screen');
             loginScreen.style.display = 'flex';
             setTimeout(() => { loginScreen.style.opacity = '1'; }, 50);
+            
+            // PERBAIKAN: Panggil sapaan Bee-Boot saat halaman login pertama kali dimuat
+            setTimeout(() => { 
+                if(typeof window.setLoginGreeting === 'function') {
+                    window.setLoginGreeting(); 
+                }
+            }, 500);
         }
     });
 
