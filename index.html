@@ -148,8 +148,22 @@
         .btn-minimize:hover { color: #fff; border-color: var(--blue-glow); background: rgba(56, 189, 248, 0.1); }
 
         .analytics-grid { display: grid; grid-template-columns: 1fr 1.8fr; gap: 25px; }
-        .stats-subgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-        .stats-card-full { grid-column: span 2; }
+
+.stats-subgrid { 
+    display: flex; 
+    flex-wrap: nowrap; 
+    gap: 15px; 
+    overflow-x: auto; /* Memungkinkan scroll horizontal di layar kecil */
+    padding-bottom: 10px;
+}
+.stats-subgrid::-webkit-scrollbar { height: 8px; }
+.stats-subgrid::-webkit-scrollbar-thumb { background: var(--blue-glow); border-radius: 4px; }
+.stat-box { 
+    flex: 1; 
+    min-width: 130px; /* Menjaga agar kotak tidak terlalu sempit */
+}
+/* Hapus .stats-card-full karena kita tidak pakai grid lagi untuk bagian ini */        
+
         .stat-box { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--panel-border); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; }
         .stat-box::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; opacity: 0.8; }
         .stat-box.total::after { background: var(--blue-glow); } .stat-box.selesai::after { background: var(--emerald-glow); } .stat-box.proses::after { background: var(--cyan-glow); } .stat-box.pending::after { background: var(--text-muted); } .stat-box.idle::after { background: var(--warning-glow); } .stat-box.stoppage::after { background: var(--danger-glow); } .stat-box.takeover::after { background: var(--purple-glow); }
@@ -674,61 +688,66 @@
             </div>
         </div>
         
-        <div class="analytics-grid" id="panel-analytics">
+        <div id="panel-analytics" style="display: flex; flex-direction: column; gap: 25px;">
+            
+            <!-- PANEL 1: RINGKASAN MASTER SPP & INVENTARIS -->
             <div class="panel">
                 <h3>📈 Ringkasan Master SPP</h3>
+                
+                <!-- Kotak Indikator SPP (Memanjang ke Kanan) -->
                 <div class="stats-subgrid">
+                    <div class="stat-box total"><span class="stat-label">📊 Total SPP Masuk</span><div id="stat-total" class="stat-value">0</div></div>
                     <div class="stat-box selesai"><span class="stat-label">✅ Selesai (Produksi)</span><div id="stat-selesai" class="stat-value">0</div></div>
                     <div class="stat-box proses"><span class="stat-label">🔄 Sedang Proses</span><div id="stat-proses" class="stat-value">0</div></div>
                     <div class="stat-box pending"><span class="stat-label">📥 Pending (Antrean)</span><div id="stat-pending" class="stat-value">0</div></div>
                     <div class="stat-box idle"><span class="stat-label">⏳ Terjeda / Lanjut</span><div id="stat-idle" class="stat-value">0</div></div>
                     <div class="stat-box stoppage"><span class="stat-label">🚨 Stoppage</span><div id="stat-stoppage" class="stat-value">0</div></div>
                     <div class="stat-box takeover"><span class="stat-label">⚠️ Takeover</span><div id="stat-takeover" class="stat-value">0</div></div>
-                    
-                    <div class="stats-card-full">
-                        <div class="stat-box total">
-                            <span class="stat-label">📊 Total Keseluruhan SPP Masuk</span>
-                            <div id="stat-total" class="stat-value">0</div>
-                        </div>
-                        
-                        <div style="margin-top: 15px; padding: 0 5px;">
-                            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: var(--text-muted); margin-bottom: 6px; text-transform:uppercase;">
-                                <span>Progress Penyelesaian Keseluruhan</span>
-                                <span id="overall-progress-text" style="color: var(--emerald-glow);">0%</span>
-                            </div>
-                            <div style="width: 100%; height: 8px; background: rgba(0,0,0,0.5); border-radius: 5px; overflow: hidden; border: 1px solid var(--panel-border);">
-                                <div id="overall-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--blue-glow), var(--emerald-glow)); transition: width 0.8s ease-in-out; box-shadow: 0 0 10px var(--emerald-glow);"></div>
-                            </div>
-                        </div>
+                </div>
+                
+                <!-- Progress Bar SPP -->
+                <div style="margin-top: 15px; padding: 0 5px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: var(--text-muted); margin-bottom: 6px; text-transform:uppercase;">
+                        <span>Progress Penyelesaian Keseluruhan SPP</span>
+                        <span id="overall-progress-text" style="color: var(--emerald-glow);">0%</span>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: rgba(0,0,0,0.5); border-radius: 5px; overflow: hidden; border: 1px solid var(--panel-border);">
+                        <div id="overall-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--blue-glow), var(--emerald-glow)); transition: width 0.8s ease-in-out; box-shadow: 0 0 10px var(--emerald-glow);"></div>
+                    </div>
+                </div>
 
-                        <!-- TABEL TAMBAHAN UNTUK READY & TERKIRIM -->
-                        <div style="margin-top: 25px; border-top: 1px dashed rgba(56, 189, 248, 0.3); padding-top: 15px;">
-                            <h4 style="color: var(--blue-glow); margin: 0 0 10px 0; font-size: 13px; text-transform: uppercase;">📦 Status Inventaris Akhir</h4>
-                            <div class="table-container">
-                                <table style="background: rgba(15, 23, 42, 0.6); margin: 0;">
-                                    <thead>
-                                        <tr>
-                                            <th style="text-align: left;">Kategori</th>
-                                            <th style="text-align: center; width: 150px;">Total Unit</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td><strong style="color: var(--emerald-glow);">Total Barang Ready (Di Gudang)</strong></td>
-                                            <td style="text-align: center;"><span id="stat-ready-gudang" class="badge bg-reguler" style="font-size:13px;">0 Unit</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong style="color: var(--cyan-glow);">Total Barang Pengiriman (Terkirim)</strong></td>
-                                            <td style="text-align: center;"><span id="stat-terkirim" class="badge bg-urgent" style="background:rgba(14,213,192,0.1); color:var(--cyan-glow); border-color:#5eead4; font-size:13px;">0 Unit</span></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
+                <!-- TABEL STATUS INVENTARIS AKHIR -->
+                <div style="margin-top: 25px; border-top: 1px dashed rgba(56, 189, 248, 0.3); padding-top: 15px;">
+                    <h4 style="color: var(--blue-glow); margin: 0 0 10px 0; font-size: 13px; text-transform: uppercase;">📦 Status Inventaris Akhir</h4>
+                    <div class="table-container">
+                        <table style="background: rgba(15, 23, 42, 0.6); margin: 0;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: left;">Kategori</th>
+                                    <th style="text-align: center; width: 150px;">Total Unit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- BARIS BARU: TOTAL SPP PROSES -->
+                                <tr>
+                                    <td><strong style="color: var(--warning-glow);">Total Keseluruhan Dalam Progres (Proses, Pending, Terjeda, Stoppage, Takeover)</strong></td>
+                                    <td style="text-align: center;"><span id="stat-total-progress" class="badge bg-buffer" style="font-size:13px; border-color: var(--warning-glow);">0 Unit</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong style="color: var(--emerald-glow);">Total Barang Ready (Di Gudang)</strong></td>
+                                    <td style="text-align: center;"><span id="stat-ready-gudang" class="badge bg-reguler" style="font-size:13px;">0 Unit</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong style="color: var(--cyan-glow);">Total Barang Pengiriman (Terkirim)</strong></td>
+                                    <td style="text-align: center;"><span id="stat-terkirim" class="badge bg-urgent" style="background:rgba(14,213,192,0.1); color:var(--cyan-glow); border-color:#5eead4; font-size:13px;">0 Unit</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
+
+            <!-- PANEL 2: GRAFIK TREN (Dipindah ke bawah dan dibuat membentang/Full Width) -->
             <div class="panel">
                 <h3>📈 Grafik Tren Volume Produksi (Aktual Barang Selesai)</h3>
                 <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
@@ -740,6 +759,7 @@
                 </div>
                 <div class="chart-panel-box"><canvas id="sppTrendLineChart"></canvas></div>
             </div>
+
         </div>
 
         <div class="panel" id="panel-aktual">
@@ -3358,6 +3378,13 @@ window.globalLineChartInstance = new Chart(ctx, { type: 'line', data: { labels: 
         const statTerkirim = document.getElementById('stat-terkirim');
         if(statReadyGudang) statReadyGudang.innerText = readyItems + " Unit";
         if(statTerkirim) statTerkirim.innerText = shippedItems + " Unit";
+
+const statTotalProgress = document.getElementById('stat-total-progress');
+        if(statTotalProgress) {
+            // Karena "selesaiSPP" sudah berisi SPP yang statusnya selesai, sisanya pasti merupakan SPP yang masih on progres
+            const totalInProgress = filteredSPP.length - selesaiSPP;
+            statTotalProgress.innerText = totalInProgress + " Unit";
+        }
 
         const chartType = window.currentChartType;
         const legendColor = document.body.classList.contains('light-theme') ? '#0f172a' : '#f8fafc';
