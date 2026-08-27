@@ -2095,7 +2095,7 @@ document.getElementById('bee-boot-container').style.display = 'flex';
         "AQUATECH TRO 3000 GPD/L": { ops: 2, hours: 24 },
         "AQUATECH TRO 4500 GPD/L": { ops: 2, hours: 24 },
         "AQUATECH TRO 6000 GPD/L": { ops: 2, hours: 24 },
-        "FLOOR STANDING": { ops: 2, hours: 15 },
+        "FLOOR STANDING": { ops: 2, hours: 24 },
         "EF": { ops: 1, hours: 7 },
         "TRO MOBILE MH3": { ops: 2, hours: 24 },
         "UF BEAVER 8.0 AD": { ops: 2, hours: 24 },
@@ -4512,26 +4512,74 @@ window.globalLineChartInstance = new Chart(ctx, { type: 'line', data: { labels: 
         }
     }
 
-    window.exportTableToCSV = function(tableId, filename) {
-        const table = document.getElementById(tableId);
-        if(!table) return;
-        let csv = [];
-        const rows = table.querySelectorAll('tr');
-        rows.forEach(row => {
-            if(row.style.display !== 'none') {
-                let cols = row.querySelectorAll('th, td');
-                let rowData = [];
-                cols.forEach(col => rowData.push('"' + (col.innerText || col.textContent).replace(/"/g, '""') + '"'));
-                csv.push(rowData.join(','));
-            }
-        });
-        const csvString = csv.join('\n');
-        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        link.click();
-    }
+   window.exportTableToCSV = function(tableId, filename) {
+    const table = document.getElementById(tableId);
+    if(!table) return;
+
+    // 1. Clone tabel agar kita tidak merusak tampilan asli di web
+    const clonedTable = table.cloneNode(true);
+    const rows = clonedTable.querySelectorAll('tr');
+    
+    // 2. Hapus baris yang disembunyikan oleh fitur pencarian (search)
+    Array.from(rows).forEach((row, index) => {
+        const originalRow = table.rows[index];
+        // Jika di tabel asli barisnya disembunyikan (display: none), hapus di versi Excel
+        if (originalRow && originalRow.style.display === 'none') {
+            row.parentNode.removeChild(row);
+        }
+    });
+
+    const html = clonedTable.outerHTML;
+
+    // 3. Otomatis ubah ekstensi nama file dari .csv menjadi .xls
+    const finalFilename = filename.replace('.csv', '.xls');
+
+    // 4. Template Excel agar format terbaca rapi oleh Microsoft Excel
+    const template = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" 
+          xmlns:x="urn:schemas-microsoft-com:office:excel" 
+          xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+        <meta charset="UTF-8">
+        <!--[if gte mso 9]>
+        <xml>
+            <x:ExcelWorkbook>
+                <x:ExcelWorksheets>
+                    <x:ExcelWorksheet>
+                        <x:Name>Data Export</x:Name>
+                        <x:WorksheetOptions>
+                            <x:DisplayGridlines/>
+                        </x:WorksheetOptions>
+                    </x:ExcelWorksheet>
+                </x:ExcelWorksheets>
+            </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+            /* Memberikan border dasar agar tabel Excel lebih rapi */
+            table, th, td { border: 1px solid #000000; border-collapse: collapse; }
+            th { background-color: #e2e8f0; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        ${html}
+    </body>
+    </html>`;
+
+    // 5. Proses konversi ke File Excel menggunakan Blob
+    const blob = new Blob([template], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = finalFilename;
+    
+    document.body.appendChild(link);
+    link.click();
+    
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+} 
 
     window.printPDF = function(tableId, title) {
         let tableEl = document.getElementById(tableId);
