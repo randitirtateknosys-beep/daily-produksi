@@ -1684,14 +1684,28 @@ body.light-theme .welcome-box {
             if(!window.isTVModeReady || window.currentUserRole !== "TV Mode" || window.isBeeBootTyping) return;
             let val = snap.val();
             if(val.status === 'Selesai' || val.status === 'Selesai Awal' || val.status === 'Telat Selesai') {
-                window.showTVAlert(`🎉 <b>PRODUK SELESAI!</b><br>Hebat <b>${val.operator}</b>!<br>Telah menyelesaikan SPP <span style="color:var(--emerald-glow); font-size:15px;">${val.noSPP}</span>.<br>Teruskan kerja kerasnya! 🔥`, 15000);
+                
+                // Cek siapa saja yang pernah berkontribusi di SPP ini
+                let timTerlibat = [val.operator];
+                if (window.databaseLogOperator) {
+                    window.databaseLogOperator.forEach(log => {
+                        if (log.noSPP === val.noSPP && !timTerlibat.includes(log.operator) && !log.operator.toLowerCase().includes('dev')) {
+                            timTerlibat.push(log.operator);
+                        }
+                    });
+                }
+                
+                let timTeks = timTerlibat.join(" & ");
+                let infoTim = timTerlibat.length > 1 
+                    ? `<br><br>👥 Dikerjakan oleh Tim: <b>${timTeks}</b><br><span style="color:#fde047; font-size:12px;"><i>(Poin bonus penyelesaian telah didistribusikan rata ke seluruh tim)</i></span>` 
+                    : "";
 
+                window.showTVAlert(`🎉 <b>PRODUK SELESAI!</b><br>SPP <span style="color:var(--emerald-glow); font-size:15px;">${val.noSPP}</span> berhasil ditutup oleh <b>${val.operator}</b>.${infoTim}<br><br>Kerja bagus semuanya! 🔥`, 18000);
 
-} else {
-            window.showTVAlert(`📝 <b>UPDATE LAPORAN:</b><br><b>${val.operator}</b> baru saja mengupdate progres: <span style="color:var(--blue-glow); font-size:15px;">${val.noSPP}</span>.<br>Tahap: ${val.stage} 🚀`, 10000);
-        }
-    });
-
+            } else {
+                window.showTVAlert(`📝 <b>UPDATE LAPORAN:</b><br><b>${val.operator}</b> baru saja mengupdate progres: <span style="color:var(--blue-glow); font-size:15px;">${val.noSPP}</span>.<br>Tahap: ${val.stage} 🚀`, 10000);
+            }
+        });
     // ==========================================
     // LOGIKA NOTIFIKASI UPDATE SISTEM 
     // ==========================================
