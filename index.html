@@ -3535,7 +3535,7 @@ const statTotalProgress = document.getElementById('stat-total-progress');
         window.renderShipmentTable();
     }
 
-    window.calculateAndRenderRanking = function() {
+window.calculateAndRenderRanking = function() {
         let skorPeta = {}; 
         const filteredLogs = window.getFilteredLogs(); 
         const filteredSPP = window.getFilteredSPP(); 
@@ -3568,33 +3568,58 @@ const statTotalProgress = document.getElementById('stat-total-progress');
                 if (totalValidLogs === 0) return; 
 
                 let targetOps = 1; 
-                if (PRODUCT_DICTIONARY[spp.product]) targetOps = PRODUCT_DICTIONARY[spp.product].ops;
+                let targetHours = 8;
+                if (PRODUCT_DICTIONARY[spp.product]) {
+                    targetOps = PRODUCT_DICTIONARY[spp.product].ops;
+                    targetHours = PRODUCT_DICTIONARY[spp.product].hours;
+                }
                 
-                let basePointPerOperator = 80; 
-                let totalPoolPoints = basePointPerOperator * targetOps;
-                let pointPerLog = totalPoolPoints / totalValidLogs; 
+                // Pengali poin jika durasi target di atas 24 jam
+                let multiplier = 1;
+                if (targetHours > 24) {
+                    multiplier = Math.ceil(targetHours / 24);
+                }
 
-                Object.keys(operatorLogCounts).forEach(op => {
-                    if(skorPeta[op] === undefined) skorPeta[op] = 0;
-                    
-                    let opShare = operatorLogCounts[op] * pointPerLog; 
-                    let porsiRasio = operatorLogCounts[op] / totalValidLogs; 
-                    let finalReward = opShare;
+                // Kolam poin dengan nilai 50 poin per operator sesuai target
+                let basePointPerOperator = 50; 
+                let totalPoolPoints = basePointPerOperator * targetOps * multiplier;
+                
+                let involvedOperators = Object.keys(operatorLogCounts);
+                let totalInvolved = involvedOperators.length;
 
-                    if (spp.status === 'Selesai Awal' && msTerlambat < 0) {
-                        let jamLebihAwal = Math.floor(Math.abs(msTerlambat) / (1000 * 60 * 60));
-                        let totalBonus = Math.min(jamLebihAwal * 10, 50); 
-                        finalReward += (totalBonus * porsiRasio); 
-                    } else if (spp.status === 'Telat Selesai' && msTerlambat > 0) {
-                        let jamTelat = Math.floor(msTerlambat / (1000 * 60 * 60));
-                        let totalPenalty = 10 + (jamTelat * 5); 
-                        finalReward -= (totalPenalty * porsiRasio); 
+                if (totalInvolved > 0) {
+                    let opShare = 0;
+                    let porsiRasio = 0;
+
+                    // Logika usulan pembagian poin rata kepada semua yang terlibat
+                    if (totalInvolved <= targetOps) {
+                        opShare = totalPoolPoints / targetOps; 
+                        porsiRasio = 1 / targetOps;
+                    } else {
+                        opShare = totalPoolPoints / totalInvolved;
+                        porsiRasio = 1 / totalInvolved;
                     }
 
-                    skorPeta[op] += Math.round(finalReward); 
-                });
-            }
-        });
+                    involvedOperators.forEach(op => {
+                        if(skorPeta[op] === undefined) skorPeta[op] = 0;
+                        
+                        let finalReward = opShare;
+
+                        if (spp.status === 'Selesai Awal' && msTerlambat < 0) {
+                            let jamLebihAwal = Math.floor(Math.abs(msTerlambat) / (1000 * 60 * 60));
+                            let totalBonus = Math.min(jamLebihAwal * 10, 50); 
+                            finalReward += (totalBonus * porsiRasio); 
+                        } else if (spp.status === 'Telat Selesai' && msTerlambat > 0) {
+                            let jamTelat = Math.floor(msTerlambat / (1000 * 60 * 60));
+                            let totalPenalty = 10 + (jamTelat * 5); 
+                            finalReward -= (totalPenalty * porsiRasio); 
+                        }
+
+                        skorPeta[op] += Math.round(finalReward); 
+                    });
+                } // Penutup 1 yang terhapus sebelumnya
+            } // Penutup 2 yang terhapus sebelumnya
+        }); // Penutup 3 yang terhapus sebelumnya
 
         let susunanRangking = Object.keys(skorPeta).map(nama => { return { nama: nama, poin: skorPeta[nama] }; }).sort((a, b) => b.poin - a.poin);
         if (window.isRankingMinimized) susunanRangking = susunanRangking.slice(0, 5);
@@ -4055,7 +4080,7 @@ const statTotalProgress = document.getElementById('stat-total-progress');
         }
 
         let processPoints = 10; 
-        if (isSelesai) processPoints = 50; 
+        if (isSelesai) processPoints = 10; 
 
         let sisaWaktuSavedHTML = "-";
         let delayMs = 0;
