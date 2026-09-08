@@ -767,7 +767,8 @@
                 <h3>📊 Aktual Produk Terbanyak Selesai <span id="matrix-status-badge" class="badge bg-reguler" style="margin-left: 15px; font-size: 10px;">Mode: Top 5</span></h3>
                 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                     <input type="text" id="search-aktual" class="local-search" placeholder="Cari di tabel Aktual Produk..." onkeyup="window.performGlobalSearch()">
-                    <button class="btn-minimize" onclick="togglePanel('table-aktual-container', this)">➖ Minimize</button>
+                   
+ <button class="btn-minimize" onclick="togglePanel('table-aktual-container', this)">➖ Minimize</button>
                     <button class="btn-export" onclick="exportTableToCSV('product-actual-table', 'Aktual_Produk.csv')">📥 Export Excel</button>
                 </div>
             </div>
@@ -780,8 +781,35 @@
             <div class="toggle-matrix-container">
                 <button type="button" id="btn-toggle-view" class="btn-toggle-matrix" onclick="toggleProductMatrixView()">🔍 Tampilkan Semua Produk Selesai</button>
             </div>
-        </div>
 
+<div id="tv-inventory-container" style="display: none; margin-top: 35px; border-top: 1px dashed var(--emerald-glow); padding-top: 20px;">
+                <div class="header-flex">
+                    <h3 style="color: var(--emerald-glow) !important; font-size: 16px; margin: 0; display: flex; align-items: center; gap: 10px;">
+                        📦 Data Inventori (Barang Ready)
+                        <span id="tv-inventory-badge" class="badge bg-reguler" style="font-size: 10px;">Mode: Top 5</span>
+                    </h3>
+                    <button class="btn-minimize" onclick="togglePanel('tv-ready-stock-table-container', this)">➖ Minimize</button>
+                </div>
+                
+                <div class="table-container" id="tv-ready-stock-table-container">
+                    <table id="tv-ready-stock-table" style="background: rgba(15, 23, 42, 0.6);">
+                        <thead>
+                            <tr>
+                                <th>Nama Produk</th>
+                                <th style="text-align: center; width: 250px;">Total Produk Selesai (Ready)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tv-ready-stock-body">
+                            <tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding: 15px;">Loading data stok...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="toggle-matrix-container">
+                    <button type="button" id="btn-toggle-tv-inventory" class="btn-toggle-matrix" onclick="toggleTvInventoryView()">🔍 Tampilkan Semua Barang Ready</button>
+                </div>
+            </div>
+	 </div> 
         <div class="panel" id="panel-inbox">
             <h3>📥 Inbox Pesan Otomatis: SPP Masuk (Aktif / Berjalan)</h3>
             <div class="table-container">
@@ -1398,6 +1426,7 @@
     window.isShipmentMinimized = true; 
     window.isDevInjectMinimized = true;
     window.isReadyStockMinimized = true;
+    window.isTvInventoryMinimized = true;
     window.isTVModeReady = false; 
     window.isMaintenanceActive = false;
     window.maintenanceMessage = "Sistem sedang diperbaiki.";
@@ -2407,10 +2436,19 @@ window.updateConditionDropdown = function(matchedSPP) {
 
   window.applyRoleAccess = function() {
         const panels = ['panel-analytics','panel-aktual','panel-inbox','panel-monitoring','panel-input-prod','panel-history-prod','panel-ranking','panel-surat-perintah','panel-input-spp','panel-history-spp','panel-internal-produksi','panel-input-shipment','panel-history-shipment'];
+        
         panels.forEach(id => {
             let el = document.getElementById(id);
             if(el) el.style.display = 'block';
         });
+
+        const tvInv = document.getElementById('tv-inventory-container');
+        if (tvInv) {
+            // Beri akses panel inventori baru ke role berikut:
+            const allowedRoles = ["TV Mode", "Admin", "Septi Utami", "Manager Warehouse", "Managemen", "Randi", "Febri"];
+            tvInv.style.display = allowedRoles.includes(window.currentUserRole) ? 'block' : 'none';
+        }
+
         document.getElementById('panel-monitoring').style.display = 'flex'; 
         document.getElementById('panel-analytics').style.display = 'grid';
     
@@ -3525,6 +3563,21 @@ const statTotalProgress = document.getElementById('stat-total-progress');
         window.renderReadyStockTable();
     }
 
+window.toggleTvInventoryView = function() {
+        window.isTvInventoryMinimized = !window.isTvInventoryMinimized;
+        const btn = document.getElementById('btn-toggle-tv-inventory');
+        const badge = document.getElementById('tv-inventory-badge');
+        
+        if (window.isTvInventoryMinimized) { 
+            btn.innerHTML = "🔍 Tampilkan Semua Barang Ready"; 
+            if(badge) { badge.innerHTML = "Mode: Top 5"; badge.className = "badge bg-reguler"; }
+        } else { 
+            btn.innerHTML = "🗜️ Sembunyikan Detail"; 
+            if(badge) { badge.innerHTML = "Mode: Seluruh Data"; badge.className = "badge bg-buffer"; }
+        }
+        window.renderReadyStockTable();
+    }
+
     window.toggleProductMatrixView = function() {
         window.isMatrixMinimized = !window.isMatrixMinimized;
         const btn = document.getElementById('btn-toggle-view'); const badge = document.getElementById('matrix-status-badge');
@@ -4264,16 +4317,21 @@ window.calculateAndRenderRanking = function() {
         });
     }
 
-    window.renderReadyStockTable = function() {
+   window.renderReadyStockTable = function() {
         const tbody = document.getElementById('ready-stock-body');
-        if(!tbody) return;
-        tbody.innerHTML = '';
+        const tvBody = document.getElementById('tv-ready-stock-body');
+        if(!tbody && !tvBody) return;
+        
+        if (tbody) tbody.innerHTML = '';
+        if (tvBody) tvBody.innerHTML = '';
         
         const filteredSPP = window.getFilteredNonSPLSPP(); 
         const produkSelesaiEksternal = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped && !window.isInternalProduct(i.product));
         
         if(produkSelesaiEksternal.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding: 15px;">Belum ada stok produk yang siap dikirim di gudang.</td></tr>';
+            let emptyMsg = '<tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding: 15px;">Belum ada stok produk yang siap dikirim di gudang.</td></tr>';
+            if(tbody) tbody.innerHTML = emptyMsg;
+            if(tvBody) tvBody.innerHTML = emptyMsg;
             return;
         }
 
@@ -4283,13 +4341,40 @@ window.calculateAndRenderRanking = function() {
         let stockArray = Object.keys(stockMap).map(nama => { return { nama: nama, jumlah: stockMap[nama] }; }).sort((a, b) => b.jumlah - a.jumlah);
 
         let displayStock = window.isReadyStockMinimized ? stockArray.slice(0, 5) : stockArray;
+        
+        // Logika baru untuk TV/Admin panel
+        let displayStockTV = window.isTvInventoryMinimized ? stockArray.slice(0, 5) : stockArray;
+        
+        // Kalkulasi Total Keseluruhan (tidak ikut terpotong)
+        let totalQty = stockArray.reduce((sum, item) => sum + item.jumlah, 0);
+        let totalRowHTML = `<tr>
+            <td><strong style="color: var(--warning-glow); font-size: 14px;">TOTAL KESELURUHAN (BARANG READY)</strong></td>
+            <td style="text-align: center;"><span style="color:var(--warning-glow); font-weight:900; font-size:14px; background:rgba(251, 191, 36, 0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(251, 191, 36, 0.3);">${totalQty} Unit Total</span></td>
+        </tr>`;
 
-        displayStock.forEach(item => {
-            tbody.innerHTML += `<tr>
-                <td><strong style="color: var(--text-main);">${item.nama}</strong></td>
-                <td style="text-align: center;"><span style="color:var(--emerald-glow); font-weight:800; font-size:13px; background:rgba(16,185,129,0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">${item.jumlah} Unit Selesai</span></td>
-            </tr>`;
-        });
+        // Render tabel aslinya (Logistik Gudang)
+        if(tbody) {
+            let html = '';
+            displayStock.forEach(item => {
+                html += `<tr>
+                    <td><strong style="color: var(--text-main);">${item.nama}</strong></td>
+                    <td style="text-align: center;"><span style="color:var(--emerald-glow); font-weight:800; font-size:13px; background:rgba(16,185,129,0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">${item.jumlah} Unit Selesai</span></td>
+                </tr>`;
+            });
+            tbody.innerHTML = html + totalRowHTML;
+        }
+
+        // Render tabel khusus (Admin, TV, Manager)
+        if(tvBody) {
+            let tvHtml = '';
+            displayStockTV.forEach(item => {
+                tvHtml += `<tr>
+                    <td><strong style="color: var(--text-main);">${item.nama}</strong></td>
+                    <td style="text-align: center;"><span style="color:var(--emerald-glow); font-weight:800; font-size:13px; background:rgba(16,185,129,0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">${item.jumlah} Unit Selesai</span></td>
+                </tr>`;
+            });
+            tvBody.innerHTML = tvHtml + totalRowHTML;
+        }
     };
 
     window.renderShipmentTable = function() {
@@ -5240,6 +5325,12 @@ window.calculateAndRenderRanking = function() {
         const tbody = document.getElementById('operator-history-body'); 
         
         let rawLogs = window.getFilteredLogs();
+        
+        // Memaksa tampilan History 2 hanya "Hari Ini" jika sedang dalam TV Mode
+        if (window.currentUserRole === "TV Mode") {
+            rawLogs = window.databaseLogOperator.filter(log => window.isWithinTimeframe(log.timestampMs, 'today'));
+        }
+        
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
         
         let filteredLogs = rawLogs.filter(log => {
