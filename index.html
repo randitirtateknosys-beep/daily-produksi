@@ -17,7 +17,7 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name= "google-site-verification=zqHuxuilAa1cMNn7tXojTgNF3EqS_CsUDItVEDAX43w"/>
+	<meta name="google-site-verification" content="zqHuxuilAa1cMNn7tXojTgNF3EqS_CsUDItVEDAX43w" />
 	<meta name="google-site-verification" content="YPrEGWr7eVHfcBkQ4zaBQaTLXuADwT7a69QAOu9VQcE" />
     <title>Daily Report Produksi - PT. Tirta Teknosys</title>
     
@@ -257,18 +257,27 @@
         .btn-delete { background: rgba(244, 63, 94, 0.15); color: #f43f5e; border: 1px solid #fda4af; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 800; text-transform: uppercase; }
         .btn-export { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #6ee7b7; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 800; text-transform: uppercase; }
 
-        .table-container { overflow-x: auto; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); transition: 0.3s ease; }
-        table { width: 100%; border-collapse: collapse; text-align: left; background: rgba(15, 23, 42, 0.4); }
-        th, td { padding: 14px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 13.5px; white-space: nowrap; }
+                th, td { padding: 14px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 13.5px; white-space: nowrap; }
         th { background: rgba(15, 23, 42, 0.8); color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
 
-.table-container { overflow-x: auto; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); transition: 0.3s ease; cursor: grab; }
-        .table-container:active { cursor: grabbing; }
-        .table-container::-webkit-scrollbar { height: 10px; width: 10px; }
-        .table-container::-webkit-scrollbar-thumb { background: var(--blue-glow); border-radius: 6px; }
-        .table-container::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 6px; }
-        
-        table { width: 100%; border-collapse: collapse; text-align: left; background: rgba(15, 23, 42, 0.4); }
+.table-container { 
+    overflow-x: auto; 
+    border-radius: 8px; 
+    border: 1px solid rgba(255, 255, 255, 0.05); 
+    transition: 0.3s ease; 
+    cursor: grab; 
+}
+.table-container:active { cursor: grabbing; }
+.table-container::-webkit-scrollbar { height: 10px; width: 10px; }
+.table-container::-webkit-scrollbar-thumb { background: var(--blue-glow); border-radius: 6px; }
+.table-container::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 6px; }
+
+table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    text-align: left; 
+    background: rgba(15, 23, 42, 0.4); 
+}
 
         .badge { padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; display: inline-block; }
         .bg-reguler { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); } .bg-buffer { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); } .bg-urgent { background: rgba(244, 63, 94, 0.15); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.3); }
@@ -1426,7 +1435,18 @@
       measurementId: "G-7C343LPLT6"
     };
 
-   
+  // --- TAMBAHAN FUNGSI NOTIFIKASI PUSH ---
+    const GAS_NOTIF_URL = "https://script.google.com/macros/s/AKfycbxfywMlEUgXdTTSgPvVRU2i9z2rYEu5bxVC-JJRTR6BQe72Bp-y4BBfjzdnpt4J-y2e/exec"; 
+
+    window.sendPushNotification = function(title, msg) {
+        fetch(GAS_NOTIF_URL, {
+            method: 'POST',
+            body: JSON.stringify({ title: title, message: msg }),
+            headers: { 'Content-Type': 'text/plain' } // bypass CORS
+        }).catch(e => console.log("Gagal kirim notif: ", e));
+    }; 
+
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const auth = firebase.auth(); 
@@ -1460,8 +1480,10 @@ window.addWorkingHours = function(startMs, hoursToAdd) {
         let currentMs = startMs;
         let msToAdd = Math.abs(hoursToAdd * 60 * 60 * 1000);
         let direction = hoursToAdd >= 0 ? 1 : -1;
+	let maxIterations = 10000;
 
-        while (msToAdd > 0) {
+        while (msToAdd > 0 && maxIterations > 0) {
+        maxIterations--;
             let d = new Date(currentMs);
             let day = d.getDay();
             let hour = d.getHours();
@@ -1503,15 +1525,16 @@ window.addWorkingHours = function(startMs, hoursToAdd) {
         return currentMs;
     };
     
-    window.getWorkingTimeDiff = function(startMs, endMs) {
-        let isNegative = startMs > endMs;
-        let t1 = isNegative ? endMs : startMs;
-        let t2 = isNegative ? startMs : endMs;
+   window.getWorkingTimeDiff = function(startMs, endMs) {
+    let isNegative = startMs > endMs;
+    let t1 = isNegative ? endMs : startMs;
+    let t2 = isNegative ? startMs : endMs;
+    let workingMs = 0;
+    let current = t1;
+    let maxIterations = 10000;
 
-        let workingMs = 0;
-        let current = t1;
-
-        while (current < t2) {
+    while (current < t2 && maxIterations > 0) {
+        maxIterations--;
             let d = new Date(current);
             let day = d.getDay();
             let hour = d.getHours();
@@ -1636,8 +1659,9 @@ body.light-theme .welcome-box {
             }
         }
     }
-    setTimeout(setupThemeToggle, 2000);
-
+    document.addEventListener('DOMContentLoaded', () => {
+    setupThemeToggle();
+});
     setTimeout(() => { window.isTVModeReady = true; }, 5000); 
 
     window.setupUserPresence = function(roleName) {
@@ -3215,57 +3239,56 @@ window.beeShowDynamicStats = function() {
     const AI_GAS_URL = "https://script.google.com/macros/s/AKfycbyzvJ1f3FXMTLEXeU98IHy-FyBEPUG8Vhvf8PrfAYc4mAiZzmW28trfa_u4-Bo-J4Ujww/exec";
 
     window.sendToBeeAI = async function() {
-        const inputEl = document.getElementById('bee-user-input');
-        const sendBtn = document.getElementById('bee-send-btn');
-        const historyEl = document.getElementById('bee-boot-text');
+    const inputEl = document.getElementById('bee-user-input');
+    const sendBtn = document.getElementById('bee-send-btn');
+    const historyEl = document.getElementById('bee-boot-text');
+    
+    const userText = inputEl.value.trim();
+    if(!userText) return;
+    
+    inputEl.value = "";
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = "Memproses...";
+    
+    historyEl.innerHTML += `<br><br><span style="color:var(--cyan-glow);"><b>Anda:</b></span> ${userText}<br><span id="bee-typing-indicator" style="color:var(--text-muted); font-size:11px;"><i>BEE-BOOT sedang berpikir... ⏳</i></span>`;
+    historyEl.parentElement.scrollTop = historyEl.parentElement.scrollHeight;
+    
+    const activeSPPCount = window.databaseMasterSPP.filter(s => s.status !== "Selesai").length;
+    const totalLogs = window.databaseLogOperator.length;
+    
+    try {
+        const res = await fetch(AI_GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ 
+                message: userText, 
+                context: { totalSPPBerkalan: activeSPPCount, totalUpdateAktualHarian: totalLogs, currentUser: window.currentUserRole } 
+            })
+        });
         
-        const userText = inputEl.value.trim();
-        if(!userText) return;
+        if (!res.ok) throw new Error("Server gagal merespons");
         
-        // Reset input dan kunci tombol sementara
-        inputEl.value = "";
-        sendBtn.disabled = true;
-        sendBtn.innerHTML = "Memproses...";
+        const textResponse = await res.text();
+        const data = JSON.parse(textResponse);
         
-        // Tampilkan pesan operator di layar
-        historyEl.innerHTML += `<br><br><span style="color:var(--cyan-glow);"><b>Anda:</b></span> ${userText}<br><span id="bee-typing-indicator" style="color:var(--text-muted); font-size:11px;"><i>BEE-BOOT sedang berpikir... ⏳</i></span>`;
-        historyEl.parentElement.scrollTop = historyEl.parentElement.scrollHeight;
+        document.getElementById('bee-typing-indicator').remove();
         
-        // Kumpulkan konteks data realtime agar AI terlihat pintar
-        const activeSPPCount = window.databaseMasterSPP.filter(s => s.status !== "Selesai").length;
-        const totalLogs = window.databaseLogOperator.length;
-        
-        try {
-            const res = await fetch(AI_GAS_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' }, // Pakai text/plain untuk bypass preflight CORS GAS
-                body: JSON.stringify({ 
-                    message: userText, 
-                    context: { totalSPPBerkalan: activeSPPCount, totalUpdateAktualHarian: totalLogs, currentUser: window.currentUserRole } 
-                })
-            });
-            
-            const data = await res.json();
-            
-            // Hapus tulisan "sedang berpikir"
-            document.getElementById('bee-typing-indicator').remove();
-            
-            // Tulis jawaban dari Gemini
-            if(data.reply) {
-                historyEl.innerHTML += `<br><br><span style="color:var(--emerald-glow);"><b>BEE-BOOT:</b></span> ${window.sanitizeHTML(data.reply)}`;
-            } else {
-                historyEl.innerHTML += `<br><br><span style="color:var(--emerald-glow);"><b>BEE-BOOT:</b></span> Terjadi kesalahan sistem.`;
-            }
-        } catch(e) {
-            document.getElementById('bee-typing-indicator').remove();
-            historyEl.innerHTML += `<br><br><span style="color:var(--danger-glow);"><b>BEE-BOOT:</b></span> Koneksi ke server AI terputus. Pastikan URL Apps Script sudah benar.`;
+        if(data.reply) {
+            historyEl.innerHTML += `<br><br><span style="color:var(--emerald-glow);"><b>BEE-BOOT:</b></span> ${window.sanitizeHTML(data.reply)}`;
+        } else {
+            historyEl.innerHTML += `<br><br><span style="color:var(--emerald-glow);"><b>BEE-BOOT:</b></span> Terjadi kesalahan sistem.`;
         }
-        
-        // Buka kunci tombol
+    
+} catch(e) {
+        document.getElementById('bee-typing-indicator').remove();
+        historyEl.innerHTML += `<br><br><span style="color:var(--danger-glow);"><b>BEE-BOOT:</b></span> Terjadi kendala teknis: ${e.message}`;
+    } finally {
         sendBtn.disabled = false;
         sendBtn.innerHTML = "Kirim Pesan";
         historyEl.parentElement.scrollTop = historyEl.parentElement.scrollHeight;
     }
+}
+
     const PENJEDAAN_STATUS_LIST = ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'];
 
     window.toggleCustomDate = function() {
@@ -3843,7 +3866,10 @@ window.calculateAndRenderRanking = function() {
         btnSubmit.disabled = false;
         btnSubmit.style.background = "linear-gradient(135deg, #7c3aed, #a855f7)";
         
-        alert("Terimakasih data spp yang anda input akan kami teruskan ke bagian produksi" + (uploadedFileUrl ? " beserta dokumen lampiran!" : "!"));
+// Pemicu Notifikasi SPP
+        window.sendPushNotification("SPP Baru Masuk 🚨", `No SPP: ${noSPP} | Produk: ${product}`);       
+
+ alert("Terimakasih data spp yang anda input akan kami teruskan ke bagian produksi" + (uploadedFileUrl ? " beserta dokumen lampiran!" : "!"));
     });
 
     document.getElementById('spl-form').addEventListener('submit', function(e) {
@@ -3877,7 +3903,11 @@ window.calculateAndRenderRanking = function() {
             isShipped: false 
         });
         this.reset(); window.resetDateTimeInputs();
-        alert("Surat Perintah Langsung telah masuk ke antrean operator Produksi!");
+       
+// Pemicu Notifikasi SPL
+        window.sendPushNotification("SPL Baru Masuk ⚡", `No SPL: ${noSPL} | Produk: ${product}`);
+
+ alert("Surat Perintah Langsung telah masuk ke antrean operator Produksi!");
     });
 
     document.getElementById('internal-out-form').addEventListener('submit', function(e) {
@@ -3947,8 +3977,15 @@ window.calculateAndRenderRanking = function() {
 
         document.getElementById('shipment-carrier-manual').style.display = "none"; 
         window.resetDateTimeInputs();
-        alert("Terimakasih data yang sudah anda berikan akan terekam di log history gudang");
-    });
+
+// Mencari No Produksi dari histori log terkait SPP ini
+        let logTerkait = window.databaseLogOperator.find(log => log.noSPP === sppAsal && log.noProd && log.noProd !== "-");
+        let noProdKirim = logTerkait ? logTerkait.noProd : "Tidak ada no produksi";
+
+        // Pemicu Notifikasi Pengiriman
+        window.sendPushNotification("Barang Dikirim 🚚", `No Prod: ${noProdKirim} | Produk: ${productSelection} | Tujuan: ${customer}`);
+        
+        alert("Terimakasih data yang sudah anda berikan akan terekam di log history gudang");});
 
     const devInjectForm = document.getElementById('dev-inject-form');
     if(devInjectForm) {
@@ -4073,8 +4110,12 @@ window.calculateAndRenderRanking = function() {
             }
             document.getElementById('prod-target-ops').value = "SPL (Manual)";
             // Pastikan jika tetap 0 karena pertama kali belum submit, beri default 1 agar tidak error
-            document.getElementById('prod-deadline-val').value = splJam > 0 ? splJam : 1; 
-            document.getElementById('prod-deadline-unit').value = "jam";
+            
+document.getElementById('prod-deadline-val').value = splJam;
+if (splJam === 0) {
+    document.getElementById('prod-deadline-val').placeholder = "Set manual (0)";
+}
+document.getElementById('prod-deadline-unit').value = "jam";
         } else {
             document.getElementById('prod-target-ops').value = "";
             document.getElementById('prod-deadline-val').value = "";
@@ -4257,6 +4298,16 @@ window.calculateAndRenderRanking = function() {
             document.getElementById('prod-operator').value = window.currentUserRole;
         }
         
+// Pemicu Notifikasi Laporan
+        let notifTitle = "Laporan Di-submit 📝";
+        let notifMsg = `Jam: ${formattedTimeStr} | Kondisi Lapangan: ${condition}`;
+        
+        if (isSelesai) {
+            notifTitle = matchedSPP.isSPL ? "SPL Selesai Dikerjakan ✅" : "SPP Selesai Dikerjakan ✅";
+            notifMsg = `SPP/SPL: ${sppNo} | Produk: ${matchedSPP.product}`;
+        }
+        window.sendPushNotification(notifTitle, notifMsg);
+
         alert("Pekerjaan berhasil diperbarui! Terimakasih telah melakukan pelaporan.");
     });
 
