@@ -582,6 +582,7 @@ table {
         <div class="global-filter-bar" id="top-nav">
             <div class="user-identity">
                 <span>Login sebagai: <b id="current-user-role">Guest</b></span>
+		<button class="btn-action-trigger" style="background:var(--emerald-glow); color:#fff; border: 1px solid #10b981;" onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
                 <button class="btn-action-trigger" style="background:var(--blue-glow); color:#000;" onclick="openChangePassword()">⚙️ GANTI SANDI</button>
                 <button class="btn-logout" onclick="logout()">LOG OUT</button>
             </div>
@@ -1984,6 +1985,13 @@ document.getElementById('bee-boot-container').style.display = 'flex';
     window.dbPushChat = (data) => db.ref('messages').push(data);
     window.dbRemoveChat = (key) => db.ref('messages/' + key).remove();
     window.dbClearAllChat = () => db.ref('messages').remove();
+
+window.aktifkanNotifikasiManual = function() {
+    // Memanggil popup OneSignal secara manual saat tombol diklik
+    window.OneSignalDeferred.push(function(OneSignal) {
+        OneSignal.Slidedown.promptPush();
+    });
+};
 
     window.checkLogin = function(bypassWelcome = false) {
         const inputEmail = document.getElementById('login-email').value.trim();
