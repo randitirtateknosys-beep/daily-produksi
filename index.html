@@ -9,8 +9,16 @@
     await OneSignal.init({
       appId: "4fd92645-7c36-4b76-a426-0e087d3228bd",
       notifyButton: {
-        enable: true, // Memunculkan tombol lonceng berlangganan di pojok layar
+        enable: true, 
       }
+    });
+
+    // Menambahkan deteksi ketika user berhasil berlangganan
+    OneSignal.User.PushSubscription.addEventListener("change", function(event) {
+        if (event.current.optedIn) {
+            // Memunculkan pesan sukses di layar
+            alert("✅ Akses Diterima! HP/Perangkat ini sekarang akan menerima notifikasi SPP secara Real-time.");
+        }
     });
   });
 </script>
