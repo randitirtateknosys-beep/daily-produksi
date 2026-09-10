@@ -1438,13 +1438,14 @@ table {
   // --- TAMBAHAN FUNGSI NOTIFIKASI PUSH ---
     const GAS_NOTIF_URL = "https://script.google.com/macros/s/AKfycbxfywMlEUgXdTTSgPvVRU2i9z2rYEu5bxVC-JJRTR6BQe72Bp-y4BBfjzdnpt4J-y2e/exec"; 
 
-    window.sendPushNotification = function(title, msg) {
-        fetch(GAS_NOTIF_URL, {
-            method: 'POST',
-            body: JSON.stringify({ title: title, message: msg }),
-            headers: { 'Content-Type': 'text/plain' } // bypass CORS
-        }).catch(e => console.log("Gagal kirim notif: ", e));
-    }; 
+window.sendPushNotification = function(title, msg) {
+    fetch(GAS_NOTIF_URL, {
+        method: 'POST',
+        mode: 'no-cors', // TAMBAHKAN BARIS INI
+        body: JSON.stringify({ title: title, message: msg }),
+        headers: { 'Content-Type': 'text/plain' } 
+    }).catch(e => console.log("Gagal kirim notif: ", e));
+};
 
 
     firebase.initializeApp(firebaseConfig);
