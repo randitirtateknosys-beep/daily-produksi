@@ -12,8 +12,6 @@
         enable: true, // Memunculkan tombol lonceng berlangganan di pojok layar
       }
     });
-    // Memaksa munculnya popup permintaan notifikasi
-    OneSignal.Slidedown.promptPush();
   });
 </script>
 
@@ -1995,7 +1993,17 @@ document.getElementById('bee-boot-container').style.display = 'flex';
         auth.signInWithEmailAndPassword(inputEmail, inputPass)
             .then((userCredential) => {
                 window.loginSelesai = true; 
+                
+                // === TAMBAHKAN KODE INI DI SINI ===
+                // Memicu popup notifikasi setelah user mengklik tombol login (Browser tidak akan memblokirnya karena ada interaksi klik dari user)
+                window.OneSignalDeferred.push(function(OneSignal) {
+                    OneSignal.Slidedown.promptPush();
+                });
+                // ==================================
+
                 let loader = document.getElementById('fast-loader');
+                // ... (sisa kode login Anda di bawahnya tetap sama)
+
                 if (loader) loader.remove();
 
                 let userFound = userRoles[inputEmail.toLowerCase()] || { role: "Guest", panel: "viewonly" };
