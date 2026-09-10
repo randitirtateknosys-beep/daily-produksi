@@ -8,7 +8,12 @@
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: "4fd92645-7c36-4b76-a426-0e087d3228bd",
+      notifyButton: {
+        enable: true, // Memunculkan tombol lonceng berlangganan di pojok layar
+      }
     });
+    // Memaksa munculnya popup permintaan notifikasi
+    OneSignal.Slidedown.promptPush();
   });
 </script>
 
