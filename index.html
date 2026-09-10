@@ -590,7 +590,9 @@ table {
         <div class="global-filter-bar" id="top-nav">
             <div class="user-identity">
                 <span>Login sebagai: <b id="current-user-role">Guest</b></span>
-		<button class="btn-action-trigger" style="background:var(--emerald-glow); color:#fff; border: 1px solid #10b981;" onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
+		<button class="btn-action-trigger" style="background:var(--emerald-glow); color:#fff; border: 1px solid #10b981;" 
+
+onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
                 <button class="btn-action-trigger" style="background:var(--blue-glow); color:#000;" onclick="openChangePassword()">⚙️ GANTI SANDI</button>
                 <button class="btn-logout" onclick="logout()">LOG OUT</button>
             </div>
@@ -1995,9 +1997,19 @@ document.getElementById('bee-boot-container').style.display = 'flex';
     window.dbClearAllChat = () => db.ref('messages').remove();
 
 window.aktifkanNotifikasiManual = function() {
-    // Memanggil popup OneSignal secara manual saat tombol diklik
     window.OneSignalDeferred.push(function(OneSignal) {
-        OneSignal.Slidedown.promptPush();
+        // Cek langsung status langganan di HP tersebut
+        let isSubscribed = OneSignal.User.PushSubscription.optedIn;
+        
+        if (isSubscribed) {
+            // Jika sudah izinkan
+            alert("✅ STATUS: SUDAH AKTIF!\n\nHP Anda sudah berhasil terhubung ke sistem dan siap menerima notifikasi SPP Real-time.");
+        } else {
+            // Jika belum izinkan
+            alert("⚠️ STATUS: BELUM AKTIF.\n\nSistem akan memunculkan popup permintaan izin. Silakan klik 'Allow' atau 'Izinkan' di layar Anda.");
+            // Paksa munculkan prompt OneSignal
+            OneSignal.Slidedown.promptPush();
+        }
     });
 };
 
