@@ -1998,16 +1998,13 @@ document.getElementById('bee-boot-container').style.display = 'flex';
 
 window.aktifkanNotifikasiManual = function() {
     window.OneSignalDeferred.push(function(OneSignal) {
-        // Cek langsung status langganan di HP tersebut
         let isSubscribed = OneSignal.User.PushSubscription.optedIn;
         
         if (isSubscribed) {
-            // Jika sudah izinkan
+            // Jika SUDAH aktif, alert boleh muncul
             alert("✅ STATUS: SUDAH AKTIF!\n\nHP Anda sudah berhasil terhubung ke sistem dan siap menerima notifikasi SPP Real-time.");
         } else {
-            // Jika belum izinkan
-            alert("⚠️ STATUS: BELUM AKTIF.\n\nSistem akan memunculkan popup permintaan izin. Silakan klik 'Allow' atau 'Izinkan' di layar Anda.");
-            // Paksa munculkan prompt OneSignal
+            // Jika BELUM aktif, JANGAN pakai alert. Langsung panggil popup OneSignal!
             OneSignal.Slidedown.promptPush();
         }
     });
