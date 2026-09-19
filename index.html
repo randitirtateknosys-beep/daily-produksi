@@ -2,27 +2,10 @@
 <html lang="id">
 <head>
 
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
+  // Script cadangan agar tombol tidak error saat ditekan di lokal
   window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "4fd92645-7c36-4b76-a426-0e087d3228bd",
-      notifyButton: {
-        enable: true, 
-      }
-    });
-
-    // Menambahkan deteksi ketika user berhasil berlangganan
-    OneSignal.User.PushSubscription.addEventListener("change", function(event) {
-        if (event.current.optedIn) {
-            // Memunculkan pesan sukses di layar
-            alert("✅ Akses Diterima! HP/Perangkat ini sekarang akan menerima notifikasi SPP secara Real-time.");
-        }
-    });
-  });
 </script>
-
     <script>
         window.loginSelesai = false;
     </script>
@@ -789,6 +772,58 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
                 </div>
             </div>
 
+<!-- PANEL REKAP KHUSUS (DEV, ADMIN, MGR, MANAJEMEN, TV) -->
+<div class="panel" id="panel-rekap-khusus" style="display: none; border-color: var(--emerald-glow); margin-bottom: 25px; overflow: hidden; max-width: 100%;">
+    <div class="header-flex">
+        <h3 style="color: var(--emerald-glow) !important; margin: 0;">📊 Rekap Total SPP Khusus</h3>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <!-- Fitur Pencarian & Filter Tanggal -->
+            <input type="text" id="search-rekap-khusus" class="local-search" placeholder="Cari No SPP atau Nama..." onkeyup="window.renderRekapKhususTable()">
+            <select id="filter-waktu-rekap" class="local-search" style="min-width: 120px;" onchange="window.toggleCustomDateRekap()">
+                <option value="all" selected>Semua Waktu</option>
+                <option value="today">Hari Ini</option>
+                <option value="week">Minggu Ini</option>
+                <option value="month">Bulan Ini</option>
+                <option value="year">Tahun Ini</option>
+                <option value="custom">Pilih Tanggal (Custom)...</option>
+            </select>
+            <div id="custom-date-rekap-container" style="display:none; align-items:center; gap:5px;">
+                <input type="date" id="custom-rekap-start" class="local-search" onchange="window.renderRekapKhususTable()">
+                <span style="color:#fff; font-size:12px;">s/d</span>
+                <input type="date" id="custom-rekap-end" class="local-search" onchange="window.renderRekapKhususTable()">
+            </div>
+            <button class="btn-minimize" onclick="togglePanel('table-rekap-khusus-container', this)">➖ Minimize</button>
+            <button class="btn-export" onclick="exportTableToCSV('rekap-khusus-table', 'Rekap_SPP_Manajemen.csv')">📥 Export Excel</button>
+        </div>
+    </div>
+
+    <!-- STRUKTUR TABEL YANG BENAR & ANTI MELEBAR KE LUAR -->
+    <div class="table-container" id="table-rekap-khusus-container" style="overflow-x: auto; width: 100%; display: block;">
+        <table id="rekap-khusus-table" style="width: 100%; min-width: 1300px; table-layout: fixed; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">NO SPP</th>
+                    <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">NO BPMP</th>
+                    <th style="width: 250px; padding: 12px; white-space: normal; vertical-align: middle;">NAMA BARANG</th>
+                    <th style="width: 60px; padding: 12px; text-align: center; vertical-align: middle;">QTY</th>
+                    <th style="width: 130px; padding: 12px; white-space: normal; vertical-align: middle;">TGL MULAI DIKERJAKAN</th>
+                    <th style="width: 130px; padding: 12px; white-space: normal; vertical-align: middle;">TARGET SELESAI</th>
+                    <th style="width: 130px; padding: 12px; white-space: normal; vertical-align: middle;">TGL SELESAI</th>
+                    <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">NO LPBHP</th>
+                    <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">STATUS</th>
+                    <th style="width: 120px; padding: 12px; white-space: normal; vertical-align: middle;">KET</th>
+                </tr>
+            </thead>
+            <tbody id="rekap-khusus-body">
+                <tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding: 15px;">Loading data...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="toggle-matrix-container">
+        <button type="button" id="btn-toggle-rekap-khusus" class="btn-toggle-matrix" onclick="toggleRekapKhususView()">🔍 Tampilkan Semua Data</button>
+    </div>
+</div>
             <!-- PANEL 2: GRAFIK TREN (Dipindah ke bawah dan dibuat membentang/Full Width) -->
             <div class="panel">
                 <h3>📈 Grafik Tren Volume Produksi (Aktual Barang Selesai)</h3>
@@ -1746,6 +1781,11 @@ body.light-theme .welcome-box {
                 window.renderAdminDokumenTable();
                 window.populateAdminSelectSelesai();
             }
+            
+            // --- TAMBAHAN BARU: Paksa tabel Rekap Khusus update saat dokumen BPMP masuk ---
+            if(window.currentUserRole !== "Guest" && typeof window.renderRekapKhususTable === 'function') {
+                window.renderRekapKhususTable();
+            }
         });
 
         db.ref('messages').limitToLast(50).on('value', snap => {
@@ -2523,6 +2563,15 @@ window.updateConditionDropdown = function(matchedSPP) {
             let el = document.getElementById(id);
             if(el) el.style.display = 'block';
         });
+
+// Aturan pembatasan untuk Panel Rekap Khusus (Tepat sebelum kurung kurawal tutup dari fungsi applyRoleAccess)
+const rekapKhususPanel = document.getElementById('panel-rekap-khusus');
+if (rekapKhususPanel) {
+    const authorizedRoles = [
+        "Randi", "Febri", "Admin", "Septi Utami", "Manager Warehouse", "Managemen", "TV Mode"
+    ];
+    rekapKhususPanel.style.display = authorizedRoles.includes(window.currentUserRole) ? 'block' : 'none';
+}
 
         const tvInv = document.getElementById('tv-inventory-container');
         if (tvInv) {
@@ -3330,46 +3379,6 @@ window.beeShowDynamicStats = function() {
 
     const PENJEDAAN_STATUS_LIST = ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'];
 
-    window.toggleCustomDate = function() {
-        const val = document.getElementById('global-time-filter').value;
-        document.getElementById('custom-date-container').style.display = val === 'custom' ? 'flex' : 'none'; window.applyGlobalFilter();
-    }
-
-    window.toggleCustomExportDokumen = function() {
-        const val = document.getElementById('export-dokumen-filter').value;
-        document.getElementById('custom-export-dokumen-container').style.display = val === 'custom' ? 'flex' : 'none';
-        window.renderAdminDokumenTable();
-    }
-
-    window.applyGlobalFilter = function() {
-        window.refreshAnalyticsAndChart(); 
-        window.renderProductActualMatrix(); 
-        window.renderMasterTable(); 
-        window.renderSPLTable();
-        window.updateSPPDropdown(); 
-        
-        window.updateInternalProductDropdown();
-        window.renderInternalStockTable();
-        window.renderInternalHistoryTable();
-        window.updateWarehouseProductDropdown(); 
-        window.renderReadyStockTable();
-        window.renderShipmentTable();
-        window.renderWarehouseInbox(); 
-        window.renderRealtimeWAMonitor(); 
-        window.calculateAndRenderRanking();
-        window.renderDevInjectTable(); 
-        window.renderOperatorTable();
-        
-        if (typeof window.populateAdminSelectSelesai === "function") {
-            window.populateAdminSelectSelesai();
-        }
-        if (typeof window.renderAdminDokumenTable === "function") {
-            window.renderAdminDokumenTable();
-        }
-  	
-        setTimeout(() => { window.performGlobalSearch(); }, 150);
-    }
-
     window.isWithinTimeframe = function(timestampMs, filter) {
         if (!timestampMs) return false;
         const d = new Date(timestampMs); const now = new Date();
@@ -3425,12 +3434,12 @@ window.beeShowDynamicStats = function() {
 
     window.renderRealtimeWAMonitor = function() {
         const tbody = document.getElementById('wa-monitor-body'); if (!tbody) return;
-        let monitoredSPP = window.databaseMasterSPP.filter(i => !['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && i.isLocked);
-        if (monitoredSPP.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:25px;">Belum ada SPP aktif yang dikunci batas durasinya untuk dimonitor.</td></tr>'; return; }
+        // Ubah sumber data agar mengikuti filter waktu global
+        let monitoredSPP = window.getFilteredSPP().filter(i => !['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && i.isLocked);
+        if (monitoredSPP.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:25px;">Belum ada SPP aktif yang dikunci batas durasinya pada rentang waktu ini.</td></tr>'; return; }
 
         let htmlRows = "";
-monitoredSPP.forEach(item => {
-           
+        monitoredSPP.forEach(item => {
            const isPaused = ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(item.status);
            const timeToCalculate = isPaused ? item.lastInputTimeMs : Date.now();
            const timeDiff = window.getWorkingTimeDiff(timeToCalculate, item.deadlineRawObjectMs);
@@ -3450,11 +3459,10 @@ monitoredSPP.forEach(item => {
             let badgeHTML = window.getStatusBadge(item.status);
 
             htmlRows += `<tr style="border-left: 3px solid var(--purple-glow);"><td><strong>${item.no}</strong></td><td><span style="font-weight:700;">${item.product}</span></td>
-
-<td><code style="color:var(--blue-glow); font-weight:700;">${PRODUCT_DICTIONARY[item.product] ? PRODUCT_DICTIONARY[item.product].hours + " Jam" : "-"}</code></td>
-
-<td><span style="${cdStyle}">${cdText}</span></td><td>${badgeHTML}</td><td><button type="button" class="btn-wa" onclick="sendWhatsAppReminder('${item.no}', '${cdText.replace(/'/g, "\\'")}')">Kirim WA</button></td></tr>`;
-        }); tbody.innerHTML = htmlRows;
+            <td><code style="color:var(--blue-glow); font-weight:700;">${PRODUCT_DICTIONARY[item.product] ? PRODUCT_DICTIONARY[item.product].hours + " Jam" : "-"}</code></td>
+            <td><span style="${cdStyle}">${cdText}</span></td><td>${badgeHTML}</td><td><button type="button" class="btn-wa" onclick="sendWhatsAppReminder('${item.no}', '${cdText.replace(/'/g, "\\'")}')">Kirim WA</button></td></tr>`;
+        }); 
+        tbody.innerHTML = htmlRows;
     }
 
     window.sendWhatsAppReminder = function(sppNo, countdownText) {
@@ -3615,10 +3623,349 @@ const statTotalProgress = document.getElementById('stat-total-progress');
         dataJadi.forEach(item => { tbody.innerHTML += `<tr><td><strong>${item.namaProduk}</strong></td><td><span class="badge bg-reguler">${item.totalUnit} Unit Total</span></td><td>${item.stringNoProd}</td><td><span style="color:var(--emerald-glow); font-weight:800;">${item.jmlSelesai} (Di Gudang)</span></td><td><b style="color:var(--cyan-glow); background:rgba(14,213,192,0.1); padding:4px 10px; border-radius:4px; border:1px solid rgba(14,213,192,0.3);">📦 ${item.unitKeluar} Digunakan/Dikirim</b></td></tr>`; });
     };
 
+window.isWithinTimeframeRekap = function(timestampMs, filter) {
+    if (!timestampMs) return false;
+    const d = new Date(timestampMs); 
+    const now = new Date();
+    if (filter === 'today') return d.toDateString() === now.toDateString();
+    else if (filter === 'week') { 
+        const start = new Date(now.setDate(now.getDate() - now.getDay())); 
+        start.setHours(0,0,0,0); 
+        return d >= start; 
+    }
+    else if (filter === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    else if (filter === 'year') return d.getFullYear() === now.getFullYear();
+    else if (filter === 'custom') {
+        const startD = document.getElementById('custom-rekap-start').value; 
+        const endD = document.getElementById('custom-rekap-end').value;
+        if(!startD || !endD) return true; 
+        const st = new Date(startD).setHours(0,0,0,0); 
+        const en = new Date(endD).setHours(23,59,59,999);
+        return timestampMs >= st && timestampMs <= en;
+    } 
+    return true;
+};
+
+window.isRekapKhususMinimized = true;
+
+window.toggleRekapKhususView = function() {
+    window.isRekapKhususMinimized = !window.isRekapKhususMinimized;
+    const btn = document.getElementById('btn-toggle-rekap-khusus');
+    if (btn) {
+        btn.innerHTML = window.isRekapKhususMinimized ? "🔍 Tampilkan Semua Data" : "🗜️ Sembunyikan Detail";
+    }
+    window.renderRekapKhususTable();
+};
+
+window.renderRekapKhususTable = function() {
+    const tbody = document.getElementById('rekap-khusus-body');
+    if(!tbody) return;
+
+    let filterType = document.getElementById('filter-waktu-rekap').value;
+    let searchQuery = document.getElementById('search-rekap-khusus').value.toLowerCase().trim();
+
+    let filteredSPP = window.databaseMasterSPP.filter(spp => !spp.isSPL);
+
+    // Terapkan Filter Tanggal
+    if (filterType !== 'all') {
+        filteredSPP = filteredSPP.filter(spp => window.isWithinTimeframe(spp.rawTimestampMs, filterType));
+    }
+
+    // Terapkan Filter Pencarian
+    if (searchQuery !== "") {
+        filteredSPP = filteredSPP.filter(spp => 
+            (spp.product && spp.product.toLowerCase().includes(searchQuery)) || 
+            (spp.no && spp.no.toLowerCase().includes(searchQuery))
+        );
+    }
+
+    tbody.innerHTML = '';
+    if(filteredSPP.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada data pada periode atau pencarian ini.</td></tr>';
+        
+        // Sembunyikan tombol toggle jika tidak ada data
+        const toggleBtn = document.getElementById('btn-toggle-rekap-khusus');
+        if(toggleBtn) toggleBtn.parentElement.style.display = 'none';
+        return;
+    }
+
+    // Pastikan tombol toggle muncul jika ada data
+    const toggleBtn = document.getElementById('btn-toggle-rekap-khusus');
+    if(toggleBtn) toggleBtn.parentElement.style.display = 'flex';
+
+    filteredSPP.sort((a, b) => b.rawTimestampMs - a.rawTimestampMs);
+
+    // Terapkan limit 10 data jika mode minimized aktif
+    let displaySPP = window.isRekapKhususMinimized ? filteredSPP.slice(0, 10) : filteredSPP;
+
+    let htmlRows = '';
+    
+    displaySPP.forEach(spp => {
+        let rekapData = window.databaseRekapAdmin.find(r => r.spp && r.spp.trim().toLowerCase() === spp.no.trim().toLowerCase() && !r.isHidden);
+        let noBpmp = rekapData && rekapData.noBPMP ? rekapData.noBPMP : "-";
+        let noLpbhp = rekapData && rekapData.noLPBHP ? rekapData.noLPBHP : "-";
+        let qty = rekapData && rekapData.qty ? rekapData.qty : "1";
+
+        let tglMulai = spp.startTimeObjectMs ? window.formatDateToString(new Date(spp.startTimeObjectMs)) : "-";
+        let targetSelesai = spp.formattedDeadline && spp.formattedDeadline !== "Belum dimulai" ? spp.formattedDeadline : "-";
+        
+        let isSelesai = ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(spp.status);
+        let tglSelesai = isSelesai && spp.lastInputTimeMs ? window.formatDateToString(new Date(spp.lastInputTimeMs)) : "-";
+        
+        let statusBadge = window.getStatusBadge(spp.status);
+        if (spp.isShipped) {
+            statusBadge = `<span class="badge bg-reguler" style="background:#ccfbf1; color:var(--emerald-glow); border-color:#5eead4;">Terkirim/Selesai</span>`;
+        }
+
+        let ket = "-";
+        if (isSelesai) {
+            ket = spp.isShipped ? "Sudah Terkirim" : "Tersedia di Gudang";
+        } else if (['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(spp.status)) {
+            ket = "Ada Kendala / Terjeda";
+        } else if (spp.status === "Proses") {
+            ket = "Sedang Dikerjakan";
+        } else if (spp.status === "Pending") {
+            ket = "Menunggu Dikerjakan";
+        }
+
+        htmlRows += `
+            <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <td style="padding: 12px; white-space: nowrap;"><strong style="color:var(--blue-glow);">${spp.no}</strong></td>
+                <td style="padding: 12px; white-space: nowrap;"><code style="color:var(--emerald-glow); font-weight:bold; font-size:13px;">${noBpmp}</code></td>
+                <td style="padding: 12px; white-space: normal; word-wrap: break-word;"><strong style="color:var(--text-main); font-size:13px; line-height:1.4;">${spp.product}</strong></td>
+                <td style="padding: 12px; text-align:center;"><span style="color:var(--warning-glow); font-weight:bold;">${qty}</span></td>
+                <td style="padding: 12px; white-space: normal; font-size: 12px;">${tglMulai}</td>
+                <td style="padding: 12px; white-space: normal; font-size: 12px;">${targetSelesai}</td>
+                <td style="padding: 12px; white-space: normal; font-size: 12px; color:var(--emerald-glow); font-weight:600;">${tglSelesai}</td>
+                <td style="padding: 12px; white-space: nowrap;"><code style="color:var(--purple-glow); font-weight:bold; font-size:13px;">${noLpbhp}</code></td>
+                <td style="padding: 12px; white-space: normal;">${statusBadge}</td>
+                <td style="padding: 12px; white-space: normal; font-size:12px; color:var(--text-muted); font-weight:bold;">${ket}</td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = htmlRows;
+};
+
+window.toggleCustomDateRekap = function() {
+    const val = document.getElementById('filter-waktu-rekap').value;
+    document.getElementById('custom-date-rekap-container').style.display = val === 'custom' ? 'flex' : 'none';
+    window.renderRekapKhususTable();
+};
+
+window.isWithinTimeframeRekap = function(timestampMs, filter) {
+    if (!timestampMs) return false;
+    const d = new Date(timestampMs); 
+    const now = new Date();
+    if (filter === 'today') return d.toDateString() === now.toDateString();
+    else if (filter === 'week') { 
+        const start = new Date(now.setDate(now.getDate() - now.getDay())); 
+        start.setHours(0,0,0,0); 
+        return d >= start; 
+    }
+    else if (filter === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    else if (filter === 'year') return d.getFullYear() === now.getFullYear();
+    else if (filter === 'custom') {
+        const startD = document.getElementById('custom-rekap-start').value; 
+        const endD = document.getElementById('custom-rekap-end').value;
+        if(!startD || !endD) return true; 
+        const st = new Date(startD).setHours(0,0,0,0); 
+        const en = new Date(endD).setHours(23,59,59,999);
+        return timestampMs >= st && timestampMs <= en;
+    } 
+    return true;
+};
+
+window.renderRekapKhususTable = function() {
+    const tbody = document.getElementById('rekap-khusus-body');
+    if(!tbody) return;
+
+    // Ambil Filter yang sedang aktif di Rekap Khusus
+    let filterType = document.getElementById('filter-waktu-rekap').value;
+    let searchQuery = document.getElementById('search-rekap-khusus').value.toLowerCase().trim();
+
+    // Pastikan kita memfilter data SPP dan bukan SPL
+    let filteredSPP = window.databaseMasterSPP.filter(spp => !spp.isSPL);
+
+    // 1. TERAPKAN FILTER TANGGAL
+    if (filterType !== 'all') {
+        filteredSPP = filteredSPP.filter(spp => {
+            const timestamp = spp.rawTimestampMs;
+            if (!timestamp) return false;
+            
+            const d = new Date(timestamp);
+            const now = new Date();
+            
+            if (filterType === 'today') {
+                return d.toDateString() === now.toDateString();
+            } else if (filterType === 'week') {
+                const start = new Date(now.setDate(now.getDate() - now.getDay()));
+                start.setHours(0,0,0,0);
+                return d >= start;
+            } else if (filterType === 'month') {
+                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+            } else if (filterType === 'year') {
+                return d.getFullYear() === now.getFullYear();
+            } else if (filterType === 'custom') {
+                const startD = document.getElementById('custom-rekap-start').value;
+                const endD = document.getElementById('custom-rekap-end').value;
+                if (!startD || !endD) return true;
+                const st = new Date(startD).setHours(0,0,0,0);
+                const en = new Date(endD).setHours(23,59,59,999);
+                return timestamp >= st && timestamp <= en;
+            }
+            return true;
+        });
+    }
+
+    // 2. TERAPKAN FILTER PENCARIAN (SEARCH)
+    if (searchQuery !== "") {
+        filteredSPP = filteredSPP.filter(spp => 
+            (spp.product && spp.product.toLowerCase().includes(searchQuery)) || 
+            (spp.no && spp.no.toLowerCase().includes(searchQuery))
+        );
+    }
+
+    tbody.innerHTML = '';
+
+    // Tangani jika data kosong setelah difilter
+    if(filteredSPP.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada data pada periode atau pencarian ini.</td></tr>';
+        
+        // Sembunyikan tombol toggle jika data kosong
+        const toggleBtn = document.getElementById('btn-toggle-rekap-khusus');
+        if(toggleBtn) toggleBtn.parentElement.style.display = 'none';
+        return;
+    }
+
+    // Tampilkan tombol toggle jika data tersedia
+    const toggleBtn = document.getElementById('btn-toggle-rekap-khusus');
+    if(toggleBtn) toggleBtn.parentElement.style.display = 'flex';
+
+    // 3. URUTKAN DATA DARI YANG TERBARU
+    filteredSPP.sort((a, b) => b.rawTimestampMs - a.rawTimestampMs);
+
+    // 4. POTONG DATA MENJADI 10 SAJA JIKA MODE "MINIMIZE" AKTIF
+    let displaySPP = window.isRekapKhususMinimized ? filteredSPP.slice(0, 10) : filteredSPP;
+
+    let htmlRows = '';
+    
+    // 5. RENDER TABEL
+    displaySPP.forEach(spp => {
+        let rekapData = window.databaseRekapAdmin.find(r => r.spp && r.spp.trim().toLowerCase() === spp.no.trim().toLowerCase() && !r.isHidden);
+        let noBpmp = rekapData && rekapData.noBPMP ? rekapData.noBPMP : "-";
+        let noLpbhp = rekapData && rekapData.noLPBHP ? rekapData.noLPBHP : "-";
+        let qty = rekapData && rekapData.qty ? rekapData.qty : "1";
+
+        let tglMulai = spp.startTimeObjectMs ? window.formatDateToString(new Date(spp.startTimeObjectMs)) : "-";
+        let targetSelesai = spp.formattedDeadline && spp.formattedDeadline !== "Belum dimulai" ? spp.formattedDeadline : "-";
+        
+        let isSelesai = ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(spp.status);
+        let tglSelesai = isSelesai && spp.lastInputTimeMs ? window.formatDateToString(new Date(spp.lastInputTimeMs)) : "-";
+        
+        let statusBadge = window.getStatusBadge(spp.status);
+        if (spp.isShipped) {
+            statusBadge = `<span class="badge bg-reguler" style="background:#ccfbf1; color:var(--emerald-glow); border-color:#5eead4;">Terkirim/Selesai</span>`;
+        }
+
+        let ket = "-";
+        if (isSelesai) {
+            ket = spp.isShipped ? "Sudah Terkirim" : "Tersedia di Gudang";
+        } else if (['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(spp.status)) {
+            ket = "Ada Kendala / Terjeda";
+        } else if (spp.status === "Proses") {
+            ket = "Sedang Dikerjakan";
+        } else if (spp.status === "Pending") {
+            ket = "Menunggu Dikerjakan";
+        }
+
+        htmlRows += `
+            <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <td style="padding: 12px; white-space: nowrap;"><strong style="color:var(--blue-glow);">${spp.no}</strong></td>
+                <td style="padding: 12px; white-space: nowrap;"><code style="color:var(--emerald-glow); font-weight:bold; font-size:13px;">${noBpmp}</code></td>
+                <td style="padding: 12px; white-space: normal; word-wrap: break-word;"><strong style="color:var(--text-main); font-size:13px; line-height:1.4;">${spp.product}</strong></td>
+                <td style="padding: 12px; text-align:center;"><span style="color:var(--warning-glow); font-weight:bold;">${qty}</span></td>
+                <td style="padding: 12px; white-space: normal; font-size: 12px;">${tglMulai}</td>
+                <td style="padding: 12px; white-space: normal; font-size: 12px;">${targetSelesai}</td>
+                <td style="padding: 12px; white-space: normal; font-size: 12px; color:var(--emerald-glow); font-weight:600;">${tglSelesai}</td>
+                <td style="padding: 12px; white-space: nowrap;"><code style="color:var(--purple-glow); font-weight:bold; font-size:13px;">${noLpbhp}</code></td>
+                <td style="padding: 12px; white-space: normal;">${statusBadge}</td>
+                <td style="padding: 12px; white-space: normal; font-size:12px; color:var(--text-muted); font-weight:bold;">${ket}</td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = htmlRows;
+};
+
+window.applyGlobalFilter = function() {
+    const globalFilterVal = document.getElementById('global-time-filter').value;
+    const globalStart = document.getElementById('custom-start-date') ? document.getElementById('custom-start-date').value : '';
+    const globalEnd = document.getElementById('custom-end-date') ? document.getElementById('custom-end-date').value : '';
+    
+    // 1. Sinkronisasi Filter Master Atas ke Tabel Rekap Khusus
+    const rekapFilter = document.getElementById('filter-waktu-rekap');
+    if (rekapFilter) {
+        if (Array.from(rekapFilter.options).some(opt => opt.value === globalFilterVal)) {
+            rekapFilter.value = globalFilterVal;
+            if (globalFilterVal === 'custom') {
+                const customRekapStart = document.getElementById('custom-rekap-start');
+                const customRekapEnd = document.getElementById('custom-rekap-end');
+                if(customRekapStart) customRekapStart.value = globalStart;
+                if(customRekapEnd) customRekapEnd.value = globalEnd;
+            }
+            const rekapContainer = document.getElementById('custom-date-rekap-container');
+            if(rekapContainer) rekapContainer.style.display = globalFilterVal === 'custom' ? 'flex' : 'none';
+        }
+    }
+
+    // 2. Sinkronisasi Filter Master Atas ke Tabel Admin Dokumen
+    const adminFilter = document.getElementById('export-dokumen-filter');
+    if (adminFilter) {
+        if (Array.from(adminFilter.options).some(opt => opt.value === globalFilterVal)) {
+            adminFilter.value = globalFilterVal;
+            if (globalFilterVal === 'custom') {
+                const customAdminStart = document.getElementById('custom-export-start');
+                const customAdminEnd = document.getElementById('custom-export-end');
+                if(customAdminStart) customAdminStart.value = globalStart;
+                if(customAdminEnd) customAdminEnd.value = globalEnd;
+            }
+            const adminContainer = document.getElementById('custom-export-dokumen-container');
+            if(adminContainer) adminContainer.style.display = globalFilterVal === 'custom' ? 'flex' : 'none';
+        }
+    }
+
+    // Jalankan semua fungsi render agar tabel ter-update
+    window.refreshAnalyticsAndChart(); 
+    window.renderProductActualMatrix(); 
+    window.renderMasterTable(); 
+    window.renderSPLTable();
+    window.updateSPPDropdown(); 
+    window.updateInternalProductDropdown();
+    window.renderInternalStockTable();
+    window.renderInternalHistoryTable();
+    window.updateWarehouseProductDropdown(); 
+    window.renderReadyStockTable();
+    window.renderShipmentTable();
+    window.renderWarehouseInbox(); 
+    window.renderRealtimeWAMonitor(); 
+    window.calculateAndRenderRanking();
+    window.renderDevInjectTable(); 
+    window.renderOperatorTable();
+    
+    // Render tabel khusus
+    if (typeof window.renderRekapKhususTable === "function") window.renderRekapKhususTable();
+    if (typeof window.populateAdminSelectSelesai === "function") window.populateAdminSelectSelesai();
+    if (typeof window.renderAdminDokumenTable === "function") window.renderAdminDokumenTable();
+    
+    setTimeout(() => { window.performGlobalSearch(); }, 150);
+};
+
     window.renderWarehouseInbox = function() {
         const msgBody = document.getElementById('warehouse-msg-body'); msgBody.innerHTML = "";
-        let activeSPP = window.databaseMasterSPP.filter(i => !['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status) && !i.isSPL);
-        if (activeSPP.length === 0) { msgBody.innerHTML = `<tr id="empty-inbox-row"><td colspan="6" style="text-align:center; color:var(--text-muted); padding: 30px;">Belum ada pesan SPP aktif.</td></tr>`; return; }
+        // Ubah sumber data agar mengikuti filter waktu global
+        let activeSPP = window.getFilteredNonSPLSPP().filter(i => !['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status));
+        if (activeSPP.length === 0) { msgBody.innerHTML = `<tr id="empty-inbox-row"><td colspan="6" style="text-align:center; color:var(--text-muted); padding: 30px;">Belum ada pesan SPP aktif pada rentang waktu ini.</td></tr>`; return; }
         activeSPP.forEach(item => {
             let badgeClass = 'bg-reguler'; let msgText = `⚙️ Perintah pengerjaan terdaftar baru.`;
             if (item.priority === 'Buffer Stok') { badgeClass = 'bg-buffer'; msgText = `📦 Pengadaan berkala sistem gudang.`; }
@@ -4721,10 +5068,11 @@ document.getElementById('prod-deadline-unit').value = "jam";
         if(!tbody) return;
         tbody.innerHTML = '';
         
-        let injectedLogs = window.databaseLogOperator.filter(log => log.operator === "Randi (Dev System)");
+        // Ubah sumber data agar mengikuti filter waktu global
+        let injectedLogs = window.getFilteredLogs().filter(log => log.operator === "Randi (Dev System)");
         
         if(injectedLogs.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:15px;">Belum ada data yang di-inject melalui jalur Fast-Track.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:15px;">Belum ada data yang di-inject melalui jalur Fast-Track pada rentang waktu ini.</td></tr>';
             return;
         }
 
