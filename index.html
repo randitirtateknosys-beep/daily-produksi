@@ -2102,15 +2102,30 @@ document.getElementById('bee-boot-container').style.display = 'flex';
     window.dbClearAllChat = () => db.ref('messages').remove();
 
 window.aktifkanNotifikasiManual = function() {
+    // 1. Cek apakah browser HP terlalu jadul dan tidak mendukung notif
+    if (!("Notification" in window)) {
+        alert("⚠️ Maaf, browser HP Anda versi lama dan tidak mendukung fitur Notifikasi. Silakan gunakan Chrome atau Safari terbaru.");
+        return;
+    }
+
+    // 2. Cek apakah operator pernah tidak sengaja memblokir notifikasi web ini
+    if (Notification.permission === "denied") {
+        alert("❌ DIBLOKIR OLEH BROWSER HP!\n\nBrowser Anda saat ini menolak notifikasi dari web ini. Cara memperbaikinya:\n\n1. Klik ikon Gembok (🔒) atau ikon setelan di sebelah link web (paling atas)\n2. Pilih 'Izin Situs' (Site Settings) / 'Pengaturan Situs'\n3. Cari opsi 'Notifikasi', lalu ubah menjadi 'Izinkan' (Allow).\n4. Refresh halaman ini.");
+        return;
+    }
+
+    // 3. Eksekusi pemanggilan OneSignal dengan sistem native HP (Lebih kuat)
     window.OneSignalDeferred.push(function(OneSignal) {
         let isSubscribed = OneSignal.User.PushSubscription.optedIn;
         
         if (isSubscribed) {
-            // Jika SUDAH aktif, alert boleh muncul
-            alert("✅ STATUS: SUDAH AKTIF!\n\nHP Anda sudah berhasil terhubung ke sistem dan siap menerima notifikasi SPP Real-time.");
+            alert("✅ STATUS: SUDAH AKTIF!\n\nSistem HP Anda sudah sinkron dan siap menerima notifikasi SPP Real-time.");
         } else {
-            // Jika BELUM aktif, JANGAN pakai alert. Langsung panggil popup OneSignal!
-            OneSignal.Slidedown.promptPush();
+            // Gunakan metode optIn() untuk memanggil popup asli bawaan OS Android/iOS
+            OneSignal.User.PushSubscription.optIn().catch(() => {
+                // Jika browser menolak pemanggilan native, gunakan plan B (Slidedown)
+                OneSignal.Slidedown.promptPush();
+            });
         }
     });
 };
