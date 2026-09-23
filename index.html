@@ -897,7 +897,7 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
 <!-- STRUKTUR TABEL YANG BENAR & ANTI MELEBAR KE LUAR -->
     <div class="table-container" id="table-rekap-khusus-container" style="overflow-x: auto; width: 100%; max-width: 100vw; display: block; -webkit-overflow-scrolling: touch;">
         <table id="rekap-khusus-table" style="width: max-content; min-width: 100%; border-collapse: collapse;">
-                <thead>
+            <thead>
                 <tr>
                     <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">NO SPP</th>
                     <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">NO BPMP</th>
@@ -909,10 +909,12 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
                     <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">NO LPBHP</th>
                     <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">STATUS</th>
                     <th style="width: 120px; padding: 12px; white-space: normal; vertical-align: middle;">KET</th>
+                    <!-- TAMBAHAN KOLOM AKSI (DISINI) -->
+                    <th id="th-aksi-rekap" style="width: 90px; padding: 12px; text-align: center; vertical-align: middle; display: none;">AKSI</th>
                 </tr>
             </thead>
             <tbody id="rekap-khusus-body">
-                <tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding: 15px;">Loading data...</td></tr>
+                <tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding: 15px;">Loading data...</td></tr>
             </tbody>
         </table>
     </div>
@@ -3800,12 +3802,12 @@ window.renderRekapKhususTable = function() {
 
     let filteredSPP = window.databaseMasterSPP.filter(spp => !spp.isSPL);
 
-    // Terapkan Filter Tanggal
+    // Filter Tanggal
     if (filterType !== 'all') {
         filteredSPP = filteredSPP.filter(spp => window.isWithinTimeframe(spp.rawTimestampMs, filterType));
     }
 
-    // Terapkan Filter Pencarian
+    // Filter Pencarian
     if (searchQuery !== "") {
         filteredSPP = filteredSPP.filter(spp => 
             (spp.product && spp.product.toLowerCase().includes(searchQuery)) || 
@@ -3813,25 +3815,24 @@ window.renderRekapKhususTable = function() {
         );
     }
 
+    // Cek Otorisasi (Hanya Admin / Dev yang lihat tombol Edit)
+    const isDevOrAdmin = (window.currentUserRole.toUpperCase() === "RANDI" || window.currentUserRole.toUpperCase() === "FEBRI" || window.currentUserRole === "Admin" || window.currentUserRole === "Septi Utami");
+    const thAksi = document.getElementById('th-aksi-rekap');
+    if (thAksi) { thAksi.style.display = isDevOrAdmin ? 'table-cell' : 'none'; }
+
     tbody.innerHTML = '';
     if(filteredSPP.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada data pada periode atau pencarian ini.</td></tr>';
-        
-        // Sembunyikan tombol toggle jika tidak ada data
+        tbody.innerHTML = `<tr><td colspan="${isDevOrAdmin ? '11' : '10'}" style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada data pada periode atau pencarian ini.</td></tr>`;
         const toggleBtn = document.getElementById('btn-toggle-rekap-khusus');
         if(toggleBtn) toggleBtn.parentElement.style.display = 'none';
         return;
     }
 
-    // Pastikan tombol toggle muncul jika ada data
     const toggleBtn = document.getElementById('btn-toggle-rekap-khusus');
     if(toggleBtn) toggleBtn.parentElement.style.display = 'flex';
 
     filteredSPP.sort((a, b) => b.rawTimestampMs - a.rawTimestampMs);
-
-    // Terapkan limit 10 data jika mode minimized aktif
     let displaySPP = window.isRekapKhususMinimized ? filteredSPP.slice(0, 10) : filteredSPP;
-
     let htmlRows = '';
     
     displaySPP.forEach(spp => {
@@ -3847,20 +3848,15 @@ window.renderRekapKhususTable = function() {
         let tglSelesai = isSelesai && spp.lastInputTimeMs ? window.formatDateToString(new Date(spp.lastInputTimeMs)) : "-";
         
         let statusBadge = window.getStatusBadge(spp.status);
-        if (spp.isShipped) {
-            statusBadge = `<span class="badge bg-reguler" style="background:#ccfbf1; color:var(--emerald-glow); border-color:#5eead4;">Terkirim/Selesai</span>`;
-        }
+        if (spp.isShipped) statusBadge = `<span class="badge bg-reguler" style="background:#ccfbf1; color:var(--emerald-glow); border-color:#5eead4;">Terkirim/Selesai</span>`;
 
         let ket = "-";
-        if (isSelesai) {
-            ket = spp.isShipped ? "Sudah Terkirim" : "Tersedia di Gudang";
-        } else if (['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(spp.status)) {
-            ket = "Ada Kendala / Terjeda";
-        } else if (spp.status === "Proses") {
-            ket = "Sedang Dikerjakan";
-        } else if (spp.status === "Pending") {
-            ket = "Menunggu Dikerjakan";
-        }
+        if (isSelesai) ket = spp.isShipped ? "Sudah Terkirim" : "Tersedia di Gudang";
+        else if (['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(spp.status)) ket = "Ada Kendala / Terjeda";
+        else if (spp.status === "Proses") ket = "Sedang Dikerjakan";
+        else if (spp.status === "Pending") ket = "Menunggu Dikerjakan";
+
+        let actionBtn = isDevOrAdmin ? `<td style="padding: 12px; text-align:center; vertical-align:middle;"><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; padding: 6px 12px; width:100%; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="editRekapKhusus('${spp.no}')">✏️ Edit</button></td>` : '';
 
         htmlRows += `
             <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
@@ -3874,11 +3870,109 @@ window.renderRekapKhususTable = function() {
                 <td style="padding: 12px; white-space: nowrap;"><code style="color:var(--purple-glow); font-weight:bold; font-size:13px;">${noLpbhp}</code></td>
                 <td style="padding: 12px; white-space: normal;">${statusBadge}</td>
                 <td style="padding: 12px; white-space: normal; font-size:12px; color:var(--text-muted); font-weight:bold;">${ket}</td>
+                ${actionBtn}
             </tr>
         `;
     });
-    
     tbody.innerHTML = htmlRows;
+};
+
+// ==========================================
+// FUNGSI BARU: EDIT REKAP KHUSUS (INJECT SUPPORT)
+// ==========================================
+window.editRekapKhusus = function(sppNo) {
+    let matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
+    if (!matchedSPP) return;
+
+    let rekapData = window.databaseRekapAdmin.find(r => r.spp === sppNo && !r.isHidden);
+
+    let promptText = "Pilih angka data yang mau diedit untuk SPP: " + sppNo + "\n\n" +
+                     "--- DATA DOKUMEN ---\n" +
+                     "1. No BPMP\n" +
+                     "2. No LPBHP\n" +
+                     "3. QTY\n\n" +
+                     "--- DATA LAPANGAN (Bypass) ---\n" +
+                     "4. Tanggal Mulai Dikerjakan\n" +
+                     "5. Tanggal Selesai (Aktual)\n" +
+                     "6. Status Pekerjaan (Contoh: Selesai, Proses)";
+                     
+    let choice = prompt(promptText);
+    if (!choice) return;
+
+    if (['1', '2', '3'].includes(choice)) {
+        if (!rekapData) {
+            if(confirm("⚠️ Dokumen rekap BPMP/LPBHP belum dibuat untuk SPP ini (karena berasal dari Inject Manual).\n\nApakah Anda ingin membuat kerangka datanya sekarang?")) {
+                const d = new Date();
+                const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+                const newRekap = {
+                    bulan: monthNames[d.getMonth()], spp: sppNo, noProd: "Inject Manual", jenisPekerjaan: "Baru", jenisProduksi: matchedSPP.product,
+                    tglBPMP: "-", noBPMP: "-", tglLPBHP: "-", noLPBHP: "-", qty: 1, timestampMs: d.getTime()
+                };
+                firebase.database().ref('rekapDokumen').push(newRekap).then(() => {
+                    alert("✅ Kerangka data berhasil dibuat!\nSilakan klik tombol 'Edit' sekali lagi untuk memasukkan nomor BPMP/LPBHP.");
+                });
+            }
+            return;
+        }
+
+        let updates = {};
+        if (choice === '1') {
+            let val = prompt("Masukkan No BPMP Baru:", rekapData.noBPMP || "");
+            if (val !== null) updates.noBPMP = val.trim();
+        } else if (choice === '2') {
+            let val = prompt("Masukkan No LPBHP Baru:", rekapData.noLPBHP || "");
+            if (val !== null) updates.noLPBHP = val.trim();
+        } else if (choice === '3') {
+            let val = prompt("Masukkan QTY:", rekapData.qty || "1");
+            if (val !== null && !isNaN(val)) updates.qty = parseInt(val.trim());
+        }
+
+        if (Object.keys(updates).length > 0) {
+            firebase.database().ref('rekapDokumen/' + rekapData.firebaseKey).update(updates).then(() => alert("✅ Data dokumen berhasil diperbarui!"));
+        }
+    } 
+    else if (['4', '5', '6'].includes(choice)) {
+        let sppUpdates = {};
+        
+        function getIsoString(ms) {
+            if(!ms) return "";
+            let d = new Date(ms);
+            return d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2) + " " + ("0"+d.getHours()).slice(-2) + ":" + ("0"+d.getMinutes()).slice(-2);
+        }
+
+        if (choice === '4') {
+            let currentVal = getIsoString(matchedSPP.startTimeObjectMs);
+            let val = prompt("Edit Tanggal MULAI (Format: YYYY-MM-DD HH:MM)\nBiarkan kosong lalu klik OK jika ingin menghapus tanggalnya:", currentVal);
+            if (val !== null) {
+                if (val.trim() === "") { sppUpdates.startTimeObjectMs = null; }
+                else {
+                    let d = new Date(val.replace(" ", "T")); // support safari
+                    if(!isNaN(d.getTime())) sppUpdates.startTimeObjectMs = d.getTime();
+                    else { alert("❌ Format tanggal salah!"); return; }
+                }
+            }
+        } else if (choice === '5') {
+            let currentVal = getIsoString(matchedSPP.lastInputTimeMs);
+            let val = prompt("Edit Tanggal SELESAI (Format: YYYY-MM-DD HH:MM)\nBiarkan kosong lalu klik OK jika ingin menghapus tanggalnya:", currentVal);
+            if (val !== null) {
+                if (val.trim() === "") { sppUpdates.lastInputTimeMs = null; }
+                else {
+                    let d = new Date(val.replace(" ", "T"));
+                    if(!isNaN(d.getTime())) sppUpdates.lastInputTimeMs = d.getTime();
+                    else { alert("❌ Format tanggal salah!"); return; }
+                }
+            }
+        } else if (choice === '6') {
+            let val = prompt("Ubah Status (misal: Selesai, Selesai Awal, Telat Selesai, Proses, Pending):", matchedSPP.status);
+            if (val !== null) sppUpdates.status = val.trim();
+        }
+
+        if (Object.keys(sppUpdates).length > 0) {
+            firebase.database().ref('masterSPP/' + matchedSPP.firebaseKey).update(sppUpdates).then(() => alert("✅ Master SPP berhasil diperbarui!"));
+        }
+    } else {
+        alert("Pilihan tidak ada!");
+    }
 };
 
 window.toggleCustomDateRekap = function() {
