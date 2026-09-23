@@ -3792,23 +3792,6 @@ window.toggleRekapKhususView = function() {
     }
     window.renderRekapKhususTable();
 };
-
-
-    let filteredSPP = window.databaseMasterSPP.filter(spp => !spp.isSPL);
-
-    // Filter Tanggal
-    if (filterType !== 'all') {
-        filteredSPP = filteredSPP.filter(spp => window.isWithinTimeframe(spp.rawTimestampMs, filterType));
-    }
-
-    // Filter Pencarian
-    if (searchQuery !== "") {
-        filteredSPP = filteredSPP.filter(spp => 
-            (spp.product && spp.product.toLowerCase().includes(searchQuery)) || 
-            (spp.no && spp.no.toLowerCase().includes(searchQuery))
-        );
-    }
-
     // Cek Otorisasi (Hanya Admin / Dev yang lihat tombol Edit)
     const isDevOrAdmin = (window.currentUserRole.toUpperCase() === "RANDI" || window.currentUserRole.toUpperCase() === "FEBRI" || window.currentUserRole === "Admin" || window.currentUserRole === "Septi Utami");
     const thAksi = document.getElementById('th-aksi-rekap');
