@@ -3793,12 +3793,6 @@ window.toggleRekapKhususView = function() {
     window.renderRekapKhususTable();
 };
 
-window.renderRekapKhususTable = function() {
-    const tbody = document.getElementById('rekap-khusus-body');
-    if(!tbody) return;
-
-    let filterType = document.getElementById('filter-waktu-rekap').value;
-    let searchQuery = document.getElementById('search-rekap-khusus').value.toLowerCase().trim();
 
     let filteredSPP = window.databaseMasterSPP.filter(spp => !spp.isSPL);
 
