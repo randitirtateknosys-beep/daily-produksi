@@ -5553,11 +5553,22 @@ document.getElementById('prod-deadline-unit').value = "jam";
         const currentSavedValue = select.value;
         select.innerHTML = '<option value="">-- Klik untuk menampilkan daftar pekerjaan selesai --</option>';
         
-        const produkSelesai = window.databaseMasterSPP.filter(i => 
-            ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && 
-            !i.isSPL && 
-            !i.isShipped &&
-            !window.databaseRekapAdmin.some(rekap => rekap.spp === i.no));
+        // --- PERBAIKAN FILTERING DROPDOWN ---
+        // 1. Ambil daftar SPP yang "disembunyikan/dihapus" dari rekapDokumen
+        const hiddenSPPs = window.databaseRekapAdmin
+                            .filter(rekap => rekap.isHidden === true)
+                            .map(rekap => rekap.spp);
+
+        // 2. Filter Master SPP: Harus berstatus Selesai, bukan SPL, belum dikirim, dan TIDAK ADA di dalam hiddenSPPs maupun rekapDokumen yang valid
+        const produkSelesai = window.databaseMasterSPP.filter(i => {
+            let isSelesai = ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status);
+            let notSPL = !i.isSPL;
+            let notShipped = !i.isShipped;
+            let notHidden = !hiddenSPPs.includes(i.no);
+            let notAlreadyRekap = !window.databaseRekapAdmin.some(rekap => rekap.spp === i.no && !rekap.isHidden);
+            
+            return isSelesai && notSPL && notShipped && notHidden && notAlreadyRekap;
+        });
         
         produkSelesai.forEach(item => {
             let noProdTambahan = "";
