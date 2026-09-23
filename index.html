@@ -3993,6 +3993,125 @@ window.renderRekapKhususTable = function() {
     let filterType = document.getElementById('filter-waktu-rekap').value;
     let searchQuery = document.getElementById('search-rekap-khusus').value.toLowerCase().trim();
 
+    // Pastikan kita memfilter data SPP dan bukan SPL
+    let filteredSPP = window.databaseMasterSPP.filter(spp => !spp.isSPL);
+
+    // 1. TERAPKAN FILTER TANGGAL
+    if (filterType !== 'all') {
+        filteredSPP = filteredSPP.filter(spp => {
+            const timestamp = spp.rawTimestampMs;
+            if (!timestamp) return false;
+            
+            const d = new Date(timestamp);
+            const now = new Date();
+            
+            if (filterType === 'today') {
+                return d.toDateString() === now.toDateString();
+            } else if (filterType === 'week') {
+                const start = new Date(now.setDate(now.getDate() - now.getDay()));
+                start.setHours(0,0,0,0);
+                return d >= start;
+            } else if (filterType === 'month') {
+                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+            } else if (filterType === 'year') {
+                return d.getFullYear() === now.getFullYear();
+            } else if (filterType === 'custom') {
+                const startD = document.getElementById('custom-rekap-start').value;
+                const endD = document.getElementById('custom-rekap-end').value;
+                if (!startD || !endD) return true;
+                const st = new Date(startD).setHours(0,0,0,0);
+                const en = new Date(endD).setHours(23,59,59,999);
+                return timestamp >= st && timestamp <= en;
+            }
+            return true;
+        });
+    }
+
+    // 2. TERAPKAN FILTER PENCARIAN (SEARCH)
+    if (searchQuery !== "") {
+        filteredSPP = filteredSPP.filter(spp => 
+            (spp.product && spp.product.toLowerCase().includes(searchQuery)) || 
+            (spp.no && spp.no.toLowerCase().includes(searchQuery))
+        );
+    }
+
+    // Cek Otorisasi (Hanya Admin / Dev yang lihat tombol Edit)
+    const isDevOrAdmin = (window.currentUserRole.toUpperCase() === "RANDI" || window.currentUserRole.toUpperCase() === "FEBRI" || window.currentUserRole === "Admin" || window.currentUserRole === "Septi Utami");
+    const thAksi = document.getElementById('th-aksi-rekap');
+    if (thAksi) { thAksi.style.display = isDevOrAdmin ? 'table-cell' : 'none'; }
+
+    tbody.innerHTML = '';
+    if(filteredSPP.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${isDevOrAdmin ? '11' : '10'}" style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada data pada periode atau pencarian ini.</td></tr>`;
+        
+        // Sembunyikan tombol toggle jika data kosong
+        const toggleBtn = document.getElementById('btn-toggle-rekap-khusus');
+        if(toggleBtn) toggleBtn.parentElement.style.display = 'none';
+        return;
+    }
+
+    // Tampilkan tombol toggle jika data tersedia
+    const toggleBtn = document.getElementById('btn-toggle-rekap-khusus');
+    if(toggleBtn) toggleBtn.parentElement.style.display = 'flex';
+
+    // 3. URUTKAN DATA DARI YANG TERBARU
+    filteredSPP.sort((a, b) => b.rawTimestampMs - a.rawTimestampMs);
+
+    // 4. POTONG DATA MENJADI 10 SAJA JIKA MODE "MINIMIZE" AKTIF
+    let displaySPP = window.isRekapKhususMinimized ? filteredSPP.slice(0, 10) : filteredSPP;
+
+    let htmlRows = '';
+    
+    // 5. RENDER TABEL
+    displaySPP.forEach(spp => {
+        let rekapData = window.databaseRekapAdmin.find(r => r.spp && r.spp.trim().toLowerCase() === spp.no.trim().toLowerCase() && !r.isHidden);
+        let noBpmp = rekapData && rekapData.noBPMP ? rekapData.noBPMP : "-";
+        let noLpbhp = rekapData && rekapData.noLPBHP ? rekapData.noLPBHP : "-";
+        let qty = rekapData && rekapData.qty ? rekapData.qty : "1";
+
+        let tglMulai = spp.startTimeObjectMs ? window.formatDateToString(new Date(spp.startTimeObjectMs)) : "-";
+        let targetSelesai = spp.formattedDeadline && spp.formattedDeadline !== "Belum dimulai" ? spp.formattedDeadline : "-";
+        
+        let isSelesai = ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(spp.status);
+        let tglSelesai = isSelesai && spp.lastInputTimeMs ? window.formatDateToString(new Date(spp.lastInputTimeMs)) : "-";
+        
+        let statusBadge = window.getStatusBadge(spp.status);
+        if (spp.isShipped) {
+            statusBadge = `<span class="badge bg-reguler" style="background:#ccfbf1; color:var(--emerald-glow); border-color:#5eead4;">Terkirim/Selesai</span>`;
+        }
+
+        let ket = "-";
+        if (isSelesai) {
+            ket = spp.isShipped ? "Sudah Terkirim" : "Tersedia di Gudang";
+        } else if (['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(spp.status)) {
+            ket = "Ada Kendala / Terjeda";
+        } else if (spp.status === "Proses") {
+            ket = "Sedang Dikerjakan";
+        } else if (spp.status === "Pending") {
+            ket = "Menunggu Dikerjakan";
+        }
+
+        let actionBtn = isDevOrAdmin ? `<td style="padding: 12px; text-align:center; vertical-align:middle;"><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; padding: 6px 12px; width:100%; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="editRekapKhusus('${spp.no}')">✏️ Edit</button></td>` : '';
+
+        htmlRows += `
+            <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <td style="padding: 12px; white-space: nowrap;"><strong style="color:var(--blue-glow);">${spp.no}</strong></td>
+                <td style="padding: 12px; white-space: nowrap;"><code style="color:var(--emerald-glow); font-weight:bold; font-size:13px;">${noBpmp}</code></td>
+                <td style="padding: 12px; white-space: normal; word-wrap: break-word;"><strong style="color:var(--text-main); font-size:13px; line-height:1.4;">${spp.product}</strong></td>
+                <td style="padding: 12px; text-align:center;"><span style="color:var(--warning-glow); font-weight:bold;">${qty}</span></td>
+                <td style="padding: 12px; white-space: normal; font-size: 12px;">${tglMulai}</td>
+                <td style="padding: 12px; white-space: normal; font-size: 12px;">${targetSelesai}</td>
+                <td style="padding: 12px; white-space: normal; font-size: 12px; color:var(--emerald-glow); font-weight:600;">${tglSelesai}</td>
+                <td style="padding: 12px; white-space: nowrap;"><code style="color:var(--purple-glow); font-weight:bold; font-size:13px;">${noLpbhp}</code></td>
+                <td style="padding: 12px; white-space: normal;">${statusBadge}</td>
+                <td style="padding: 12px; white-space: normal; font-size:12px; color:var(--text-muted); font-weight:bold;">${ket}</td>
+                ${actionBtn}
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = htmlRows;
+};
     
 window.applyGlobalFilter = function() {
     const globalFilterVal = document.getElementById('global-time-filter').value;
