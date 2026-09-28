@@ -1911,6 +1911,15 @@ body.light-theme .welcome-box {
             window.triggerChatNotification();
         });
 
+window.databaseManualStock = {};
+        db.ref('manualStock').on('value', snap => {
+            window.databaseManualStock = snap.val() || {};
+            if(window.currentUserRole !== "Guest") {
+                if (typeof window.renderReadyStockTable === 'function') window.renderReadyStockTable();
+                if (typeof window.updateWarehouseProductDropdown === 'function') window.updateWarehouseProductDropdown();
+            }
+        });
+
         db.ref('masterSPP').on('child_added', snap => {
             if(!window.isTVModeReady || window.currentUserRole !== "TV Mode" || window.isBeeBootTyping) return;
             let val = snap.val();
@@ -3896,6 +3905,145 @@ window.renderRekapKhususTable = function() {
     tbody.innerHTML = htmlRows;
 };
 
+// ==========================================
+// FUNGSI BARU: EDIT & HAPUS REKAP KHUSUS
+// ==========================================
+window.editRekapKhusus = function(sppNo) {
+    let matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
+    if (!matchedSPP) {
+        alert("Data Master SPP tidak ditemukan!");
+        return;
+    }
+
+    let rekapData = window.databaseRekapAdmin.find(r => r.spp === sppNo && !r.isHidden);
+
+    let promptText = "Pilih angka data yang mau diedit untuk SPP: " + sppNo + "\n\n" +
+                     "--- DATA DOKUMEN ---\n" +
+                     "1. No BPMP\n" +
+                     "2. No LPBHP\n" +
+                     "3. QTY\n\n" +
+                     "--- DATA LAPANGAN (Bypass) ---\n" +
+                     "4. Tanggal Mulai Dikerjakan\n" +
+                     "5. Tanggal Selesai (Aktual)\n" +
+                     "6. Status Pekerjaan (Contoh: Selesai, Proses)\n\n" +
+                     "--- HAPUS DATA ---\n" +
+                     "7. ❌ HAPUS SELURUH DATA SPP INI (Permanen)";
+                     
+    let choice = prompt(promptText);
+    if (!choice) return;
+
+    choice = choice.trim();
+
+    // FITUR HAPUS PERMANEN (MASTER SPP, LOGS, REKAP, PENGIRIMAN)
+    if (choice === '7') {
+        if(confirm(`⚠️ PERINGATAN KERAS! ⚠️\n\nAnda yakin ingin menghapus SELURUH data untuk SPP [${sppNo}]?\n\nIni akan menghapus data di Master SPP, Log Operator, Rekap Dokumen, dan Pengiriman yang terkait. Tindakan ini TIDAK BISA dibatalkan!`)) {
+            // Hapus dari Master SPP
+            window.dbRemoveSPP(matchedSPP.firebaseKey);
+            
+            // Hapus dari Log Operator
+            window.databaseLogOperator.filter(l => l.noSPP === sppNo).forEach(log => {
+                window.dbRemoveLog(log.firebaseKey);
+            });
+            
+            // Hapus dari Rekap Dokumen Admin
+            window.databaseRekapAdmin.filter(r => r.spp === sppNo).forEach(rekap => {
+                firebase.database().ref('rekapDokumen/' + rekap.firebaseKey).remove();
+            });
+
+            // Hapus dari Pengiriman (jika ada)
+            window.databaseShipment.filter(sh => sh.spp === sppNo).forEach(sh => {
+                window.dbRemoveShipment(sh.firebaseKey);
+            });
+            
+            // Hapus dari Tarikan Internal (jika ada)
+            window.databaseInternalOut.filter(io => io.spp === sppNo).forEach(io => {
+                window.dbRemoveInternalOut(io.firebaseKey);
+            });
+
+            alert(`✅ Seluruh data untuk SPP [${sppNo}] berhasil dihapus dari sistem.`);
+            return;
+        } else {
+            return; // Dibatalkan pengguna
+        }
+    }
+
+    if (['1', '2', '3'].includes(choice)) {
+        if (!rekapData) {
+            if(confirm("⚠️ Dokumen rekap BPMP/LPBHP belum dibuat untuk SPP ini.\n\nApakah Anda ingin membuat kerangka datanya sekarang?")) {
+                const d = new Date();
+                const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+                const newRekap = {
+                    bulan: monthNames[d.getMonth()], spp: sppNo, noProd: "Inject Manual", jenisPekerjaan: "Baru", jenisProduksi: matchedSPP.product,
+                    tglBPMP: "-", noBPMP: "-", tglLPBHP: "-", noLPBHP: "-", qty: 1, timestampMs: d.getTime()
+                };
+                firebase.database().ref('rekapDokumen').push(newRekap).then(() => {
+                    alert("✅ Kerangka data berhasil dibuat!\nSilakan klik tombol 'Edit' sekali lagi untuk memasukkan nomor BPMP/LPBHP.");
+                });
+            }
+            return;
+        }
+
+        let updates = {};
+        if (choice === '1') {
+            let val = prompt("Masukkan No BPMP Baru:", rekapData.noBPMP || "");
+            if (val !== null) updates.noBPMP = val.trim();
+        } else if (choice === '2') {
+            let val = prompt("Masukkan No LPBHP Baru:", rekapData.noLPBHP || "");
+            if (val !== null) updates.noLPBHP = val.trim();
+        } else if (choice === '3') {
+            let val = prompt("Masukkan QTY:", rekapData.qty || "1");
+            if (val !== null && !isNaN(val)) updates.qty = parseInt(val.trim());
+        }
+
+        if (Object.keys(updates).length > 0) {
+            firebase.database().ref('rekapDokumen/' + rekapData.firebaseKey).update(updates).then(() => alert("✅ Data dokumen berhasil diperbarui!"));
+        }
+    } 
+    else if (['4', '5', '6'].includes(choice)) {
+        let sppUpdates = {};
+        
+        function getIsoString(ms) {
+            if(!ms) return "";
+            let d = new Date(ms);
+            return d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2) + " " + ("0"+d.getHours()).slice(-2) + ":" + ("0"+d.getMinutes()).slice(-2);
+        }
+
+        if (choice === '4') {
+            let currentVal = getIsoString(matchedSPP.startTimeObjectMs);
+            let val = prompt("Edit Tanggal MULAI (Format: YYYY-MM-DD HH:MM)\nBiarkan kosong lalu klik OK jika ingin menghapus tanggalnya:", currentVal);
+            if (val !== null) {
+                if (val.trim() === "") { sppUpdates.startTimeObjectMs = null; }
+                else {
+                    let d = new Date(val.replace(" ", "T")); 
+                    if(!isNaN(d.getTime())) sppUpdates.startTimeObjectMs = d.getTime();
+                    else { alert("❌ Format tanggal salah!"); return; }
+                }
+            }
+        } else if (choice === '5') {
+            let currentVal = getIsoString(matchedSPP.lastInputTimeMs);
+            let val = prompt("Edit Tanggal SELESAI (Format: YYYY-MM-DD HH:MM)\nBiarkan kosong lalu klik OK jika ingin menghapus tanggalnya:", currentVal);
+            if (val !== null) {
+                if (val.trim() === "") { sppUpdates.lastInputTimeMs = null; }
+                else {
+                    let d = new Date(val.replace(" ", "T"));
+                    if(!isNaN(d.getTime())) sppUpdates.lastInputTimeMs = d.getTime();
+                    else { alert("❌ Format tanggal salah!"); return; }
+                }
+            }
+        } else if (choice === '6') {
+            let val = prompt("Ubah Status (misal: Selesai, Selesai Awal, Telat Selesai, Proses, Pending):", matchedSPP.status);
+            if (val !== null) sppUpdates.status = val.trim();
+        }
+
+        if (Object.keys(sppUpdates).length > 0) {
+            window.dbUpdateSPP(matchedSPP.firebaseKey, sppUpdates);
+            alert("✅ Master SPP berhasil diperbarui!");
+        }
+    } else {
+        alert("Pilihan tidak valid!");
+    }
+};
+
 window.applyGlobalFilter = function() {
     const globalFilterVal = document.getElementById('global-time-filter').value;
     const globalStart = document.getElementById('custom-start-date') ? document.getElementById('custom-start-date').value : '';
@@ -4302,8 +4450,14 @@ window.calculateAndRenderRanking = function() {
         let [sppAsal, productClean] = productSelection.split('::');
         productSelection = productClean;
         
-        let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal); 
-        if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: true }); 
+        if (sppAsal === "MANUAL_STOK") {
+            let safeKey = productSelection.replace(/\//g, '_SLASH_').replace(/\./g, '_DOT_');
+            let currentManual = window.databaseManualStock ? (window.databaseManualStock[safeKey] || 0) : 0;
+            if (currentManual > 0) firebase.database().ref('manualStock/' + safeKey).set(currentManual - 1);
+        } else {
+            let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal); 
+            if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: true }); 
+        }
         
         const targetProduct = document.getElementById('internal-target-product').value; 
         const rawTime = new Date(document.getElementById('internal-datetime').value); 
@@ -4314,7 +4468,6 @@ window.calculateAndRenderRanking = function() {
         }
 
         const formattedTime = window.formatDateToString(rawTime);
-        
         window.dbPushInternalOut({ time: formattedTime, rawTimestampMs: rawTime.getTime(), product: productSelection, spp: sppAsal, targetProduct: targetProduct });
         
         this.reset(); 
@@ -4330,46 +4483,39 @@ window.calculateAndRenderRanking = function() {
         let [sppAsal, productClean] = productSelection.split('::');
         productSelection = productClean;
         
-        let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal); 
-        if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: true });
-       const carrierElement = document.getElementById('shipment-carrier'); 
+        if (sppAsal === "MANUAL_STOK") {
+            let safeKey = productSelection.replace(/\//g, '_SLASH_').replace(/\./g, '_DOT_');
+            let currentManual = window.databaseManualStock ? (window.databaseManualStock[safeKey] || 0) : 0;
+            if (currentManual > 0) firebase.database().ref('manualStock/' + safeKey).set(currentManual - 1);
+        } else {
+            let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal); 
+            if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: true });
+        }
+
+        const carrierElement = document.getElementById('shipment-carrier'); 
         let carrier = carrierElement.value; 
         if (carrier === 'other') carrier = document.getElementById('shipment-carrier-manual').value || "Logistik Manual";
         
         const rawTime = new Date(document.getElementById('shipment-datetime').value); 
-        
-        if (isNaN(rawTime.getTime())) {
-            alert("Format waktu keberangkatan tidak valid! Silakan pilih ulang tanggal dan jam.");
-            return;
-        }
+        if (isNaN(rawTime.getTime())) { alert("Format waktu keberangkatan tidak valid!"); return; }
         
         const formattedTime = window.formatDateToString(rawTime); 
         const customer = document.getElementById('shipment-customer').value;
         
         window.dbPushShipment({ 
-            time: formattedTime, 
-            rawTimestampMs: rawTime.getTime(), 
-            product: productSelection, 
-            spp: sppAsal, 
-            operatorReceiver: "-", 
-            carrier: carrier, 
-            customer: customer,
-            status: "Dalam Perjalanan"
+            time: formattedTime, rawTimestampMs: rawTime.getTime(), product: productSelection, spp: sppAsal, operatorReceiver: "-", carrier: carrier, customer: customer, status: "Dalam Perjalanan"
         });
         
         this.reset();
-
         document.getElementById('shipment-carrier-manual').style.display = "none"; 
         window.resetDateTimeInputs();
 
-// Mencari No Produksi dari histori log terkait SPP ini
         let logTerkait = window.databaseLogOperator.find(log => log.noSPP === sppAsal && log.noProd && log.noProd !== "-");
-        let noProdKirim = logTerkait ? logTerkait.noProd : "Tidak ada no produksi";
+        let noProdKirim = logTerkait ? logTerkait.noProd : (sppAsal === "MANUAL_STOK" ? "Stok Manual" : "Tidak ada no produksi");
 
-        // Pemicu Notifikasi Pengiriman
         window.sendPushNotification("Barang Dikirim 🚚", `No Prod: ${noProdKirim} | Produk: ${productSelection} | Tujuan: ${customer}`);
-        
-        alert("Terimakasih data yang sudah anda berikan akan terekam di log history gudang");});
+        alert("Terimakasih data yang sudah anda berikan akan terekam di log history gudang");
+    });
 
     const devInjectForm = document.getElementById('dev-inject-form');
     if(devInjectForm) {
@@ -4381,50 +4527,18 @@ window.calculateAndRenderRanking = function() {
 
             if (!sppNo || !prodNo || !productName) return;
 
-            if (window.databaseMasterSPP.some(i => i.no === sppNo)) {
-                alert("No SPP ini sudah ada di sistem!");
-                return;
-            }
+            if (window.databaseMasterSPP.some(i => i.no === sppNo)) { alert("No SPP ini sudah ada di sistem!"); return; }
 
             const now = new Date();
             const timeMs = now.getTime();
             const formattedTime = window.formatDateToString(now);
 
             window.dbPushSPP({
-                no: sppNo,
-                datetime: formattedTime,
-                rawTimestampMs: timeMs,
-                product: productName,
-                maker: "Randi (Dev System)",
-                receiver: "-",
-                priority: "Reguler",
-                status: "Selesai",
-                isLocked: true,
-                deadlineRawObjectMs: timeMs,
-                startTimeObjectMs: timeMs - (3600 * 1000), 
-                isSPL: false,
-                formattedDeadline: formattedTime,
-                lastEventTimeMs: timeMs,
-                lastEventTimeFormatted: formattedTime,
-                lastInputTimeMs: timeMs,
-                isShipped: false,
-                fileUrl: null
+                no: sppNo, datetime: formattedTime, rawTimestampMs: timeMs, product: productName, maker: "Randi (Dev System)", receiver: "-", priority: "Reguler", status: "Selesai", isLocked: true, deadlineRawObjectMs: timeMs, startTimeObjectMs: timeMs - (3600 * 1000), isSPL: false, formattedDeadline: formattedTime, lastEventTimeMs: timeMs, lastEventTimeFormatted: formattedTime, lastInputTimeMs: timeMs, isShipped: false, fileUrl: null
             });
 
             window.dbPushLog({
-                noSPP: sppNo,
-                noProd: prodNo,
-                operator: "Randi (Dev System)",
-                condition: "Pekerjaan Selesai Tepat Waktu",
-                stage: "7. Packing & Selesai (Final)",
-                aktivitas: "Inject Data Fast-Track By Dev",
-                time: formattedTime,
-                timestampMs: timeMs,
-                deadline: "Inject Otomatis",
-                status: "Selesai",
-                reason: "-",
-                processPoints: 50,
-                msTerlambat: 0
+                noSPP: sppNo, noProd: prodNo, operator: "Randi (Dev System)", condition: "Pekerjaan Selesai Tepat Waktu", stage: "7. Packing & Selesai (Final)", aktivitas: "Inject Data Fast-Track By Dev", time: formattedTime, timestampMs: timeMs, deadline: "Inject Otomatis", status: "Selesai", reason: "-", processPoints: 50, msTerlambat: 0
             });
 
             this.reset();
@@ -4436,38 +4550,20 @@ window.calculateAndRenderRanking = function() {
         e.preventDefault();
 
         const sppNo = document.getElementById('admin-spp').value;
-        if (!sppNo) {
-            alert("Silakan pilih pekerjaan produksi terlebih dahulu dari dropdown atau klik Input Manual!");
-            return;
-        }
+        if (!sppNo) { alert("Silakan pilih pekerjaan produksi terlebih dahulu dari dropdown atau klik Input Manual!"); return; }
 
         const rekapData = {
-            bulan: document.getElementById('admin-bulan').value,
-            spp: sppNo,
-            noProd: document.getElementById('admin-noprod').value,
-            jenisPekerjaan: document.getElementById('admin-jenispek').value,
-            jenisProduksi: document.getElementById('admin-jenisprod').value,
-            tglBPMP: document.getElementById('admin-tglbpmp').value,
-            noBPMP: document.getElementById('admin-nobpmp').value,
-            tglLPBHP: document.getElementById('admin-tgllpbhp').value,
-            noLPBHP: document.getElementById('admin-nolpbhp').value,
-            qty: parseInt(document.getElementById('admin-qty').value) || 1,
-            timestampMs: Date.now()
+            bulan: document.getElementById('admin-bulan').value, spp: sppNo, noProd: document.getElementById('admin-noprod').value, jenisPekerjaan: document.getElementById('admin-jenispek').value, jenisProduksi: document.getElementById('admin-jenisprod').value, tglBPMP: document.getElementById('admin-tglbpmp').value, noBPMP: document.getElementById('admin-nobpmp').value, tglLPBHP: document.getElementById('admin-tgllpbhp').value, noLPBHP: document.getElementById('admin-nolpbhp').value, qty: parseInt(document.getElementById('admin-qty').value) || 1, timestampMs: Date.now()
         };
 
         firebase.database().ref('rekapDokumen').push(rekapData)
             .then(() => {
                 alert("Berhasil! Data Rekap Dokumen BPMP & LPBHP telah disimpan.");
-                this.reset();
-                document.getElementById('admin-select-selesai').value = ""; 
-                window.autoFillAdminDokumen(); 
+                this.reset(); document.getElementById('admin-select-selesai').value = ""; window.autoFillAdminDokumen(); 
             })
-            .catch((error) => {
-                alert("Gagal menyimpan data: " + error.message);
-            });
+            .catch((error) => { alert("Gagal menyimpan data: " + error.message); });
     });
 
-    // 🌟 PERBAIKAN BUG SPL TARGET WAKTU 0:
     window.handleSppSelection = function() {
         const sppNo = document.getElementById('prod-spp-select').value;
         const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
@@ -4487,19 +4583,14 @@ window.calculateAndRenderRanking = function() {
             document.getElementById('prod-deadline-val').value = PRODUCT_DICTIONARY[matchedSPP.product].hours;
             document.getElementById('prod-deadline-unit').value = "jam";
         } else if (matchedSPP.isSPL) {
-            // FIX Bug SPL 0 Waktu
             let splJam = parseInt(matchedSPP.splTargetHours) || 0;
             if (splJam === 0 && matchedSPP.deadlineRawObjectMs && matchedSPP.startTimeObjectMs) {
                 splJam = Math.round((matchedSPP.deadlineRawObjectMs - matchedSPP.startTimeObjectMs) / (1000 * 60 * 60));
             }
             document.getElementById('prod-target-ops').value = "SPL (Manual)";
-            // Pastikan jika tetap 0 karena pertama kali belum submit, beri default 1 agar tidak error
-            
-document.getElementById('prod-deadline-val').value = splJam;
-if (splJam === 0) {
-    document.getElementById('prod-deadline-val').placeholder = "Set manual (0)";
-}
-document.getElementById('prod-deadline-unit').value = "jam";
+            document.getElementById('prod-deadline-val').value = splJam;
+            if (splJam === 0) document.getElementById('prod-deadline-val').placeholder = "Set manual (0)";
+            document.getElementById('prod-deadline-unit').value = "jam";
         } else {
             document.getElementById('prod-target-ops').value = "";
             document.getElementById('prod-deadline-val').value = "";
@@ -4511,18 +4602,13 @@ document.getElementById('prod-deadline-unit').value = "jam";
             const timeDiff = window.getWorkingTimeDiff(timeToCalculate, matchedSPP.deadlineRawObjectMs);
 
             if (isPaused) {
-                const h = Math.floor(timeDiff / (1000 * 60 * 60));
-                const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-                deadlineDisplay.innerHTML = `⏸️ WAKTU TERJEDA: Sisa ${h} Jam ${m} Menit`;
-                deadlineDisplay.style.color = "var(--warning-glow)";
+                const h = Math.floor(timeDiff / (1000 * 60 * 60)); const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                deadlineDisplay.innerHTML = `⏸️ WAKTU TERJEDA: Sisa ${h} Jam ${m} Menit`; deadlineDisplay.style.color = "var(--warning-glow)";
             } else if (timeDiff > 0) {
-                const h = Math.floor(timeDiff / (1000 * 60 * 60));
-                const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-                deadlineDisplay.innerHTML = `⏳ Sisa Waktu Pekerjaan: ${h} Jam ${m} Menit`;
-                deadlineDisplay.style.color = "var(--warning-glow)";
+                const h = Math.floor(timeDiff / (1000 * 60 * 60)); const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                deadlineDisplay.innerHTML = `⏳ Sisa Waktu Pekerjaan: ${h} Jam ${m} Menit`; deadlineDisplay.style.color = "var(--warning-glow)";
             } else {
-                deadlineDisplay.innerHTML = `🚨 WAKTU HABIS!`;
-                deadlineDisplay.style.color = "var(--danger-glow)";
+                deadlineDisplay.innerHTML = `🚨 WAKTU HABIS!`; deadlineDisplay.style.color = "var(--danger-glow)";
             }
         } else {
             deadlineDisplay.innerHTML = "🟢 SPP Belum dikerjakan (Waktu akan dikunci saat Anda submit pertama kali).";
@@ -4538,7 +4624,6 @@ document.getElementById('prod-deadline-unit').value = "jam";
         const deadlineDisplay = document.getElementById('live-deadline-display');
 
         if(!sppNo || !valInput) return;
-
         const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
         
         if(matchedSPP && !matchedSPP.isLocked) {
@@ -4561,54 +4646,37 @@ document.getElementById('prod-deadline-unit').value = "jam";
         const targetVal = document.getElementById('prod-deadline-val').value;
         const targetUnit = document.getElementById('prod-deadline-unit').value;
 
-        if (!sppNo || !operator || !condition) {
-            alert("Harap lengkapi semua data laporan yang wajib!");
-            return;
-        }
-
-        const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
-        if (!matchedSPP) return;
+        if (!sppNo || !operator || !condition) { alert("Harap lengkapi semua data laporan yang wajib!"); return; }
+        const matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo); if (!matchedSPP) return;
 
         const timeMs = Date.now();
         const dateNow = new Date();
         const formattedTimeStr = window.formatDateToString(dateNow);
         
-        let statusKirim = "Proses";
-        let isSelesai = false;
+        let statusKirim = "Proses"; let isSelesai = false;
         if (condition.includes("Selesai") || stage.includes("7. Packing")) {
-            if (condition === "Pekerjaan Selesai Awal") {
-                statusKirim = "Selesai Awal";
-            } else if (condition === "Pekerjaan Selesai Telat") {
-                statusKirim = "Telat Selesai";
-            } else if (condition.includes("Lembur Selesai")) {
-                statusKirim = condition; 
-            } else {
-                statusKirim = "Selesai";
-            }
+            if (condition === "Pekerjaan Selesai Awal") statusKirim = "Selesai Awal";
+            else if (condition === "Pekerjaan Selesai Telat") statusKirim = "Telat Selesai";
+            else if (condition.includes("Lembur Selesai")) statusKirim = condition; 
+            else statusKirim = "Selesai";
             isSelesai = true;
         } else if (PENJEDAAN_STATUS_LIST.includes(condition)) {
             statusKirim = condition;
         }
 
-        let processPoints = 10; 
-        if (isSelesai) processPoints = 10; 
-
-        let sisaWaktuSavedHTML = "-";
-        let delayMs = 0;
+        let processPoints = isSelesai ? 10 : 10; 
+        let sisaWaktuSavedHTML = "-"; let delayMs = 0;
+        
         if (matchedSPP.isLocked && matchedSPP.deadlineRawObjectMs) {
             const isPausedBefore = ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(matchedSPP.status);
             const timeToCalculateLog = isPausedBefore ? matchedSPP.lastInputTimeMs : timeMs;
-            
             let timeDiff = window.getWorkingTimeDiff(timeToCalculateLog, matchedSPP.deadlineRawObjectMs);
             
             if (timeDiff > 0) {
-                const h = Math.floor(timeDiff / (1000 * 60 * 60));
-                const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                const h = Math.floor(timeDiff / (1000 * 60 * 60)); const m = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
                 sisaWaktuSavedHTML = `<span style="color:var(--emerald-glow); font-weight:bold;">${h} Jam ${m} Menit</span>`;
             } else {
-                const lateMs = Math.abs(timeDiff);
-                const h = Math.floor(lateMs / (1000 * 60 * 60));
-                const m = Math.floor((lateMs % (1000 * 60 * 60)) / (1000 * 60));
+                const lateMs = Math.abs(timeDiff); const h = Math.floor(lateMs / (1000 * 60 * 60)); const m = Math.floor((lateMs % (1000 * 60 * 60)) / (1000 * 60));
                 sisaWaktuSavedHTML = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${h} Jam ${m} Menit</span>`;
             }
             delayMs = -timeDiff;
@@ -4617,79 +4685,32 @@ document.getElementById('prod-deadline-unit').value = "jam";
         const reasonInputEl = document.getElementById('prod-reason-input');
         const reasonValue = (reasonInputEl && reasonInputEl.value.trim() !== "") ? reasonInputEl.value.trim() : "-";
 
-        const logData = {
-            noSPP: sppNo,
-            noProd: noProd,
-            operator: operator,
-            condition: condition,
-            stage: stage,
-            aktivitas: aktivitas,
-            time: formattedTimeStr,
-            timestampMs: timeMs,
-            deadline: `${targetVal} ${targetUnit}`,
-            status: statusKirim,
-            reason: reasonValue,
-            processPoints: processPoints,
-            msTerlambat: delayMs,
-            sisaWaktuSaved: sisaWaktuSavedHTML
-        };
+        window.dbPushLog({
+            noSPP: sppNo, noProd: noProd, operator: operator, condition: condition, stage: stage, aktivitas: aktivitas, time: formattedTimeStr, timestampMs: timeMs, deadline: `${targetVal} ${targetUnit}`, status: statusKirim, reason: reasonValue, processPoints: processPoints, msTerlambat: delayMs, sisaWaktuSaved: sisaWaktuSavedHTML
+        });
 
-        window.dbPushLog(logData);
-
-        let sppUpdates = {
-            lastInputTimeMs: timeMs,
-            lastEventTimeFormatted: formattedTimeStr,
-            status: statusKirim
-        };
+        let sppUpdates = { lastInputTimeMs: timeMs, lastEventTimeFormatted: formattedTimeStr, status: statusKirim };
 
         if (!matchedSPP.isLocked) {
-            sppUpdates.isLocked = true;
-            sppUpdates.startTimeObjectMs = timeMs;
-            
-            let calcTarget = new Date(timeMs);
-            if (targetUnit === "jam") {
-                calcTarget = new Date(window.addWorkingHours(timeMs, parseInt(targetVal)));
-            } else {
-                calcTarget = new Date(window.addWorkingHours(timeMs, parseInt(targetVal) * 24));
-            }            
-
-            sppUpdates.deadlineRawObjectMs = calcTarget.getTime();
-            sppUpdates.formattedDeadline = window.formatDateToString(calcTarget);
-
-            if (matchedSPP.isSPL) {
-                sppUpdates.splTargetHours = parseInt(targetVal);
-            }
-        }
-        else if (matchedSPP.isLocked && ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(matchedSPP.status) && condition === "Normal") {
+            sppUpdates.isLocked = true; sppUpdates.startTimeObjectMs = timeMs;
+            let calcTarget = targetUnit === "jam" ? new Date(window.addWorkingHours(timeMs, parseInt(targetVal))) : new Date(window.addWorkingHours(timeMs, parseInt(targetVal) * 24));
+            sppUpdates.deadlineRawObjectMs = calcTarget.getTime(); sppUpdates.formattedDeadline = window.formatDateToString(calcTarget);
+            if (matchedSPP.isSPL) sppUpdates.splTargetHours = parseInt(targetVal);
+        } else if (matchedSPP.isLocked && ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(matchedSPP.status) && condition === "Normal") {
             let pausedWorkingMs = window.getWorkingTimeDiff(matchedSPP.lastInputTimeMs, timeMs);
             if (pausedWorkingMs > 0) {
-                let pausedHours = pausedWorkingMs / (1000 * 60 * 60);
-                let newDeadlineMs = window.addWorkingHours(matchedSPP.deadlineRawObjectMs, pausedHours);
-                
-                sppUpdates.deadlineRawObjectMs = newDeadlineMs;
-                sppUpdates.formattedDeadline = window.formatDateToString(new Date(newDeadlineMs));
+                let newDeadlineMs = window.addWorkingHours(matchedSPP.deadlineRawObjectMs, pausedWorkingMs / (1000 * 60 * 60));
+                sppUpdates.deadlineRawObjectMs = newDeadlineMs; sppUpdates.formattedDeadline = window.formatDateToString(new Date(newDeadlineMs));
             }
         }
 
         window.dbUpdateSPP(matchedSPP.firebaseKey, sppUpdates);
 
-        this.reset();
-        document.getElementById('prod-stage-manual').style.display = 'none';
-        document.getElementById('prod-reason-group').style.display = 'none';
-        window.resetDateTimeInputs();
+        this.reset(); document.getElementById('prod-stage-manual').style.display = 'none'; document.getElementById('prod-reason-group').style.display = 'none'; window.resetDateTimeInputs();
+        if (window.currentUserAccess === "produksi") document.getElementById('prod-operator').value = window.currentUserRole;
         
-        if (window.currentUserAccess === "produksi") {
-            document.getElementById('prod-operator').value = window.currentUserRole;
-        }
-        
-// Pemicu Notifikasi Laporan
-        let notifTitle = "Laporan Di-submit 📝";
-        let notifMsg = `Jam: ${formattedTimeStr} | Kondisi Lapangan: ${condition}`;
-        
-        if (isSelesai) {
-            notifTitle = matchedSPP.isSPL ? "SPL Selesai Dikerjakan ✅" : "SPP Selesai Dikerjakan ✅";
-            notifMsg = `SPP/SPL: ${sppNo} | Produk: ${matchedSPP.product}`;
-        }
+        let notifTitle = isSelesai ? (matchedSPP.isSPL ? "SPL Selesai Dikerjakan ✅" : "SPP Selesai Dikerjakan ✅") : "Laporan Di-submit 📝";
+        let notifMsg = isSelesai ? `SPP/SPL: ${sppNo} | Produk: ${matchedSPP.product}` : `Jam: ${formattedTimeStr} | Kondisi Lapangan: ${condition}`;
         window.sendPushNotification(notifTitle, notifMsg);
 
         alert("Pekerjaan berhasil diperbarui! Terimakasih telah melakukan pelaporan.");
@@ -4707,28 +4728,8 @@ document.getElementById('prod-deadline-unit').value = "jam";
         const produkSelesaiInternal = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped && window.isInternalProduct(i.product));
         produkSelesaiInternal.forEach(item => { select.innerHTML += `<option value="${item.no}::${item.product}">${item.product} (${item.no})</option>`; });
     }
-    
-    window.updateWarehouseProductDropdown = function() {
-        const select = document.getElementById('shipment-product-select'); 
-        select.innerHTML = '<option value="">-- Pilih Produk di Gudang --</option>';
-        
-        const filteredSPP = window.getFilteredNonSPLSPP(); 
-        const produkSelesaiEksternal = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped && !window.isInternalProduct(i.product));
-        
-        produkSelesaiEksternal.forEach(item => { 
-            let noProdTambahan = "";
-            let logTerkait = window.databaseLogOperator.find(log => log.noSPP === item.no && log.noProd && log.noProd !== "-");
-            
-            if (logTerkait) {
-                let nomorDepan = logTerkait.noProd.split('/')[0].trim();
-                noProdTambahan = ` - [Prod: ${nomorDepan}]`;
-            }
-            
-            select.innerHTML += `<option value="${item.no}::${item.product}">${item.product} (${item.no})${noProdTambahan}</option>`; 
-        });
-    }
-
-    window.renderInternalStockTable = function() {
+   
+window.renderInternalStockTable = function() {
         const tbody = document.getElementById('internal-stock-body');
         if(!tbody) return;
         tbody.innerHTML = '';
@@ -4769,9 +4770,58 @@ document.getElementById('prod-deadline-unit').value = "jam";
             let delBtn = isDev? `<td><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; margin-right:5px;" onclick="editInternalOut('${item.firebaseKey}')">✏️ Edit</button> <button class="btn-delete" onclick="deleteInternalOut('${item.firebaseKey}', '${item.spp}')">Batal/Hapus</button></td>` : '';
             tbody.innerHTML += `<tr style="border-left: 4px solid var(--purple-glow);"><td>${item.time}</td><td><strong style="color: var(--text-main);">${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>📦 ${amanTarget}</b></td><td><span class="badge bg-reguler" style="background:rgba(168,85,247,0.1); color:var(--purple-glow); border-color:#d8b4fe;">Digunakan Produksi</span></td>${delBtn}</tr>`;
         });
+    };
+ 
+    // ====== GANTI FUNGSI DROPDOWN PENGIRIMAN ======
+    window.updateWarehouseProductDropdown = function() {
+        const select = document.getElementById('shipment-product-select'); 
+        select.innerHTML = '<option value="">-- Pilih Produk di Gudang --</option>';
+        
+        const filteredSPP = window.getFilteredNonSPLSPP(); 
+        const produkSelesaiEksternal = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped && !window.isInternalProduct(i.product));
+        
+        let htmlOptions = "";
+        let sppsByProduct = {};
+
+        produkSelesaiEksternal.forEach(item => {
+            if(!sppsByProduct[item.product]) sppsByProduct[item.product] = [];
+            sppsByProduct[item.product].push(item);
+        });
+
+        for(let prod in sppsByProduct) {
+            let actualSPPs = sppsByProduct[prod];
+            let safeKey = prod.replace(/\//g, '_SLASH_').replace(/\./g, '_DOT_');
+            let manualAdj = window.databaseManualStock ? (window.databaseManualStock[safeKey] || 0) : 0;
+            
+            if (manualAdj < 0) {
+                let removeCount = Math.min(Math.abs(manualAdj), actualSPPs.length);
+                actualSPPs.splice(0, removeCount); 
+            }
+
+            actualSPPs.forEach(item => {
+                let logTerkait = window.databaseLogOperator.find(log => log.noSPP === item.no && log.noProd && log.noProd !== "-");
+                let noProdTambahan = logTerkait ? ` - [Prod: ${logTerkait.noProd.split('/')[0].trim()}]` : "";
+                htmlOptions += `<option value="${item.no}::${item.product}">${item.product} (${item.no})${noProdTambahan}</option>`;
+            });
+        }
+
+        if (window.databaseManualStock) {
+            for (let safeKey in window.databaseManualStock) {
+                let prod = safeKey.replace(/_SLASH_/g, '/').replace(/_DOT_/g, '.');
+                let manualAdj = window.databaseManualStock[safeKey];
+                if (manualAdj > 0) {
+                    for(let i=0; i < manualAdj; i++) {
+                        htmlOptions += `<option value="MANUAL_STOK::${prod}">${prod} (Penyesuaian Manual)</option>`;
+                    }
+                }
+            }
+        }
+
+        select.innerHTML += htmlOptions;
     }
 
-   window.renderReadyStockTable = function() {
+    // ====== GANTI FUNGSI RENDER TABEL STOK & EDIT QTY ======
+    window.renderReadyStockTable = function() {
         const tbody = document.getElementById('ready-stock-body');
         const tvBody = document.getElementById('tv-ready-stock-body');
         if(!tbody && !tvBody) return;
@@ -4779,10 +4829,8 @@ document.getElementById('prod-deadline-unit').value = "jam";
         if (tbody) tbody.innerHTML = '';
         if (tvBody) tvBody.innerHTML = '';
 
-        // Cek apakah yang login adalah Dev atau Admin
         const isDevOrAdmin = (window.currentUserRole.toUpperCase() === "RANDI" || window.currentUserRole.toUpperCase() === "FEBRI" || window.currentUserRole === "Admin" || window.currentUserRole === "Septi Utami");
         
-        // Memastikan header tabel punya kolom Aksi untuk Dev/Admin
         const theadOriginal = document.querySelector('#ready-stock-table thead tr');
         if(theadOriginal && isDevOrAdmin && !document.getElementById('th-aksi-ready')) {
             theadOriginal.innerHTML += `<th id="th-aksi-ready" style="text-align:center; width:90px;">Aksi</th>`;
@@ -4793,7 +4841,25 @@ document.getElementById('prod-deadline-unit').value = "jam";
         const filteredSPP = window.getFilteredNonSPLSPP(); 
         const produkSelesaiEksternal = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped && !window.isInternalProduct(i.product));
         
-        if(produkSelesaiEksternal.length === 0) {
+        let stockMap = {};
+        produkSelesaiEksternal.forEach(item => { stockMap[item.product] = (stockMap[item.product] || 0) + 1; });
+
+        if (window.databaseManualStock) {
+            for (let safeKey in window.databaseManualStock) {
+                let prod = safeKey.replace(/_SLASH_/g, '/').replace(/_DOT_/g, '.');
+                stockMap[prod] = (stockMap[prod] || 0) + window.databaseManualStock[safeKey];
+            }
+        }
+
+        let stockArray = [];
+        for (let prod in stockMap) {
+            if (stockMap[prod] > 0) {
+                stockArray.push({ nama: prod, jumlah: stockMap[prod] });
+            }
+        }
+        stockArray.sort((a, b) => b.jumlah - a.jumlah);
+
+        if(stockArray.length === 0) {
             let colspanCnt = isDevOrAdmin ? 3 : 2;
             let emptyMsg = `<tr><td colspan="${colspanCnt}" style="text-align:center; color:var(--text-muted); padding: 15px;">Belum ada stok produk yang siap dikirim di gudang.</td></tr>`;
             if(tbody) tbody.innerHTML = emptyMsg;
@@ -4801,17 +4867,9 @@ document.getElementById('prod-deadline-unit').value = "jam";
             return;
         }
 
-        let stockMap = {};
-        produkSelesaiEksternal.forEach(item => { stockMap[item.product] = (stockMap[item.product] || 0) + 1; });
-
-        let stockArray = Object.keys(stockMap).map(nama => { return { nama: nama, jumlah: stockMap[nama] }; }).sort((a, b) => b.jumlah - a.jumlah);
-
         let displayStock = window.isReadyStockMinimized ? stockArray.slice(0, 5) : stockArray;
-        
-        // Logika baru untuk TV/Admin panel
         let displayStockTV = window.isTvInventoryMinimized ? stockArray.slice(0, 5) : stockArray;
         
-        // Kalkulasi Total Keseluruhan (tidak ikut terpotong)
         let totalQty = stockArray.reduce((sum, item) => sum + item.jumlah, 0);
         let actionColspan = isDevOrAdmin ? `<td></td>` : '';
         let totalRowHTML = `<tr>
@@ -4820,7 +4878,6 @@ document.getElementById('prod-deadline-unit').value = "jam";
             ${actionColspan}
         </tr>`;
 
-        // Render tabel aslinya (Logistik Gudang)
         if(tbody) {
             let html = '';
             displayStock.forEach(item => {
@@ -4834,7 +4891,6 @@ document.getElementById('prod-deadline-unit').value = "jam";
             tbody.innerHTML = html + totalRowHTML;
         }
 
-        // Render tabel khusus (TV / No Edit Mode)
         if(tvBody) {
             let tvHtml = '';
             displayStockTV.forEach(item => {
@@ -4850,9 +4906,8 @@ document.getElementById('prod-deadline-unit').value = "jam";
         }
     };
 
-// 🌟 FUNGSI BARU: EDIT QTY STOCK EKSTERNAL
     window.editReadyStockQty = function(productName, currentQty) {
-        let inputVal = prompt(`Ubah Stok Ready untuk:\n[ ${productName} ]\n\nStok saat ini: ${currentQty} Unit\n\nMasukkan JUMLAH TOTAL STOK AKHIR yang Anda inginkan:`, currentQty);
+        let inputVal = prompt(`Ubah Stok Ready untuk:\n[ ${productName} ]\n\nStok aktual saat ini: ${currentQty} Unit\n\nMasukkan JUMLAH TOTAL STOK AKHIR yang Anda inginkan (Aman, tidak akan membuat antrean SPP baru):`, currentQty);
         
         if (inputVal === null || inputVal.trim() === "") return;
         
@@ -4863,89 +4918,22 @@ document.getElementById('prod-deadline-unit').value = "jam";
         }
 
         let diff = newQty - currentQty;
-        
-        if (diff === 0) {
-            alert("Jumlah tidak berubah.");
-            return;
-        }
+        if (diff === 0) return;
 
-        if (diff > 0) {
-            // Tambah stok -> Inject Dummy SPP dan Logs
-            if(confirm(`Sistem akan menyuntikkan ${diff} unit data produksi (Fast-Track) otomatis untuk produk ${productName} agar total stok menjadi ${newQty} Unit.\n\nLanjutkan?`)) {
-                for(let i = 0; i < diff; i++) {
-                    let timestampMs = Date.now() + i; // hindari duplicate id
-                    let sppNo = "ADJ-" + timestampMs.toString().slice(-6) + "-" + i; 
-                    let formattedTime = window.formatDateToString(new Date(timestampMs));
-                    
-                    window.dbPushSPP({
-                        no: sppNo,
-                        datetime: formattedTime,
-                        rawTimestampMs: timestampMs,
-                        product: productName,
-                        maker: window.currentUserRole + " (Adjustment)",
-                        receiver: "-",
-                        priority: "Reguler",
-                        status: "Selesai",
-                        isLocked: true,
-                        deadlineRawObjectMs: timestampMs,
-                        startTimeObjectMs: timestampMs - 3600000,
-                        isSPL: false,
-                        formattedDeadline: formattedTime,
-                        lastEventTimeMs: timestampMs,
-                        lastEventTimeFormatted: formattedTime,
-                        lastInputTimeMs: timestampMs,
-                        isShipped: false,
-                        fileUrl: null
-                    });
-                    
-                    window.dbPushLog({
-                        noSPP: sppNo,
-                        noProd: "ADJ-STOK",
-                        operator: "Sistem Manajemen",
-                        condition: "Pekerjaan Selesai Tepat Waktu",
-                        stage: "7. Packing & Selesai (Final)",
-                        aktivitas: "Penyesuaian Tambah Stok Gudang",
-                        time: formattedTime,
-                        timestampMs: timestampMs,
-                        deadline: "Auto",
-                        status: "Selesai",
-                        reason: "-",
-                        processPoints: 0,
-                        msTerlambat: 0
-                    });
-                }
-                alert(`✅ Berhasil menambahkan ${diff} unit stok!`);
-            }
-        } else {
-            // Kurangi Stok -> Tandai isShipped: true agar hilang dari gudang ready
-            let toRemove = Math.abs(diff);
-            if(confirm(`Sistem akan mengeluarkan/menyembunyikan ${toRemove} unit ${productName} dari stok ready agar total stok menjadi ${newQty} Unit.\n\nLanjutkan?`)) {
-                let readyItems = window.databaseMasterSPP.filter(i => 
-                    i.product === productName && 
-                    ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && 
-                    !i.isShipped && !i.isSPL
-                );
-                
-                // Prioritaskan menghapus stok suntikan "ADJ-" (Adjustment) jika ada, sebelum stok SPP Asli
-                readyItems.sort((a, b) => {
-                    let aIsAdj = a.no.startsWith("ADJ-") || a.no.startsWith("SPP-MNL") ? 1 : 0;
-                    let bIsAdj = b.no.startsWith("ADJ-") || b.no.startsWith("SPP-MNL") ? 1 : 0;
-                    return bIsAdj - aIsAdj; 
-                });
-
-                let removedCount = 0;
-                for(let i = 0; i < readyItems.length; i++) {
-                    if(removedCount >= toRemove) break;
-                    window.dbUpdateSPP(readyItems[i].firebaseKey, { isShipped: true });
-                    removedCount++;
-                }
-                alert(`✅ Berhasil mengurangi/menyembunyikan ${toRemove} unit stok!`);
-            }
+        if(confirm(`Sistem akan menyesuaikan stok ${productName} menjadi ${newQty} Unit secara virtual.\nTabel History SPP TIDAK AKAN terpengaruh.\n\nLanjutkan?`)) {
+            let safeKey = productName.replace(/\//g, '_SLASH_').replace(/\./g, '_DOT_');
+            let currentManual = window.databaseManualStock ? (window.databaseManualStock[safeKey] || 0) : 0;
+            let newManual = currentManual + diff;
+            
+            firebase.database().ref('manualStock/' + safeKey).set(newManual).then(() => {
+                alert("✅ Stok berhasil diperbarui!");
+            }).catch(e => {
+                alert("Gagal update stok: " + e.message);
+            });
         }
     };
 
-
-    window.renderShipmentTable = function() {
+window.renderShipmentTable = function() {
         const tbody = document.getElementById('shipment-history-body'); tbody.innerHTML = ""; 
         let filteredShips = window.databaseShipment.filter(ship => window.isWithinTimeframe(ship.rawTimestampMs, document.getElementById('global-time-filter').value));
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
@@ -4972,7 +4960,7 @@ document.getElementById('prod-deadline-unit').value = "jam";
             
             tbody.innerHTML += `<tr style="border-left: 4px solid var(--blue-glow);"><td>${item.time}</td><td><strong style="color: var(--text-main);">${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>🚚 ${amanCarrier}</b></td><td><span style="color: var(--blue-glow); font-weight:700;">🏢 ${amanCustomer}</span></td><td>${badgeHTML}</td>${delBtn}</tr>`;
         });
-    }
+    };
 
     window.markShipmentTerkirim = function(firebaseKey) {
         if(confirm("Tandai pengiriman ini sebagai TERKIRIM (Sudah sampai di lokasi/customer)?")) {
@@ -5024,7 +5012,6 @@ document.getElementById('prod-deadline-unit').value = "jam";
         });
     }; 
 
-    // 🌟 PERBAIKAN FITUR EDIT JAM DAN MENIT DI HISTORY 2:
     window.editOperatorLog = function(firebaseKey) {
         let logItem = window.databaseLogOperator.find(l => l.firebaseKey === firebaseKey);
         if (!logItem) return;
@@ -5096,7 +5083,6 @@ document.getElementById('prod-deadline-unit').value = "jam";
             }
         }
         else if (choice === '7') {
-            // FIX JAM & MENIT SISA WAKTU
             let val = prompt("Masukkan Sisa Waktu Pekerjaan dalam format JAM:MENIT (Contoh: 24:30 untuk 24 jam 30 menit. Jika telat gunakan tanda minus, misal -1:15):");
             if (val) {
                 let isNegative = val.trim().startsWith('-');
@@ -5115,7 +5101,7 @@ document.getElementById('prod-deadline-unit').value = "jam";
                     sisaHtml = `<span style="color:var(--danger-glow); font-weight:bold;">Telat ${jam} Jam ${menit} Menit</span>`;
                 }
                 updates.sisaWaktuSaved = sisaHtml;
-                updates.msTerlambat = -totalMs; // msTerlambat di database log
+                updates.msTerlambat = -totalMs; 
 
                 if (['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(logItem.status) || logItem.condition.includes("Selesai")) {
                     if (totalMs >= 0) {
@@ -5180,7 +5166,6 @@ document.getElementById('prod-deadline-unit').value = "jam";
         if(!tbody) return;
         tbody.innerHTML = '';
         
-        // Ubah sumber data agar mengikuti filter waktu global
         let injectedLogs = window.getFilteredLogs().filter(log => log.operator === "Randi (Dev System)");
         
         if(injectedLogs.length === 0) {
@@ -5215,22 +5200,42 @@ document.getElementById('prod-deadline-unit').value = "jam";
 
     window.deleteMasterSPP = function(firebaseKey) { if(confirm("Hapus SPP ini secara permanen?")) window.dbRemoveSPP(firebaseKey); }
     window.deleteOperatorLog = function(firebaseKey) { if(confirm("Yakin menghapus log ini? Peringkat XP akan disesuaikan ulang.")) window.dbRemoveLog(firebaseKey); }
-    
+
     window.deleteInternalOut = function(firebaseKey, sppAsal) {
         if(confirm("Batal/hapus riwayat penarikan ini? Barang akan kembali ke stok Internal Produksi.")) {
+            let matchedIO = window.databaseInternalOut.find(io => io.firebaseKey === firebaseKey);
+            let productName = matchedIO ? matchedIO.product : null;
+            
             window.dbRemoveInternalOut(firebaseKey); 
-            let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal);
-            if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: false });
+            
+            if (sppAsal === "MANUAL_STOK" && productName) {
+                let safeKey = productName.replace(/\//g, '_SLASH_').replace(/\./g, '_DOT_');
+                let currentManual = window.databaseManualStock ? (window.databaseManualStock[safeKey] || 0) : 0;
+                firebase.database().ref('manualStock/' + safeKey).set(currentManual + 1);
+            } else {
+                let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal); 
+                if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: false });
+            }
         }
-    }
+    };
     
     window.deleteShipment = function(firebaseKey, sppAsal) {
         if(confirm("Hapus riwayat pengiriman ini? Barang akan kembali ke stok Eksternal siap kirim.")) {
+            let matchedShip = window.databaseShipment.find(sh => sh.firebaseKey === firebaseKey);
+            let productName = matchedShip ? matchedShip.product : null;
+            
             window.dbRemoveShipment(firebaseKey); 
-            let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal);
-            if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: false });
+            
+            if (sppAsal === "MANUAL_STOK" && productName) {
+                let safeKey = productName.replace(/\//g, '_SLASH_').replace(/\./g, '_DOT_');
+                let currentManual = window.databaseManualStock ? (window.databaseManualStock[safeKey] || 0) : 0;
+                firebase.database().ref('manualStock/' + safeKey).set(currentManual + 1);
+            } else {
+                let matchedSPP = window.databaseMasterSPP.find(i => i.no === sppAsal);
+                if (matchedSPP) window.dbUpdateSPP(matchedSPP.firebaseKey, { isShipped: false });
+            }
         }
-    }
+    };
 
    window.exportTableToCSV = function(tableId, filename) {
     const table = document.getElementById(tableId);
