@@ -3780,6 +3780,16 @@ window.globalLineChartInstance = new Chart(ctx, { type: 'line', data: { labels: 
             dataMatriks.push({ namaProduk, totalUnit, stringNoProd, jmlSelesai, unitKeluar });
         });
 
+        // INI BARIS YANG TERLEWAT SEBELUMNYA:
+        let dataJadi = dataMatriks.filter(item => item.jmlSelesai > 0 || item.unitKeluar > 0); 
+        dataJadi.sort((a, b) => b.unitKeluar - a.unitKeluar || b.jmlSelesai - a.jmlSelesai);
+
+        if (window.isMatrixMinimized) dataJadi = dataJadi.slice(0, 5);
+        const tbody = document.getElementById('product-actual-body'); tbody.innerHTML = "";
+        if(dataJadi.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 25px; color: var(--text-muted);">Belum ada produk yang selesai diproduksi.</td></tr>`; return; }
+        dataJadi.forEach(item => { tbody.innerHTML += `<tr><td><strong>${item.namaProduk}</strong></td><td><span class="badge bg-reguler">${item.totalUnit} Unit Total</span></td><td>${item.stringNoProd}</td><td><span style="color:var(--emerald-glow); font-weight:800;">${item.jmlSelesai} (Di Gudang)</span></td><td><b style="color:var(--cyan-glow); background:rgba(14,213,192,0.1); padding:4px 10px; border-radius:4px; border:1px solid rgba(14,213,192,0.3);">📦 ${item.unitKeluar} Digunakan/Dikirim</b></td></tr>`; });
+    };
+
         if (window.isMatrixMinimized) dataJadi = dataJadi.slice(0, 5);
         const tbody = document.getElementById('product-actual-body'); tbody.innerHTML = "";
         if(dataJadi.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 25px; color: var(--text-muted);">Belum ada produk yang selesai diproduksi.</td></tr>`; return; }
