@@ -41,22 +41,22 @@
     
     <style>
         :root {
-            --bg-main: #020814; /* Biru Navy Gelap (Matrix Night), bukan hitam polos */
-            --bg-pattern: radial-gradient(circle at 0% 0%, rgba(16, 185, 129, 0.1) 0%, transparent 40%), 
-                          radial-gradient(circle at 100% 100%, rgba(56, 189, 248, 0.1) 0%, transparent 40%);
-            --panel-bg: #0b1324; /* Warna panel sedikit dinaikkan agar elegan */
-            --panel-border: #1e293b;
-            --input-bg: #0f172a;
-            --input-border: #334155;
+            --bg-main: #0a0510; /* Gelap nuansa ungu/Oktober */
+            --bg-pattern: radial-gradient(circle at 0% 0%, rgba(249, 115, 22, 0.1) 0%, transparent 40%), 
+                          radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.1) 0%, transparent 40%);
+            --panel-bg: #12091a; 
+            --panel-border: #2d1b36;
+            --input-bg: #1a0f26;
+            --input-border: #3b244d;
             --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --cyan-glow: #0ed5c0;
-            --blue-glow: #38bdf8;
-            --purple-glow: #a855f7;
-            --success-glow: #10b981;
+            --text-muted: #a394b8;
+            --cyan-glow: #2dd4bf;
+            --blue-glow: #a855f7; /* Diganti ke Ungu Neon */
+            --purple-glow: #d946ef;
+            --success-glow: #f97316;
             --warning-glow: #fbbf24;
             --danger-glow: #f43f5e;
-            --emerald-glow: #34d399;
+            --emerald-glow: #fb923c; /* Diganti ke Oranye/Amber Neon */
             --gold-glow: #ffd700;
         }
 
@@ -65,14 +65,14 @@
         body {
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0; padding: 0;
-            /* Latar belakang Cyber Matrix penuh dengan pendaran neon hijau & biru */
-            background-color: #020617 !important;
+            /* Latar belakang Cyber Autumn penuh dengan pendaran neon Oranye & Ungu */
+            background-color: #0c0514 !important;
             background-image: 
-                radial-gradient(circle at 15% 20%, rgba(16, 185, 129, 0.25) 0%, transparent 40%),
-                radial-gradient(circle at 85% 80%, rgba(56, 189, 248, 0.2) 0%, transparent 40%),
-                radial-gradient(circle at 50% 50%, rgba(5, 150, 105, 0.1) 0%, transparent 60%),
-                linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px) !important;
+                radial-gradient(circle at 15% 20%, rgba(249, 115, 22, 0.2) 0%, transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(168, 85, 247, 0.2) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(225, 29, 72, 0.1) 0%, transparent 60%),
+                linear-gradient(rgba(249, 115, 22, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(249, 115, 22, 0.04) 1px, transparent 1px) !important;
             background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px !important;
             background-attachment: fixed !important;
             color: var(--text-main);
@@ -536,10 +536,10 @@ table {
                 padding: 25px; 
                 border: 1px solid var(--emerald-glow) !important; 
                 border-radius: 12px; 
-                box-shadow: 0 4px 30px rgba(16, 185, 129, 0.4) !important; 
+                box-shadow: 0 4px 30px rgba(249, 115, 22, 0.4) !important; 
                 overflow: hidden;
-                /* Latar Belakang Energi yang Bergerak Halus */
-                background: linear-gradient(135deg, #020617 0%, #064e3b 50%, #020617 100%) !important;
+                /* Latar Belakang Energi Oktober */
+                background: linear-gradient(135deg, #0c0514 0%, #431407 50%, #0c0514 100%) !important;
                 background-size: 200% 200%;
                 animation: cyberFlow 6s ease-in-out infinite;
             }
@@ -550,55 +550,47 @@ table {
                 100% { background-position: 0% 50%; }
             }
 
-            /* Efek Garis Grid Matrix Bergerak */
             .header-cyber::before {
                 content: "";
                 position: absolute;
                 top: 0; left: 0; width: 100%; height: 100%;
                 background-image: 
-                    linear-gradient(rgba(16, 185, 129, 0.15) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(16, 185, 129, 0.15) 1px, transparent 1px);
+                    linear-gradient(rgba(249, 115, 22, 0.15) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(249, 115, 22, 0.15) 1px, transparent 1px);
                 background-size: 30px 30px;
                 z-index: 1;
                 animation: gridMove 15s linear infinite;
             }
 
-            @keyframes gridMove {
-                0% { background-position: 0 0; }
-                100% { background-position: 60px 60px; }
-            }
-
-            /* --- PERLINDUNGAN KHUSUS UNTUK MODE TERANG --- */
+            /* Perlindungan Mode Terang Oktober */
             body.light-theme #main-header.header-cyber {
-                background: linear-gradient(135deg, #f0fdf4 0%, #6ee7b7 50%, #f0fdf4 100%) !important;
-                border-color: #059669 !important;
+                background: linear-gradient(135deg, #fff7ed 0%, #fdba74 50%, #fff7ed 100%) !important;
+                border-color: #ea580c !important;
             }
             body.light-theme #main-header.header-cyber::before {
                 background-image: 
-                    linear-gradient(rgba(5, 150, 105, 0.15) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(5, 150, 105, 0.15) 1px, transparent 1px);
+                    linear-gradient(rgba(234, 88, 12, 0.15) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(234, 88, 12, 0.15) 1px, transparent 1px);
             }
             body.light-theme #main-header.header-cyber h2,
             body.light-theme #main-header.header-cyber p,
             body.light-theme #main-header.header-cyber span {
-                color: #064e3b !important;
+                color: #431407 !important;
                 text-shadow: none !important;
             }
             body.light-theme #main-header.header-cyber .cyber-teks {
-                text-shadow: 0 0 10px rgba(16, 185, 129, 0.4) !important;
-                color: #059669 !important;
+                text-shadow: 0 0 10px rgba(234, 88, 12, 0.4) !important;
+                color: #c2410c !important;
             }
-            /* ---------------------------------------------- */
 
-            /* Kotak Kaca Transparan untuk Teks & Logo */
             .kaca-panel-cyber {
                 position: relative;
                 z-index: 5;
-                background: rgba(2, 6, 23, 0.7) !important; 
+                background: rgba(12, 5, 20, 0.7) !important; 
                 padding: 15px 25px;
                 border-radius: 10px;
                 box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-                border: 1px solid rgba(16, 185, 129, 0.4);
+                border: 1px solid rgba(249, 115, 22, 0.4);
                 backdrop-filter: blur(6px);
             }
             body.light-theme .kaca-panel-cyber {
@@ -607,24 +599,23 @@ table {
             
             .cyber-teks {
                 margin: 12px 0 0 0 !important;
-                color: #34d399 !important; /* Neon Emerald */
+                color: #fb923c !important; /* Neon Oranye */
                 font-size: 16px !important;
                 font-weight: 900 !important;
                 letter-spacing: 2px;
-                text-shadow: 0 0 10px #10b981, 0 0 20px #047857;
+                text-shadow: 0 0 10px #f97316, 0 0 20px #c2410c;
                 text-transform: uppercase;
                 animation: pulseNeon 2s infinite alternate;
             }
 
             @keyframes pulseNeon {
-                from { text-shadow: 0 0 5px #10b981, 0 0 10px #10b981; }
-                to { text-shadow: 0 0 15px #34d399, 0 0 25px #34d399 !important; }
+                from { text-shadow: 0 0 5px #f97316, 0 0 10px #f97316; }
+                to { text-shadow: 0 0 15px #fb923c, 0 0 25px #fb923c !important; }
             }
 
-            /* Animasi Ornamen Kanan (Gear Futuristik) */
             .cyber-icon {
                 font-size: 45px; 
-                filter: drop-shadow(0 0 15px #10b981); 
+                filter: drop-shadow(0 0 15px #f97316); 
                 animation: spinCyber 10s linear infinite;
             }
             @keyframes spinCyber {
@@ -632,7 +623,6 @@ table {
                 to { transform: rotate(360deg); }
             }
 
-            /* Responsif Mobile */
             @media (max-width: 768px) {
                 .header-cyber { flex-direction: column; gap: 15px; text-align: center; }
                 .kaca-panel-cyber { width: 100%; }
@@ -652,7 +642,7 @@ table {
                 <p style="margin: 8px 0 0 0; color: #a7f3d0; font-size: 16px; font-weight: bold; letter-spacing: 1px;">PT. TIRTA TEKNOSYS | Water Treatment Specialist</p>
                 <p style="margin: 6px 0 0 0; color: #6ee7b7; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">Sistem Monitoring Terintegrasi Real-time Analytics & Manajemen KPI Operator</p>
                 
-                <p class="cyber-teks">September Produktif: Akselerasi Target & Kinerja!</p>
+                <p class="cyber-teks">Oktober Produktif: Akselerasi Target & Kinerja!</p>
                 
                 <div class="live-indicator-container" style="background: rgba(0,0,0,0.6); border-color: #10b981; margin-top: 15px;">
                     <div class="live-dot" style="background-color:#34d399; box-shadow:0 0 8px #34d399;"></div>
@@ -1726,16 +1716,16 @@ window.addWorkingHours = function(startMs, hoursToAdd) {
     const lightThemeStyle = document.createElement('style');
     lightThemeStyle.innerHTML = `
         body.light-theme {
-            --bg-main: #f1f5f9;
+            --bg-main: #f8fafc;
             --panel-bg: #ffffff;
             --panel-border: #cbd5e1;
-            --input-bg: #f8fafc;
+            --input-bg: #f1f5f9;
             --input-border: #94a3b8;
             --text-main: #0f172a;
             --text-muted: #475569;
-            --blue-glow: #0284c7;
-            --emerald-glow: #059669;
-            --purple-glow: #7c3aed;
+            --blue-glow: #9333ea; /* Ungu Mode Terang */
+            --emerald-glow: #ea580c; /* Oranye Mode Terang */
+            --purple-glow: #c026d3;
             --warning-glow: #d97706;
             --danger-glow: #e11d48;
             --cyan-glow: #0d9488;
