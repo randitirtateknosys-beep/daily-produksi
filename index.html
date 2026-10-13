@@ -3765,34 +3765,42 @@ window.globalLineChartInstance = new Chart(ctx, { type: 'line', data: { labels: 
     window.renderProductActualMatrix = function() {
         const filteredSPP = window.getFilteredNonSPLSPP();
         const filteredLogs = window.getFilteredLogs();
-        let produkUnik = []; filteredSPP.forEach(spp => { if (!produkUnik.includes(spp.product)) produkUnik.push(spp.product); });
+        let produkUnik = []; 
+        filteredSPP.forEach(spp => { if (!produkUnik.includes(spp.product)) produkUnik.push(spp.product); });
         let dataMatriks = [];
 
         produkUnik.forEach(namaProduk => {
             let listSppProduk = filteredSPP.filter(s => s.product === namaProduk); 
             let totalUnit = listSppProduk.reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0); 
             let noProductionList = [];
-            filteredLogs.forEach(log => { let sMatched = listSppProduk.find(s => s.no === log.noSPP); if (sMatched && log.noProd && log.noProd !== "-" && !noProductionList.includes(log.noProd)) noProductionList.push(log.noProd); });
+            
+            filteredLogs.forEach(log => { 
+                let sMatched = listSppProduk.find(s => s.no === log.noSPP); 
+                if (sMatched && log.noProd && log.noProd !== "-" && !noProductionList.includes(log.noProd)) {
+                    noProductionList.push(log.noProd);
+                } 
+            });
+            
             let stringNoProd = noProductionList.length > 0 ? `<details><summary style="cursor:pointer; color:var(--blue-glow); font-size:11px;">Lihat No. Prod</summary><code style="color:var(--blue-glow); font-weight:bold; font-size:11px;">${noProductionList.join(", ")}</code></details>` : "-";
             
             let jmlSelesai = listSppProduk.filter(s => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(s.status) && !s.isShipped).reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
             let unitKeluar = listSppProduk.filter(s => s.isShipped).reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0); 
+            
             dataMatriks.push({ namaProduk, totalUnit, stringNoProd, jmlSelesai, unitKeluar });
         });
 
-        // INI BARIS YANG TERLEWAT SEBELUMNYA:
         let dataJadi = dataMatriks.filter(item => item.jmlSelesai > 0 || item.unitKeluar > 0); 
         dataJadi.sort((a, b) => b.unitKeluar - a.unitKeluar || b.jmlSelesai - a.jmlSelesai);
 
         if (window.isMatrixMinimized) dataJadi = dataJadi.slice(0, 5);
-        const tbody = document.getElementById('product-actual-body'); tbody.innerHTML = "";
-        if(dataJadi.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 25px; color: var(--text-muted);">Belum ada produk yang selesai diproduksi.</td></tr>`; return; }
-        dataJadi.forEach(item => { tbody.innerHTML += `<tr><td><strong>${item.namaProduk}</strong></td><td><span class="badge bg-reguler">${item.totalUnit} Unit Total</span></td><td>${item.stringNoProd}</td><td><span style="color:var(--emerald-glow); font-weight:800;">${item.jmlSelesai} (Di Gudang)</span></td><td><b style="color:var(--cyan-glow); background:rgba(14,213,192,0.1); padding:4px 10px; border-radius:4px; border:1px solid rgba(14,213,192,0.3);">📦 ${item.unitKeluar} Digunakan/Dikirim</b></td></tr>`; });
-    };
-
-        if (window.isMatrixMinimized) dataJadi = dataJadi.slice(0, 5);
-        const tbody = document.getElementById('product-actual-body'); tbody.innerHTML = "";
-        if(dataJadi.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 25px; color: var(--text-muted);">Belum ada produk yang selesai diproduksi.</td></tr>`; return; }
+        
+        const tbody = document.getElementById('product-actual-body'); 
+        tbody.innerHTML = "";
+        
+        if(dataJadi.length === 0) { 
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 25px; color: var(--text-muted);">Belum ada produk yang selesai diproduksi.</td></tr>`; 
+            return; 
+        }
         dataJadi.forEach(item => { tbody.innerHTML += `<tr><td><strong>${item.namaProduk}</strong></td><td><span class="badge bg-reguler">${item.totalUnit} Unit Total</span></td><td>${item.stringNoProd}</td><td><span style="color:var(--emerald-glow); font-weight:800;">${item.jmlSelesai} (Di Gudang)</span></td><td><b style="color:var(--cyan-glow); background:rgba(14,213,192,0.1); padding:4px 10px; border-radius:4px; border:1px solid rgba(14,213,192,0.3);">📦 ${item.unitKeluar} Digunakan/Dikirim</b></td></tr>`; });
     };
 
