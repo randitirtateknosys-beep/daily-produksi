@@ -799,14 +799,113 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
                 <button type="button" id="btn-toggle-dev-inject" class="btn-toggle-matrix" onclick="toggleDevInjectView()">🔍 Tampilkan Semua Riwayat</button>
             </div>
         </div>
-        
+
+ <!-- STYLE TAMBAHAN AGAR TABEL TIDAK PERLU SCROLL JAUH KE BAWAH & GRAFIK MUDAH DIBACA -->
+        <style>
+            .table-container {
+                max-height: 460px;
+                overflow-y: auto;
+            }
+            .table-container thead th {
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                background: #12091a !important;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+            }
+            body.light-theme .table-container thead th {
+                background: #e2e8f0 !important;
+            }
+            .chart-kpi-strip {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 12px;
+                margin-bottom: 18px;
+            }
+            .chart-kpi-card {
+                background: rgba(15, 23, 42, 0.7);
+                border: 1px solid var(--panel-border);
+                border-left: 3px solid var(--blue-glow);
+                border-radius: 8px;
+                padding: 10px 14px;
+            }
+            .chart-kpi-card span {
+                font-size: 11px;
+                color: var(--text-muted);
+                text-transform: uppercase;
+                font-weight: 700;
+                display: block;
+            }
+            .chart-kpi-card strong {
+                font-size: 16px;
+                color: #fff;
+                display: block;
+                margin-top: 4px;
+            }
+            .chart-kpi-card small {
+                font-size: 11px;
+                color: var(--emerald-glow);
+                font-weight: 600;
+            }
+            @media (max-width: 768px) {
+                .chart-kpi-strip { grid-template-columns: 1fr 1fr; }
+            }
+        </style>
+
         <div id="panel-analytics" style="display: flex; flex-direction: column; gap: 25px;">
-            
-            <!-- PANEL 1: RINGKASAN MASTER SPP & INVENTARIS -->
+        
+<!-- 1. GRAFIK TREN VOLUME PRODUKSI (PALING ATAS & MUDAH DIANALISA) -->
+            <div class="panel">
+                <div class="header-flex" style="margin-bottom: 15px;">
+                    <h3 style="margin: 0;">📈 Grafik Tren Volume Produksi (Aktual Barang Selesai)</h3>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        <select id="chartModeSelector" onchange="refreshAnalyticsAndChart()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--emerald-glow); background: var(--input-bg); color: white; font-weight: bold; cursor: pointer;">
+                            <option value="kategori" selected>📊 Analisa: Barang Produk vs Pendukung (Per Tanggal)</option>
+                            <option value="total">📈 Analisa: Total Volume Harian (Gabungan)</option>
+                            <option value="top10">🏆 Analisa: Top 10 Barang Terbanyak Selesai</option>
+                            <option value="semua">🔍 Analisa: Detail Semua Barang Per Tanggal</option>
+                        </select>
+                        <select id="chartTypeSelector" onchange="changeChartType()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--blue-glow); background: var(--input-bg); color: white; font-weight: bold; cursor: pointer;">
+                            <option value="bar" selected>📊 Bar Chart (Batang)</option>
+                            <option value="line">📈 Line Chart (Garis Tren)</option>
+                            <option value="pie">🥧 Pie Chart (Proporsi)</option>
+                        </select>
+                        <button type="button" class="btn-export" onclick="exportChartAnalysisToExcel()">📥 Export Analisa</button>
+                        <button type="button" class="btn-export" style="background: linear-gradient(135deg, #f43f5e, #e11d48); color: #fff; border: none;" onclick="printChartAnalysisPDF()">🖨️ Cetak Grafik (PDF)</button>
+                    </div>
+                </div>
+
+                <!-- Ringkasan Analisa Grafik Otomatis -->
+                <div class="chart-kpi-strip">
+                    <div class="chart-kpi-card" style="border-left-color: var(--emerald-glow);">
+                        <span>📦 Total Output Selesai</span>
+                        <strong id="chart-kpi-total">0 Unit</strong>
+                        <small id="chart-kpi-split">Produk: 0 | Pendukung: 0</small>
+                    </div>
+                    <div class="chart-kpi-card" style="border-left-color: var(--warning-glow);">
+                        <span>🏆 Barang Terbanyak (#1)</span>
+                        <strong id="chart-kpi-top-item" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</strong>
+                        <small id="chart-kpi-top-qty">0 Unit Selesai</small>
+                    </div>
+                    <div class="chart-kpi-card" style="border-left-color: var(--cyan-glow);">
+                        <span>🔥 Puncak Produksi Harian</span>
+                        <strong id="chart-kpi-peak-date">-</strong>
+                        <small id="chart-kpi-peak-qty">0 Unit / Hari</small>
+                    </div>
+                    <div class="chart-kpi-card" style="border-left-color: var(--purple-glow);">
+                        <span>⚡ Rata-Rata Produksi</span>
+                        <strong id="chart-kpi-avg">0 Unit / Hari</strong>
+                        <small id="chart-kpi-days">Dalam 0 Hari Aktif</small>
+                    </div>
+                </div>
+
+                <div class="chart-panel-box" style="height: 320px;"><canvas id="sppTrendLineChart"></canvas></div>
+            </div>
+
+            <!-- 2. RINGKASAN MASTER SPP & STATUS INVENTARIS AKHIR -->
             <div class="panel">
                 <h3>📈 Ringkasan Master SPP</h3>
                 
-                <!-- Kotak Indikator SPP (Memanjang ke Kanan) -->
                 <div class="stats-subgrid">
                     <div class="stat-box total"><span class="stat-label">📊 Total SPP Masuk</span><div id="stat-total" class="stat-value">0</div></div>
                     <div class="stat-box selesai"><span class="stat-label">✅ Selesai (Produksi)</span><div id="stat-selesai" class="stat-value">0</div></div>
@@ -817,7 +916,6 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
                     <div class="stat-box takeover"><span class="stat-label">⚠️ Takeover</span><div id="stat-takeover" class="stat-value">0</div></div>
                 </div>
                 
-                <!-- Progress Bar SPP -->
                 <div style="margin-top: 15px; padding: 0 5px;">
                     <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: var(--text-muted); margin-bottom: 6px; text-transform:uppercase;">
                         <span>Progress Penyelesaian Keseluruhan SPP</span>
@@ -830,8 +928,11 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
 
                 <!-- TABEL STATUS INVENTARIS AKHIR -->
                 <div style="margin-top: 25px; border-top: 1px dashed rgba(56, 189, 248, 0.3); padding-top: 15px;">
-                    <h4 style="color: var(--blue-glow); margin: 0 0 10px 0; font-size: 13px; text-transform: uppercase;">📦 Status Inventaris Akhir</h4>
-                    <div class="table-container">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                        <h4 style="color: var(--blue-glow); margin: 0; font-size: 13px; text-transform: uppercase;">📦 Status Inventaris Akhir</h4>
+                        <button type="button" class="btn-action-trigger" style="font-size: 11px; padding: 5px 12px; border-color: var(--blue-glow); color: var(--cyan-glow);" onclick="kelolaKataKunciProduk()">🏷️ Kelola Kata Kunci Produk</button>
+                    </div>
+                    <div class="table-container" style="max-height: none;">
                         <table style="background: rgba(15, 23, 42, 0.6); margin: 0;">
                             <thead>
                                 <tr>
@@ -840,18 +941,40 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- BARIS BARU: TOTAL SPP PROSES -->
                                 <tr>
-                                    <td><strong style="color: var(--warning-glow);">Total Keseluruhan Dalam Progres (Proses, Pending, Terjeda, Stoppage, Takeover)</strong></td>
-                                    <td style="text-align: center;"><span id="stat-total-progress" class="badge bg-buffer" style="font-size:13px; border-color: var(--warning-glow);">0 Unit</span></td>
+                                    <td colspan="2"><strong style="color: var(--warning-glow);">🔄 Total Keseluruhan Dalam Progres</strong></td>
                                 </tr>
                                 <tr>
-                                    <td><strong style="color: var(--emerald-glow);">Total Barang Ready (Di Gudang)</strong></td>
-                                    <td style="text-align: center;"><span id="stat-ready-gudang" class="badge bg-reguler" style="font-size:13px;">0 Unit</span></td>
+                                    <td style="padding-left: 20px; font-size: 12px;">└ Barang Produk</td>
+                                    <td style="text-align: center;"><span id="stat-progress-produk" class="badge bg-buffer" style="border-color: var(--warning-glow);">0 Unit</span></td>
                                 </tr>
                                 <tr>
-                                    <td><strong style="color: var(--cyan-glow);">Total Barang Pengiriman (Terkirim)</strong></td>
-                                    <td style="text-align: center;"><span id="stat-terkirim" class="badge bg-urgent" style="background:rgba(14,213,192,0.1); color:var(--cyan-glow); border-color:#5eead4; font-size:13px;">0 Unit</span></td>
+                                    <td style="padding-left: 20px; font-size: 12px;">└ Barang Pendukung</td>
+                                    <td style="text-align: center;"><span id="stat-progress-pendukung" class="badge bg-buffer" style="border-color: var(--warning-glow);">0 Unit</span></td>
+                                </tr>
+
+                                <tr>
+                                    <td colspan="2"><strong style="color: var(--emerald-glow);">🏭 Total Barang Ready (Di Gudang)</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 20px; font-size: 12px;">└ Barang Produk</td>
+                                    <td style="text-align: center;"><span id="stat-ready-produk" class="badge bg-reguler">0 Unit</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 20px; font-size: 12px;">└ Barang Pendukung</td>
+                                    <td style="text-align: center;"><span id="stat-ready-pendukung" class="badge bg-reguler">0 Unit</span></td>
+                                </tr>
+
+                                <tr>
+                                    <td colspan="2"><strong style="color: var(--cyan-glow);">🚚 Total Barang Pengiriman (Terkirim)</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 20px; font-size: 12px;">└ Barang Produk</td>
+                                    <td style="text-align: center;"><span id="stat-terkirim-produk" class="badge bg-urgent" style="background:rgba(14,213,192,0.1); color:var(--cyan-glow); border-color:#5eead4;">0 Unit</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 20px; font-size: 12px;">└ Barang Pendukung</td>
+                                    <td style="text-align: center;"><span id="stat-terkirim-pendukung" class="badge bg-urgent" style="background:rgba(14,213,192,0.1); color:var(--cyan-glow); border-color:#5eead4;">0 Unit</span></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -859,82 +982,74 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
                 </div>
             </div>
 
-<!-- PANEL REKAP KHUSUS (DEV, ADMIN, MGR, MANAJEMEN, TV) -->
-<div class="panel" id="panel-rekap-khusus" style="display: none; border-color: var(--emerald-glow); margin-bottom: 25px; overflow: hidden; max-width: 100%;">
-    <div class="header-flex">
-        <h3 style="color: var(--emerald-glow) !important; margin: 0;">📊 Rekap Total SPP Khusus</h3>
-        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-            <!-- Fitur Pencarian & Filter Tanggal -->
-            <input type="text" id="search-rekap-khusus" class="local-search" placeholder="Cari No SPP atau Nama..." onkeyup="window.renderRekapKhususTable()">
-            <select id="filter-waktu-rekap" class="local-search" style="min-width: 120px;" onchange="window.toggleCustomDateRekap()">
-                <option value="all" selected>Semua Waktu</option>
-                <option value="today">Hari Ini</option>
-                <option value="week">Minggu Ini</option>
-                <option value="month">Bulan Ini</option>
-                <option value="year">Tahun Ini</option>
-                <option value="custom">Pilih Tanggal (Custom)...</option>
-            </select>
-            <div id="custom-date-rekap-container" style="display:none; align-items:center; gap:5px;">
-                <input type="date" id="custom-rekap-start" class="local-search" onchange="window.renderRekapKhususTable()">
-                <span style="color:#fff; font-size:12px;">s/d</span>
-                <input type="date" id="custom-rekap-end" class="local-search" onchange="window.renderRekapKhususTable()">
-            </div>
-            <button class="btn-minimize" onclick="togglePanel('table-rekap-khusus-container', this)">➖ Minimize</button>
-            <button class="btn-export" onclick="exportTableToCSV('rekap-khusus-table', 'Rekap_SPP_Manajemen.csv')">📥 Export Excel</button>
         </div>
-    </div>
 
-<!-- STRUKTUR TABEL YANG BENAR & ANTI MELEBAR KE LUAR -->
-    <div class="table-container" id="table-rekap-khusus-container" style="overflow-x: auto; width: 100%; max-width: 100vw; display: block; -webkit-overflow-scrolling: touch;">
-        <table id="rekap-khusus-table" style="width: max-content; min-width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr>
-                    <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">NO SPP</th>
-                    <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">NO BPMP</th>
-                    <th style="width: 250px; padding: 12px; white-space: normal; vertical-align: middle;">NAMA BARANG</th>
-                    <th style="width: 60px; padding: 12px; text-align: center; vertical-align: middle;">QTY</th>
-                    <th style="width: 130px; padding: 12px; white-space: normal; vertical-align: middle;">TGL MULAI DIKERJAKAN</th>
-                    <th style="width: 130px; padding: 12px; white-space: normal; vertical-align: middle;">TARGET SELESAI</th>
-                    <th style="width: 130px; padding: 12px; white-space: normal; vertical-align: middle;">TGL SELESAI</th>
-                    <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">NO LPBHP</th>
-                    <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">STATUS</th>
-                    <th style="width: 120px; padding: 12px; white-space: normal; vertical-align: middle;">KET</th>
-                    <!-- TAMBAHAN KOLOM AKSI (DISINI) -->
-                    <th id="th-aksi-rekap" style="width: 90px; padding: 12px; text-align: center; vertical-align: middle; display: none;">AKSI</th>
-                </tr>
-            </thead>
-            <tbody id="rekap-khusus-body">
-                <tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding: 15px;">Loading data...</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div class="toggle-matrix-container">
-        <button type="button" id="btn-toggle-rekap-khusus" class="btn-toggle-matrix" onclick="toggleRekapKhususView()">🔍 Tampilkan Semua Data</button>
-    </div>
-</div>
-            <!-- PANEL 2: GRAFIK TREN (Dipindah ke bawah dan dibuat membentang/Full Width) -->
-            <div class="panel">
-                <h3>📈 Grafik Tren Volume Produksi (Aktual Barang Selesai)</h3>
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
-                    <select id="chartTypeSelector" onchange="changeChartType()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--blue-glow); background: var(--input-bg); color: white; font-weight: bold;">
-                        <option value="line">📈 Line Chart</option>
-                        <option value="bar">📊 Bar Chart</option>
-                        <option value="pie">🥧 Pie Chart</option>
-                    </select>
+        <!-- 3. DATA INVENTORI (BARANG READY: KIRI PRODUK & KANAN PENDUKUNG) -->
+        <div class="panel" id="tv-inventory-container" style="display: none; border-color: var(--emerald-glow);">
+            <div class="header-flex">
+                <h3 style="color: var(--emerald-glow) !important; margin: 0; display: flex; align-items: center; gap: 10px;">
+                    📦 Data Inventori (Barang Ready)
+                    <span id="tv-inventory-badge" class="badge bg-reguler" style="font-size: 10px;">Mode: Top 5</span>
+                </h3>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button type="button" class="btn-toggle-matrix" style="padding: 8px 14px; font-size: 11px;" onclick="toggleTvInventoryView()">🔄 Ubah Mode Tampilan</button>
+                    <button class="btn-minimize" onclick="togglePanel('tv-ready-stock-table-container', this)">➖ Minimize</button>
                 </div>
-                <div class="chart-panel-box"><canvas id="sppTrendLineChart"></canvas></div>
             </div>
+            
+            <div id="tv-ready-stock-table-container">
+                <div class="unified-grid" style="align-items: start;">
+                    <!-- SISI KIRI: BARANG PRODUK -->
+                    <div>
+                        <h4 style="color: var(--emerald-glow); margin: 0 0 10px 0; font-size: 13px; text-transform: uppercase;">🏭 Sisi Kiri: Barang Produk (Ready)</h4>
+                        <div class="table-container">
+                            <table id="tv-ready-produk-table" style="background: rgba(15, 23, 42, 0.6);">
+                                <thead>
+                                    <tr>
+                                        <th>Nama Barang Produk</th>
+                                        <th style="text-align: center; width: 160px;">Total Ready</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tv-ready-produk-body">
+                                    <tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding: 15px;">Loading data stok...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
 
+                    <!-- SISI KANAN: BARANG PENDUKUNG -->
+                    <div>
+                        <h4 style="color: var(--cyan-glow); margin: 0 0 10px 0; font-size: 13px; text-transform: uppercase;">🛠️ Sisi Kanan: Barang Pendukung (Ready)</h4>
+                        <div class="table-container">
+                            <table id="tv-ready-pendukung-table" style="background: rgba(15, 23, 42, 0.6);">
+                                <thead>
+                                    <tr>
+                                        <th>Nama Barang Pendukung</th>
+                                        <th style="text-align: center; width: 160px;">Total Ready</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tv-ready-pendukung-body">
+                                    <tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding: 15px;">Loading data stok...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="toggle-matrix-container">
+                <button type="button" id="btn-toggle-tv-inventory" class="btn-toggle-matrix" onclick="toggleTvInventoryView()">🔍 Tampilkan Semua Barang Ready</button>
+            </div>
         </div>
 
+        <!-- 4. AKTUAL PRODUK TERBANYAK SELESAI -->
         <div class="panel" id="panel-aktual">
             <div class="header-flex">
                 <h3>📊 Aktual Produk Terbanyak Selesai <span id="matrix-status-badge" class="badge bg-reguler" style="margin-left: 15px; font-size: 10px;">Mode: Top 5</span></h3>
                 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                     <input type="text" id="search-aktual" class="local-search" placeholder="Cari di tabel Aktual Produk..." onkeyup="window.performGlobalSearch()">
-                   
- <button class="btn-minimize" onclick="togglePanel('table-aktual-container', this)">➖ Minimize</button>
+                    <button type="button" class="btn-toggle-matrix" style="padding: 8px 14px; font-size: 11px;" onclick="toggleProductMatrixView()">🔄 Semua / Top 5</button>
+                    <button class="btn-minimize" onclick="togglePanel('table-aktual-container', this)">➖ Minimize</button>
                     <button class="btn-export" onclick="exportTableToCSV('product-actual-table', 'Aktual_Produk.csv')">📥 Export Excel</button>
                 </div>
             </div>
@@ -947,35 +1062,63 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
             <div class="toggle-matrix-container">
                 <button type="button" id="btn-toggle-view" class="btn-toggle-matrix" onclick="toggleProductMatrixView()">🔍 Tampilkan Semua Produk Selesai</button>
             </div>
+        </div>
 
-<div id="tv-inventory-container" style="display: none; margin-top: 35px; border-top: 1px dashed var(--emerald-glow); padding-top: 20px;">
-                <div class="header-flex">
-                    <h3 style="color: var(--emerald-glow) !important; font-size: 16px; margin: 0; display: flex; align-items: center; gap: 10px;">
-                        📦 Data Inventori (Barang Ready)
-                        <span id="tv-inventory-badge" class="badge bg-reguler" style="font-size: 10px;">Mode: Top 5</span>
-                    </h3>
-                    <button class="btn-minimize" onclick="togglePanel('tv-ready-stock-table-container', this)">➖ Minimize</button>
-                </div>
-                
-                <div class="table-container" id="tv-ready-stock-table-container">
-                    <table id="tv-ready-stock-table" style="background: rgba(15, 23, 42, 0.6);">
-                        <thead>
-                            <tr>
-                                <th>Nama Produk</th>
-                                <th style="text-align: center; width: 250px;">Total Produk Selesai (Ready)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tv-ready-stock-body">
-                            <tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding: 15px;">Loading data stok...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="toggle-matrix-container">
-                    <button type="button" id="btn-toggle-tv-inventory" class="btn-toggle-matrix" onclick="toggleTvInventoryView()">🔍 Tampilkan Semua Barang Ready</button>
+        <!-- 5. REKAP TOTAL SPP KHUSUS -->
+        <div class="panel" id="panel-rekap-khusus" style="display: none; border-color: var(--emerald-glow); overflow: hidden; max-width: 100%;">
+            <div class="header-flex">
+                <h3 style="color: var(--emerald-glow) !important; margin: 0;">📊 Rekap Total SPP Khusus</h3>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <input type="text" id="search-rekap-khusus" class="local-search" placeholder="Cari No SPP atau Nama..." onkeyup="window.renderRekapKhususTable()">
+                    <select id="filter-waktu-rekap" class="local-search" style="min-width: 120px;" onchange="window.toggleCustomDateRekap()">
+                        <option value="all" selected>Semua Waktu</option>
+                        <option value="today">Hari Ini</option>
+                        <option value="week">Minggu Ini</option>
+                        <option value="month">Bulan Ini</option>
+                        <option value="year">Tahun Ini</option>
+                        <option value="custom">Pilih Tanggal (Custom)...</option>
+                    </select>
+                    <div id="custom-date-rekap-container" style="display:none; align-items:center; gap:5px;">
+                        <input type="date" id="custom-rekap-start" class="local-search" onchange="window.renderRekapKhususTable()">
+                        <span style="color:#fff; font-size:12px;">s/d</span>
+                        <input type="date" id="custom-rekap-end" class="local-search" onchange="window.renderRekapKhususTable()">
+                    </div>
+                    <button type="button" id="btn-restore-rekap" class="btn-action-trigger" style="display: none; background: rgba(168, 85, 247, 0.2); border-color: var(--blue-glow); color: #e9d5ff; padding: 8px 12px;" onclick="restoreHiddenRekapSPP()">👁️ Pulihkan SPP (<span id="hidden-rekap-count">0</span>)</button>
+                    <button type="button" class="btn-toggle-matrix" style="padding: 8px 14px; font-size: 11px;" onclick="toggleRekapKhususView()">🔄 Semua / Top 10</button>
+                    <button class="btn-minimize" onclick="togglePanel('table-rekap-khusus-container', this)">➖ Minimize</button>
+                    <button class="btn-export" onclick="exportTableToCSV('rekap-khusus-table', 'Rekap_SPP_Manajemen.csv')">📥 Export Excel</button>
                 </div>
             </div>
-	 </div> 
+
+            <div class="table-container" id="table-rekap-khusus-container" style="overflow-x: auto; width: 100%; max-width: 100vw; display: block; -webkit-overflow-scrolling: touch;">
+                <table id="rekap-khusus-table" style="width: max-content; min-width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">NO SPP</th>
+                            <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">NO BPMP</th>
+                            <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">NO PRODUKSI</th>
+                            <th style="width: 250px; padding: 12px; white-space: normal; vertical-align: middle;">NAMA BARANG</th>
+                            <th style="width: 60px; padding: 12px; text-align: center; vertical-align: middle;">QTY</th>
+                            <th style="width: 130px; padding: 12px; white-space: normal; vertical-align: middle;">TGL MULAI DIKERJAKAN</th>
+                            <th style="width: 130px; padding: 12px; white-space: normal; vertical-align: middle;">TARGET SELESAI</th>
+                            <th style="width: 130px; padding: 12px; white-space: normal; vertical-align: middle;">TGL SELESAI</th>
+                            <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">NO LPBHP</th>
+                            <th style="width: 150px; padding: 12px; white-space: normal; vertical-align: middle;">STATUS</th>
+                            <th style="width: 120px; padding: 12px; white-space: normal; vertical-align: middle;">KET</th>
+                            <th id="th-aksi-rekap" style="width: 90px; padding: 12px; text-align: center; vertical-align: middle; display: none;">AKSI</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rekap-khusus-body">
+                        <tr><td colspan="12" style="text-align:center; color:var(--text-muted); padding: 15px;">Loading data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="toggle-matrix-container">
+                <button type="button" id="btn-toggle-rekap-khusus" class="btn-toggle-matrix" onclick="toggleRekapKhususView()">🔍 Tampilkan Semua Data</button>
+            </div>
+        </div>    
+                    
         <div class="panel" id="panel-inbox">
             <h3>📥 Inbox Pesan Otomatis: SPP Masuk (Aktif / Berjalan)</h3>
             <div class="table-container">
@@ -3629,7 +3772,7 @@ window.beeShowDynamicStats = function() {
 window.globalLineChartInstance = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: {weight: 'bold'} } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', stepSize: 1, font: {weight: 'bold'} }, beginAtZero: true } }, plugins: { legend: { labels: { color: document.body.classList.contains('light-theme') ? '#0f172a' : '#f8fafc', font: { size: 12, weight: 'bold' } } } } } });
     }
 
-    window.currentChartType = 'line';
+    window.currentChartType = 'bar';
 
     window.changeChartType = function() {
         const sel = document.getElementById('chartTypeSelector');
@@ -3639,112 +3782,240 @@ window.globalLineChartInstance = new Chart(ctx, { type: 'line', data: { labels: 
         }
     };
 
+    window.isKategoriProduk = function(productName) {
+        if (!productName) return false;
+        let name = productName.trim().toLowerCase();
+        const prefixes = ['aquatech', 'panel', 'pre filtration', 'ef', 'floor standing', 'upws', 'renalpro', 'zoomba', 'uf', 'tro mobile'];
+        return prefixes.some(prefix => name.startsWith(prefix));
+    };
+
     window.refreshAnalyticsAndChart = function() {
         const filteredSPP = window.getFilteredNonSPLSPP(); 
-        const filteredLogs = window.getFilteredLogs();
 
-       let totalBarang = filteredSPP.reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
+        let totalBarang = filteredSPP.reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
         document.getElementById('stat-total').innerText = totalBarang;
         
-        let selesaiBarang = filteredSPP.filter(i => ['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status)).reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
+        const completedSPPList = filteredSPP.filter(i => ['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status));
+        let selesaiBarang = completedSPPList.reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
         document.getElementById('stat-selesai').innerText = selesaiBarang;
         
         document.getElementById('stat-idle').innerText = filteredSPP.filter(i => ['Idle Time', 'Lanjutkan Besok'].includes(i.status)).reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
-        
         document.getElementById('stat-stoppage').innerText = filteredSPP.filter(i => i.status === 'Stoppage').reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
         document.getElementById('stat-takeover').innerText = filteredSPP.filter(i => i.status === 'Takeover').reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
-        
         document.getElementById('stat-pending').innerText = filteredSPP.filter(i => i.status === 'Pending').reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
         document.getElementById('stat-proses').innerText = filteredSPP.filter(i => i.status === 'Proses').reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
         
         let progressPct = totalBarang === 0 ? 0 : Math.round((selesaiBarang / totalBarang) * 100);
-        document.getElementById('overall-progress-text').innerText = progressPct + '%';
-        document.getElementById('overall-progress-bar').style.width = progressPct + '%';
+        if(document.getElementById('overall-progress-text')) document.getElementById('overall-progress-text').innerText = progressPct + '%';
+        if(document.getElementById('overall-progress-bar')) document.getElementById('overall-progress-bar').style.width = progressPct + '%';
 
-        const readyItems = filteredSPP.filter(i => ['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status) && !i.isShipped).reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
-        const shippedItems = filteredSPP.filter(i => i.isShipped).reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
-        
-        const statReadyGudang = document.getElementById('stat-ready-gudang');
-        const statTerkirim = document.getElementById('stat-terkirim');
-        if(statReadyGudang) statReadyGudang.innerText = readyItems + " Unit";
-        if(statTerkirim) statTerkirim.innerText = shippedItems + " Unit";
+        // --- LOGIKA PECAHAN BARANG PRODUK & PENDUKUNG ---
+        let progProduk = 0; let progPendukung = 0;
+        let rdyProduk = 0; let rdyPendukung = 0;
+        let krmProduk = 0; let krmPendukung = 0;
 
-        const statTotalProgress = document.getElementById('stat-total-progress');
-        if(statTotalProgress) {
-            const totalInProgress = totalBarang - selesaiBarang;
-            statTotalProgress.innerText = totalInProgress + " Unit";
+        filteredSPP.forEach(spp => {
+            let qty = parseInt(spp.qty) || 1;
+            let isProduk = window.isKategoriProduk(spp.product);
+
+            if (spp.isShipped) {
+                if (isProduk) krmProduk += qty; else krmPendukung += qty;
+            } else if (['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(spp.status)) {
+                if (isProduk) rdyProduk += qty; else rdyPendukung += qty;
+            } else {
+                if (isProduk) progProduk += qty; else progPendukung += qty;
+            }
+        });
+
+        if (window.databaseManualStock) {
+            for (let safeKey in window.databaseManualStock) {
+                let prod = safeKey.replace(/_SLASH_/g, '/').replace(/_DOT_/g, '.');
+                let qty = window.databaseManualStock[safeKey];
+                if (qty > 0) {
+                    if (window.isKategoriProduk(prod)) rdyProduk += qty;
+                    else rdyPendukung += qty;
+                }
+            }
         }
 
-        const chartType = window.currentChartType;
+        if(document.getElementById('stat-progress-produk')) document.getElementById('stat-progress-produk').innerText = progProduk + " Unit";
+        if(document.getElementById('stat-progress-pendukung')) document.getElementById('stat-progress-pendukung').innerText = progPendukung + " Unit";
+        if(document.getElementById('stat-ready-produk')) document.getElementById('stat-ready-produk').innerText = rdyProduk + " Unit";
+        if(document.getElementById('stat-ready-pendukung')) document.getElementById('stat-ready-pendukung').innerText = rdyPendukung + " Unit";
+        if(document.getElementById('stat-terkirim-produk')) document.getElementById('stat-terkirim-produk').innerText = krmProduk + " Unit";
+        if(document.getElementById('stat-terkirim-pendukung')) document.getElementById('stat-terkirim-pendukung').innerText = krmPendukung + " Unit";
+
+        // --- KALKULASI ANALISA GRAFIK TREN ---
+        let dailyTotalMap = {};
+        let dailyCategoryMap = {};
+        let dailyProductMap = {};
+        let productTotalMap = {};
+        let uniqueProducts = new Set();
+        let selesaiProdukCount = 0;
+        let selesaiPendukungCount = 0;
+
+        completedSPPList.forEach(spp => {
+            let qty = parseInt(spp.qty) || 1;
+            let prodName = spp.product || "Lainnya";
+            let isProduk = window.isKategoriProduk(prodName);
+            
+            if (isProduk) selesaiProdukCount += qty;
+            else selesaiPendukungCount += qty;
+
+            uniqueProducts.add(prodName);
+            productTotalMap[prodName] = (productTotalMap[prodName] || 0) + qty;
+
+            let timeMs = spp.lastInputTimeMs || spp.rawTimestampMs || Date.now();
+            let d = new Date(timeMs);
+            let dateKey = `${d.getFullYear()}-${("0"+(d.getMonth()+1)).slice(-2)}-${("0"+d.getDate()).slice(-2)}`;
+
+            dailyTotalMap[dateKey] = (dailyTotalMap[dateKey] || 0) + qty;
+            if (!dailyCategoryMap[dateKey]) dailyCategoryMap[dateKey] = { produk: 0, pendukung: 0 };
+            if (isProduk) dailyCategoryMap[dateKey].produk += qty;
+            else dailyCategoryMap[dateKey].pendukung += qty;
+
+            if (!dailyProductMap[dateKey]) dailyProductMap[dateKey] = {};
+            dailyProductMap[dateKey][prodName] = (dailyProductMap[dateKey][prodName] || 0) + qty;
+        });
+
+        // Update 4 Kotak Indikator Analisa Grafik
+        const sortedDates = Object.keys(dailyTotalMap).sort();
+        const activeDaysCount = sortedDates.length;
+        const avgPerDay = activeDaysCount > 0 ? (selesaiBarang / activeDaysCount).toFixed(1) : 0;
+
+        let topProdName = "-"; let topProdQty = 0;
+        Object.entries(productTotalMap).forEach(([pName, pQty]) => {
+            if (pQty > topProdQty) { topProdQty = pQty; topProdName = pName; }
+        });
+
+        let peakDate = "-"; let peakQty = 0;
+        Object.entries(dailyTotalMap).forEach(([dKey, dQty]) => {
+            if (dQty > peakQty) { peakQty = dQty; peakDate = dKey; }
+        });
+
+        if (document.getElementById('chart-kpi-total')) document.getElementById('chart-kpi-total').innerText = `${selesaiBarang} Unit`;
+        if (document.getElementById('chart-kpi-split')) document.getElementById('chart-kpi-split').innerText = `Produk: ${selesaiProdukCount} | Pendukung: ${selesaiPendukungCount}`;
+        if (document.getElementById('chart-kpi-top-item')) document.getElementById('chart-kpi-top-item').innerText = topProdName;
+        if (document.getElementById('chart-kpi-top-qty')) document.getElementById('chart-kpi-top-qty').innerText = `${topProdQty} Unit Selesai`;
+        if (document.getElementById('chart-kpi-peak-date')) document.getElementById('chart-kpi-peak-date').innerText = peakDate;
+        if (document.getElementById('chart-kpi-peak-qty')) document.getElementById('chart-kpi-peak-qty').innerText = `${peakQty} Unit Selesai`;
+        if (document.getElementById('chart-kpi-avg')) document.getElementById('chart-kpi-avg').innerText = `${avgPerDay} Unit / Hari`;
+        if (document.getElementById('chart-kpi-days')) document.getElementById('chart-kpi-days').innerText = `Dalam ${activeDaysCount} Hari Aktif`;
+
+        // Render Visual Chart.js
+        const chartType = window.currentChartType || 'bar';
+        const modeEl = document.getElementById('chartModeSelector');
+        const chartMode = modeEl ? modeEl.value : 'kategori';
         const legendColor = document.body.classList.contains('light-theme') ? '#0f172a' : '#f8fafc';
 
-        if (chartType === 'pie') {
-            const productCount = {};
-            filteredLogs.forEach(log => {
-                if (['Selesai','Selesai Awal','Telat Selesai'].includes(log.status)) {
-                    const matched = window.databaseMasterSPP.find(s => s.no === log.noSPP && !s.isSPL);
-                    if (matched) {
-                        const prod = matched.product;
-                        // Ubah perhitungan menjadi berbasis QTY
-                        productCount[prod] = (productCount[prod] || 0) + (parseInt(matched.qty) || 1);
-                    }
-                }
-            });
+        if (window.globalLineChartInstance) window.globalLineChartInstance.destroy();
+        const canvasEl = document.getElementById('sppTrendLineChart');
+        if (!canvasEl) return;
+        const ctx = canvasEl.getContext('2d');
 
-            const labels = Object.keys(productCount);
-            const data = Object.values(productCount);
-            if (window.globalLineChartInstance) window.globalLineChartInstance.destroy();
-            const ctx = document.getElementById('sppTrendLineChart').getContext('2d');
+        if (chartType === 'pie') {
+            let pieLabels = [];
+            let pieData = [];
+            if (chartMode === 'kategori') {
+                pieLabels = ['🏭 Barang Produk', '🛠️ Barang Pendukung'];
+                pieData = [selesaiProdukCount, selesaiPendukungCount];
+            } else {
+                const sortedProds = Object.entries(productTotalMap).sort((a,b) => b[1] - a[1]).slice(0, 10);
+                pieLabels = sortedProds.map(i => i[0]);
+                pieData = sortedProds.map(i => i[1]);
+            }
             window.globalLineChartInstance = new Chart(ctx, {
                 type: 'pie',
                 data: {
-                    labels: labels,
-                    datasets: [{ data: data, backgroundColor: ['#10b981','#38bdf8','#fbbf24','#a855f7','#f43f5e','#0ed5c0','#84cc16','#f97316'] }]
+                    labels: pieLabels,
+                    datasets: [{ data: pieData, backgroundColor: ['#10b981','#2dd4bf','#f97316','#a855f7','#fbbf24','#f43f5e','#38bdf8','#84cc16','#ec4899','#6366f1'] }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: legendColor, font: { size: 12, weight: 'bold' } } } } }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: legendColor, font: { size: 12, weight: 'bold' } } } } }
             });
-        } else {
-            let dailyDataMap = {};
-            let uniqueProducts = new Set();
-            filteredLogs.forEach(log => {
-                if (['Selesai','Selesai Awal','Telat Selesai'].includes(log.status)) {
-                    const matchedSPP = window.databaseMasterSPP.find(s => s.no === log.noSPP && !s.isSPL);
-                    if (!matchedSPP) return;
-                    const prodName = matchedSPP.product;
-                    uniqueProducts.add(prodName);
-                    const d = new Date(log.timestampMs);
-                    const dateKey = `${d.getFullYear()}-${("0"+(d.getMonth()+1)).slice(-2)}-${("0"+d.getDate()).slice(-2)}`;
-                    if (!dailyDataMap[dateKey]) dailyDataMap[dateKey] = {};
-                    dailyDataMap[dateKey][prodName] = (dailyDataMap[dateKey][prodName] || 0) + 1;
+        } else if (chartMode === 'top10') {
+            const sortedProds = Object.entries(productTotalMap).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            window.globalLineChartInstance = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: sortedProds.map(i => i[0]),
+                    datasets: [{
+                        label: 'Total Unit Selesai',
+                        data: sortedProds.map(i => i[1]),
+                        backgroundColor: sortedProds.map(i => window.isKategoriProduk(i[0]) ? 'rgba(251, 146, 60, 0.75)' : 'rgba(45, 212, 191, 0.75)'),
+                        borderColor: sortedProds.map(i => window.isKategoriProduk(i[0]) ? '#fb923c' : '#2dd4bf'),
+                        borderWidth: 2,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#cbd5e1', font: { size: 11, weight: 'bold' } } },
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#94a3b8', stepSize: 1 } }
+                    },
+                    plugins: { legend: { labels: { color: legendColor, font: { size: 12, weight: 'bold' } } } }
                 }
             });
-            const sortedDates = Object.keys(dailyDataMap).sort();
+        } else {
             let datasets = [];
-            let colors = ['#10b981','#38bdf8','#fbbf24','#a855f7','#f43f5e','#0ed5c0'];
-            let colorIndex = 0;
-            uniqueProducts.forEach(prod => {
-                let dataPoints = sortedDates.map(date => dailyDataMap[date][prod] || 0);
-                datasets.push({
-                    label: prod,
-                    data: dataPoints,
-                    borderColor: colors[colorIndex % colors.length],
-                    backgroundColor: colors[colorIndex % colors.length] + '22',
+            if (chartMode === 'kategori') {
+                datasets = [
+                    {
+                        label: '🏭 Barang Produk (Unit)',
+                        data: sortedDates.map(d => dailyCategoryMap[d].produk || 0),
+                        borderColor: '#fb923c',
+                        backgroundColor: chartType === 'bar' ? 'rgba(251, 146, 60, 0.8)' : 'rgba(251, 146, 60, 0.15)',
+                        borderWidth: 2.5,
+                        tension: 0.3,
+                        fill: chartType === 'line'
+                    },
+                    {
+                        label: '🛠️ Barang Pendukung (Unit)',
+                        data: sortedDates.map(d => dailyCategoryMap[d].pendukung || 0),
+                        borderColor: '#2dd4bf',
+                        backgroundColor: chartType === 'bar' ? 'rgba(45, 212, 191, 0.8)' : 'rgba(45, 212, 191, 0.15)',
+                        borderWidth: 2.5,
+                        tension: 0.3,
+                        fill: chartType === 'line'
+                    }
+                ];
+            } else if (chartMode === 'total') {
+                datasets = [{
+                    label: '📦 Total Output Harian (Unit)',
+                    data: sortedDates.map(d => dailyTotalMap[d] || 0),
+                    borderColor: '#a855f7',
+                    backgroundColor: chartType === 'bar' ? 'rgba(168, 85, 247, 0.8)' : 'rgba(168, 85, 247, 0.2)',
+                    borderWidth: 3,
                     tension: 0.3,
-                    fill: false
+                    fill: true
+                }];
+            } else {
+                let colors = ['#10b981','#38bdf8','#fbbf24','#a855f7','#f43f5e','#2dd4bf','#f97316','#84cc16'];
+                let colorIndex = 0;
+                uniqueProducts.forEach(prod => {
+                    datasets.push({
+                        label: prod,
+                        data: sortedDates.map(date => dailyProductMap[date][prod] || 0),
+                        borderColor: colors[colorIndex % colors.length],
+                        backgroundColor: colors[colorIndex % colors.length] + '88',
+                        tension: 0.3,
+                        fill: false
+                    });
+                    colorIndex++;
                 });
-                colorIndex++;
-            });
-            if (window.globalLineChartInstance) window.globalLineChartInstance.destroy();
-            const ctx = document.getElementById('sppTrendLineChart').getContext('2d');
+            }
+
             window.globalLineChartInstance = new Chart(ctx, {
                 type: chartType,
                 data: { labels: sortedDates, datasets: datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     scales: {
-                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', stepSize: 1 } }
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#cbd5e1', font: { weight: 'bold' } } },
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#94a3b8', stepSize: 1 } }
                     },
                     plugins: { legend: { labels: { color: legendColor, font: { size: 12, weight: 'bold' } } } }
                 }
@@ -3836,7 +4107,7 @@ window.renderRekapKhususTable = function() {
     let filterType = document.getElementById('filter-waktu-rekap').value;
     let searchQuery = document.getElementById('search-rekap-khusus').value.toLowerCase().trim();
 
-    let filteredSPP = window.databaseMasterSPP.filter(spp => !spp.isSPL);
+let filteredSPP = window.databaseMasterSPP.filter(spp => !spp.isSPL && !spp.isHiddenRekapKhusus);
 
     // 1. TERAPKAN FILTER TANGGAL
     if (filterType !== 'all') {
@@ -3861,7 +4132,7 @@ window.renderRekapKhususTable = function() {
 
     // Tangani jika data kosong setelah difilter
     if(filteredSPP.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${isDevOrAdmin ? '11' : '10'}" style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada data pada periode atau pencarian ini.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${isDevOrAdmin ? '12' : '11'}" style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada data pada periode atau pencarian ini.</td></tr>`;
         
         // Sembunyikan tombol toggle jika data kosong
         const toggleBtn = document.getElementById('btn-toggle-rekap-khusus');
@@ -3885,6 +4156,9 @@ window.renderRekapKhususTable = function() {
     displaySPP.forEach(spp => {
         let rekapData = window.databaseRekapAdmin.find(r => r.spp && r.spp.trim().toLowerCase() === spp.no.trim().toLowerCase() && !r.isHidden);
         let noBpmp = rekapData && rekapData.noBPMP ? rekapData.noBPMP : "-";
+// Ambil Nomor Produksi (Bisa dari rekap atau dari log operator)
+let logTerkait = window.databaseLogOperator.find(log => log.noSPP === spp.no && log.noProd && log.noProd !== "-");
+let noProduksi = rekapData && rekapData.noProd && rekapData.noProd !== "-" ? rekapData.noProd : (logTerkait ? logTerkait.noProd : "-");
         let noLpbhp = rekapData && rekapData.noLPBHP ? rekapData.noLPBHP : "-";
         let qty = rekapData && rekapData.qty ? rekapData.qty : "1";
 
@@ -3912,10 +4186,11 @@ window.renderRekapKhususTable = function() {
 
         let actionBtn = isDevOrAdmin ? `<td style="padding: 12px; text-align:center; vertical-align:middle;"><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; padding: 6px 12px; width:100%; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="editRekapKhusus('${spp.no}')">✏️ Edit</button></td>` : '';
 
-        htmlRows += `
+htmlRows += `
             <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
                 <td style="padding: 12px; white-space: nowrap;"><strong style="color:var(--blue-glow);">${spp.no}</strong></td>
                 <td style="padding: 12px; white-space: nowrap;"><code style="color:var(--emerald-glow); font-weight:bold; font-size:13px;">${noBpmp}</code></td>
+                <td style="padding: 12px; white-space: nowrap;"><code style="color:var(--warning-glow); font-weight:bold; font-size:13px;">${noProduksi}</code></td>
                 <td style="padding: 12px; white-space: normal; word-wrap: break-word;"><strong style="color:var(--text-main); font-size:13px; line-height:1.4;">${spp.product}</strong></td>
                 <td style="padding: 12px; text-align:center;"><span style="color:var(--warning-glow); font-weight:bold;">${qty}</span></td>
                 <td style="padding: 12px; white-space: normal; font-size: 12px;">${tglMulai}</td>
@@ -3932,9 +4207,6 @@ window.renderRekapKhususTable = function() {
     tbody.innerHTML = htmlRows;
 };
 
-// ==========================================
-// FUNGSI BARU: EDIT & HAPUS REKAP KHUSUS
-// ==========================================
 window.editRekapKhusus = function(sppNo) {
     let matchedSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
     if (!matchedSPP) {
@@ -3952,8 +4224,10 @@ window.editRekapKhusus = function(sppNo) {
                      "--- DATA LAPANGAN (Bypass) ---\n" +
                      "4. Tanggal Mulai Dikerjakan\n" +
                      "5. Tanggal Selesai (Aktual)\n" +
-                     "6. Status Pekerjaan (Contoh: Selesai, Proses)\n\n" +
+                     "6. Status Pekerjaan (Contoh: Selesai, Proses)\n" +
+                     "8. Edit No. Produksi\n\n" +
                      "--- HAPUS DATA ---\n" +
+                     "9. 👁️ Sembunyikan Sementara dari Rekap (Khusus Dev)\n" +
                      "7. ❌ HAPUS SELURUH DATA SPP INI (Permanen)";
                      
     let choice = prompt(promptText);
@@ -3961,28 +4235,23 @@ window.editRekapKhusus = function(sppNo) {
 
     choice = choice.trim();
 
-    // FITUR HAPUS PERMANEN (MASTER SPP, LOGS, REKAP, PENGIRIMAN)
+    // FITUR HAPUS PERMANEN
     if (choice === '7') {
         if(confirm(`⚠️ PERINGATAN KERAS! ⚠️\n\nAnda yakin ingin menghapus SELURUH data untuk SPP [${sppNo}]?\n\nIni akan menghapus data di Master SPP, Log Operator, Rekap Dokumen, dan Pengiriman yang terkait. Tindakan ini TIDAK BISA dibatalkan!`)) {
-            // Hapus dari Master SPP
             window.dbRemoveSPP(matchedSPP.firebaseKey);
             
-            // Hapus dari Log Operator
             window.databaseLogOperator.filter(l => l.noSPP === sppNo).forEach(log => {
                 window.dbRemoveLog(log.firebaseKey);
             });
             
-            // Hapus dari Rekap Dokumen Admin
             window.databaseRekapAdmin.filter(r => r.spp === sppNo).forEach(rekap => {
                 firebase.database().ref('rekapDokumen/' + rekap.firebaseKey).remove();
             });
 
-            // Hapus dari Pengiriman (jika ada)
             window.databaseShipment.filter(sh => sh.spp === sppNo).forEach(sh => {
                 window.dbRemoveShipment(sh.firebaseKey);
             });
             
-            // Hapus dari Tarikan Internal (jika ada)
             window.databaseInternalOut.filter(io => io.spp === sppNo).forEach(io => {
                 window.dbRemoveInternalOut(io.firebaseKey);
             });
@@ -3990,7 +4259,7 @@ window.editRekapKhusus = function(sppNo) {
             alert(`✅ Seluruh data untuk SPP [${sppNo}] berhasil dihapus dari sistem.`);
             return;
         } else {
-            return; // Dibatalkan pengguna
+            return;
         }
     }
 
@@ -4065,6 +4334,36 @@ window.editRekapKhusus = function(sppNo) {
         if (Object.keys(sppUpdates).length > 0) {
             window.dbUpdateSPP(matchedSPP.firebaseKey, sppUpdates);
             alert("✅ Master SPP berhasil diperbarui!");
+        }
+    } else if (['8', '9'].includes(choice)) {
+        // Fitur Edit No Produksi
+        if (choice === '8') {
+            let logTerkait = window.databaseLogOperator.find(log => log.noSPP === sppNo && log.noProd && log.noProd !== "-");
+            let currentProd = rekapData && rekapData.noProd && rekapData.noProd !== "-" ? rekapData.noProd : (logTerkait ? logTerkait.noProd : "");
+
+            let val = prompt("Masukkan No Produksi Baru:", currentProd);
+            if (val !== null && val.trim() !== "") {
+                let newVal = val.trim();
+
+                if (rekapData) firebase.database().ref('rekapDokumen/' + rekapData.firebaseKey).update({ noProd: newVal });
+
+                window.databaseLogOperator.filter(l => l.noSPP === sppNo).forEach(log => {
+                    db.ref('logOperator/' + log.firebaseKey).update({ noProd: newVal });
+                });
+                alert("✅ No Produksi berhasil diperbarui!");
+            }
+        } 
+        // Fitur Sembunyikan Sementara (Soft Delete Tabel Rekap Khusus)
+        else if (choice === '9') {
+            const isDev = (window.currentUserRole.toUpperCase() === "RANDI" || window.currentUserRole.toUpperCase() === "FEBRI");
+            if (!isDev) {
+                alert("❌ Akses Ditolak! Fitur Sembunyikan Sementara ini hanya dapat digunakan oleh Developer.");
+                return;
+            }
+            if (confirm(`Yakin ingin menyembunyikan SPP [${sppNo}] dari Tabel Rekap Khusus?\n(Data tidak akan dihapus dan total barang di Gudang / Analytics tetap aman)`)) {
+                window.dbUpdateSPP(matchedSPP.firebaseKey, { isHiddenRekapKhusus: true });
+                alert("✅ Data berhasil disembunyikan sementara dari Rekap Khusus.");
+            }
         }
     } else {
         alert("Pilihan tidak valid!");
@@ -4853,14 +5152,16 @@ window.renderInternalStockTable = function() {
         select.innerHTML += htmlOptions;
     }
 
-    // ====== GANTI FUNGSI RENDER TABEL STOK & EDIT QTY ======
+   // ====== GANTI FUNGSI RENDER TABEL STOK & EDIT QTY ======
     window.renderReadyStockTable = function() {
         const tbody = document.getElementById('ready-stock-body');
-        const tvBody = document.getElementById('tv-ready-stock-body');
-        if(!tbody && !tvBody) return;
+        const tvProdukBody = document.getElementById('tv-ready-produk-body');
+        const tvPendukungBody = document.getElementById('tv-ready-pendukung-body');
+        if(!tbody && !tvProdukBody && !tvPendukungBody) return;
         
         if (tbody) tbody.innerHTML = '';
-        if (tvBody) tvBody.innerHTML = '';
+        if (tvProdukBody) tvProdukBody.innerHTML = '';
+        if (tvPendukungBody) tvPendukungBody.innerHTML = '';
 
         const isDevOrAdmin = (window.currentUserRole.toUpperCase() === "RANDI" || window.currentUserRole.toUpperCase() === "FEBRI" || window.currentUserRole === "Admin" || window.currentUserRole === "Septi Utami");
         
@@ -4872,6 +5173,8 @@ window.renderInternalStockTable = function() {
         }
         
         const filteredSPP = window.getFilteredNonSPLSPP(); 
+
+        // 1. LOGIKA UNTUK TABEL LOGISTIK EKSTERNAL (PANEL PENGIRIMAN)
         const produkSelesaiEksternal = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped && !window.isInternalProduct(i.product));
         
         let stockMap = {};
@@ -4892,50 +5195,104 @@ window.renderInternalStockTable = function() {
         }
         stockArray.sort((a, b) => b.jumlah - a.jumlah);
 
-        if(stockArray.length === 0) {
-            let colspanCnt = isDevOrAdmin ? 3 : 2;
-            let emptyMsg = `<tr><td colspan="${colspanCnt}" style="text-align:center; color:var(--text-muted); padding: 15px;">Belum ada stok produk yang siap dikirim di gudang.</td></tr>`;
-            if(tbody) tbody.innerHTML = emptyMsg;
-            if(tvBody) tvBody.innerHTML = emptyMsg;
-            return;
-        }
-
-        let displayStock = window.isReadyStockMinimized ? stockArray.slice(0, 5) : stockArray;
-        let displayStockTV = window.isTvInventoryMinimized ? stockArray.slice(0, 5) : stockArray;
-        
-        let totalQty = stockArray.reduce((sum, item) => sum + item.jumlah, 0);
-        let actionColspan = isDevOrAdmin ? `<td></td>` : '';
-        let totalRowHTML = `<tr>
-            <td><strong style="color: var(--warning-glow); font-size: 14px;">TOTAL KESELURUHAN (BARANG READY)</strong></td>
-            <td style="text-align: center;"><span style="color:var(--warning-glow); font-weight:900; font-size:14px; background:rgba(251, 191, 36, 0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(251, 191, 36, 0.3);">${totalQty} Unit Total</span></td>
-            ${actionColspan}
-        </tr>`;
-
         if(tbody) {
-            let html = '';
-            displayStock.forEach(item => {
-                let actionBtn = isDevOrAdmin ? `<td style="text-align:center; vertical-align:middle;"><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; padding:6px 12px; border:none; border-radius:6px; font-weight:bold; font-size:11px;" onclick="editReadyStockQty('${item.nama}', ${item.jumlah})">✏️ Edit QTY</button></td>` : '';
+            if(stockArray.length === 0) {
+                let colspanCnt = isDevOrAdmin ? 3 : 2;
+                tbody.innerHTML = `<tr><td colspan="${colspanCnt}" style="text-align:center; color:var(--text-muted); padding: 15px;">Belum ada stok produk yang siap dikirim di gudang.</td></tr>`;
+            } else {
+                let displayStock = window.isReadyStockMinimized ? stockArray.slice(0, 5) : stockArray;
+                let totalQty = stockArray.reduce((sum, item) => sum + item.jumlah, 0);
+                let actionColspan = isDevOrAdmin ? `<td></td>` : '';
+                let html = '';
+                displayStock.forEach(item => {
+                    let actionBtn = isDevOrAdmin ? `<td style="text-align:center; vertical-align:middle;"><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; padding:6px 12px; border:none; border-radius:6px; font-weight:bold; font-size:11px;" onclick="editReadyStockQty('${item.nama}', ${item.jumlah})">✏️ Edit QTY</button></td>` : '';
+                    html += `<tr>
+                        <td><strong style="color: var(--text-main);">${item.nama}</strong></td>
+                        <td style="text-align: center;"><span style="color:var(--emerald-glow); font-weight:800; font-size:13px; background:rgba(16,185,129,0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">${item.jumlah} Unit Selesai</span></td>
+                        ${actionBtn}
+                    </tr>`;
+                });
                 html += `<tr>
-                    <td><strong style="color: var(--text-main);">${item.nama}</strong></td>
-                    <td style="text-align: center;"><span style="color:var(--emerald-glow); font-weight:800; font-size:13px; background:rgba(16,185,129,0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">${item.jumlah} Unit Selesai</span></td>
-                    ${actionBtn}
+                    <td><strong style="color: var(--warning-glow); font-size: 14px;">TOTAL KESELURUHAN (BARANG READY)</strong></td>
+                    <td style="text-align: center;"><span style="color:var(--warning-glow); font-weight:900; font-size:14px; background:rgba(251, 191, 36, 0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(251, 191, 36, 0.3);">${totalQty} Unit Total</span></td>
+                    ${actionColspan}
                 </tr>`;
-            });
-            tbody.innerHTML = html + totalRowHTML;
+                tbody.innerHTML = html;
+            }
         }
 
-        if(tvBody) {
-            let tvHtml = '';
-            displayStockTV.forEach(item => {
-                tvHtml += `<tr>
-                    <td><strong style="color: var(--text-main);">${item.nama}</strong></td>
-                    <td style="text-align: center;"><span style="color:var(--emerald-glow); font-weight:800; font-size:13px; background:rgba(16,185,129,0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">${item.jumlah} Unit Selesai</span></td>
+        // 2. LOGIKA UNTUK DATA INVENTORI BARANG READY (SISI KIRI: PRODUK & SISI KANAN: PENDUKUNG)
+        const semuaSelesaiReady = filteredSPP.filter(i => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(i.status) && !i.isShipped);
+        let allReadyMap = {};
+        semuaSelesaiReady.forEach(item => {
+            allReadyMap[item.product] = (allReadyMap[item.product] || 0) + (parseInt(item.qty) || 1);
+        });
+
+        if (window.databaseManualStock) {
+            for (let safeKey in window.databaseManualStock) {
+                let prod = safeKey.replace(/_SLASH_/g, '/').replace(/_DOT_/g, '.');
+                allReadyMap[prod] = (allReadyMap[prod] || 0) + window.databaseManualStock[safeKey];
+            }
+        }
+
+        let arrayProduk = [];
+        let arrayPendukung = [];
+
+        for (let prod in allReadyMap) {
+            if (allReadyMap[prod] > 0) {
+                if (window.isKategoriProduk(prod)) {
+                    arrayProduk.push({ nama: prod, jumlah: allReadyMap[prod] });
+                } else {
+                    arrayPendukung.push({ nama: prod, jumlah: allReadyMap[prod] });
+                }
+            }
+        }
+
+        arrayProduk.sort((a, b) => b.jumlah - a.jumlah);
+        arrayPendukung.sort((a, b) => b.jumlah - a.jumlah);
+
+        // Render Sisi Kiri (Barang Produk)
+        if (tvProdukBody) {
+            if (arrayProduk.length === 0) {
+                tvProdukBody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding: 15px;">Belum ada Barang Produk yang ready.</td></tr>`;
+            } else {
+                let displayProduk = window.isTvInventoryMinimized ? arrayProduk.slice(0, 5) : arrayProduk;
+                let totalProdukQty = arrayProduk.reduce((sum, item) => sum + item.jumlah, 0);
+                let htmlProduk = '';
+                displayProduk.forEach(item => {
+                    htmlProduk += `<tr>
+                        <td><strong style="color: var(--text-main);">${item.nama}</strong></td>
+                        <td style="text-align: center;"><span style="color:var(--emerald-glow); font-weight:800; font-size:13px; background:rgba(16,185,129,0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">${item.jumlah} Unit</span></td>
+                    </tr>`;
+                });
+                htmlProduk += `<tr>
+                    <td><strong style="color: var(--warning-glow); font-size: 13px;">TOTAL BARANG PRODUK</strong></td>
+                    <td style="text-align: center;"><span style="color:var(--warning-glow); font-weight:900; font-size:13px; background:rgba(251, 191, 36, 0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(251, 191, 36, 0.3);">${totalProdukQty} Unit</span></td>
                 </tr>`;
-            });
-            tvBody.innerHTML = tvHtml + `<tr>
-                <td><strong style="color: var(--warning-glow); font-size: 14px;">TOTAL KESELURUHAN (BARANG READY)</strong></td>
-                <td style="text-align: center;"><span style="color:var(--warning-glow); font-weight:900; font-size:14px; background:rgba(251, 191, 36, 0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(251, 191, 36, 0.3);">${totalQty} Unit Total</span></td>
-            </tr>`;
+                tvProdukBody.innerHTML = htmlProduk;
+            }
+        }
+
+        // Render Sisi Kanan (Barang Pendukung)
+        if (tvPendukungBody) {
+            if (arrayPendukung.length === 0) {
+                tvPendukungBody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding: 15px;">Belum ada Barang Pendukung yang ready.</td></tr>`;
+            } else {
+                let displayPendukung = window.isTvInventoryMinimized ? arrayPendukung.slice(0, 5) : arrayPendukung;
+                let totalPendukungQty = arrayPendukung.reduce((sum, item) => sum + item.jumlah, 0);
+                let htmlPendukung = '';
+                displayPendukung.forEach(item => {
+                    htmlPendukung += `<tr>
+                        <td><strong style="color: var(--text-main);">${item.nama}</strong></td>
+                        <td style="text-align: center;"><span style="color:var(--cyan-glow); font-weight:800; font-size:13px; background:rgba(45,212,191,0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(45,212,191,0.3);">${item.jumlah} Unit</span></td>
+                    </tr>`;
+                });
+                htmlPendukung += `<tr>
+                    <td><strong style="color: var(--warning-glow); font-size: 13px;">TOTAL BARANG PENDUKUNG</strong></td>
+                    <td style="text-align: center;"><span style="color:var(--warning-glow); font-weight:900; font-size:13px; background:rgba(251, 191, 36, 0.1); padding:6px 14px; border-radius:6px; border:1px solid rgba(251, 191, 36, 0.3);">${totalPendukungQty} Unit</span></td>
+                </tr>`;
+                tvPendukungBody.innerHTML = htmlPendukung;
+            }
         }
     };
 
@@ -6207,6 +6564,312 @@ window.exportDokumenAdminCSV = function() {
     document.addEventListener("DOMContentLoaded", function() {
         setTimeout(window.initDragToScroll, 1000);
     });
+
+// =========================================================================
+    // FITUR TAMBAHAN: KATA KUNCI DINAMIS, PULIHKAN SPP, & EXPORT/CETAK GRAFIK
+    // =========================================================================
+
+    // 1. KATA KUNCI KATEGORI BARANG PRODUK (DEFAULT + CUSTOM FIREBASE)
+    window.defaultProductPrefixes = [
+        'aquatech', 'aqutech', 'panel', 'pre filtration', 'ef', 
+        'floor standing', 'upws', 'renalpro', 'zoomba', 'wtp zoomba', 'uf', 'tro mobile'
+    ];
+    window.customProductPrefixes = [];
+
+    db.ref('appSettings/productPrefixes').on('value', snap => {
+        const val = snap.val();
+        window.customProductPrefixes = Array.isArray(val) ? val : [];
+        if (window.currentUserRole && window.currentUserRole !== "Guest") {
+            window.refreshAnalyticsAndChart();
+            if (typeof window.renderReadyStockTable === 'function') window.renderReadyStockTable();
+        }
+    });
+
+    window.getAllProductPrefixes = function() {
+        return [...new Set([...window.defaultProductPrefixes, ...window.customProductPrefixes])];
+    };
+
+    window.isKategoriProduk = function(productName) {
+        if (!productName) return false;
+        let name = productName.trim().toLowerCase();
+        const prefixes = window.getAllProductPrefixes();
+        return prefixes.some(prefix => name.startsWith(prefix.toLowerCase().trim()));
+    };
+
+    window.kelolaKataKunciProduk = function() {
+        const isDevOrAdmin = ["RANDI", "FEBRI", "ADMIN", "SEPTI UTAMI"].includes((window.currentUserRole || "").toUpperCase());
+        const currentAll = window.getAllProductPrefixes();
+
+        if (!isDevOrAdmin) {
+            alert("🏷️ Daftar Kata Kunci Awalan Kategori BARANG PRODUK saat ini:\n\n• " + currentAll.join("\n• ") + "\n\n(Selain awalan di atas otomatis masuk ke Kategori Barang Pendukung)");
+            return;
+        }
+
+        let menu = prompt(
+            "🏷️ KELOLA KATA KUNCI KATEGORI BARANG PRODUK\n\n" +
+            "Kata kunci aktif saat ini:\n[" + currentAll.join(", ") + "]\n\n" +
+            "Pilih tindakan:\n" +
+            "1. ➕ Tambah Kata Kunci Baru\n" +
+            "2. 🗑️ Hapus Kata Kunci Tambahan (" + (window.customProductPrefixes.length > 0 ? window.customProductPrefixes.join(", ") : "Belum ada") + ")"
+        );
+
+        if (!menu) return;
+        menu = menu.trim();
+
+        if (menu === '1') {
+            let newKw = prompt("Masukkan kata awalan nama produk baru (contoh: RO INDUSTRIAL atau DOSING):");
+            if (newKw && newKw.trim() !== "") {
+                let cleanKw = newKw.trim().toLowerCase();
+                if (!currentAll.includes(cleanKw)) {
+                    let updated = [...window.customProductPrefixes, cleanKw];
+                    db.ref('appSettings/productPrefixes').set(updated).then(() => {
+                        alert(`✅ Kata kunci "${cleanKw.toUpperCase()}" berhasil ditambahkan ke Kategori Barang Produk!`);
+                    });
+                } else {
+                    alert("ℹ️ Kata kunci tersebut sudah ada di dalam daftar.");
+                }
+            }
+        } else if (menu === '2') {
+            if (window.customProductPrefixes.length === 0) {
+                alert("Tidak ada kata kunci tambahan yang bisa dihapus (kata kunci bawaan sistem dikunci).");
+                return;
+            }
+            let delKw = prompt("Ketik kata kunci tambahan yang ingin dihapus:\n(" + window.customProductPrefixes.join(", ") + ")");
+            if (delKw && delKw.trim() !== "") {
+                let cleanDel = delKw.trim().toLowerCase();
+                let updated = window.customProductPrefixes.filter(k => k !== cleanDel);
+                db.ref('appSettings/productPrefixes').set(updated).then(() => {
+                    alert(`✅ Kata kunci "${cleanDel}" telah dihapus.`);
+                });
+            }
+        }
+    };
+
+    // 2. FITUR PULIHKAN (RESTORE) SPP YANG DISEMBUNYIKAN DARI REKAP KHUSUS (KHUSUS DEV)
+    window.updateHiddenRekapBadge = function() {
+        const isDev = ["RANDI", "FEBRI"].includes((window.currentUserRole || "").toUpperCase());
+        const btnRestore = document.getElementById('btn-restore-rekap');
+        const countSpan = document.getElementById('hidden-rekap-count');
+        if (!btnRestore || !countSpan) return;
+
+        const hiddenList = window.databaseMasterSPP.filter(s => !s.isSPL && s.isHiddenRekapKhusus);
+        countSpan.innerText = hiddenList.length;
+
+        if (isDev && hiddenList.length > 0) {
+            btnRestore.style.display = 'inline-block';
+        } else {
+            btnRestore.style.display = 'none';
+        }
+    };
+
+    // Override renderRekapKhususTable agar selalu memperbarui tombol Restore Dev
+    const originalRenderRekapKhusus = window.renderRekapKhususTable;
+    window.renderRekapKhususTable = function() {
+        if (typeof originalRenderRekapKhusus === 'function') originalRenderRekapKhusus();
+        window.updateHiddenRekapBadge();
+    };
+
+    window.restoreHiddenRekapSPP = function() {
+        const isDev = ["RANDI", "FEBRI"].includes((window.currentUserRole || "").toUpperCase());
+        if (!isDev) {
+            alert("❌ Akses Ditolak! Fitur pemulihan ini khusus untuk Developer.");
+            return;
+        }
+
+        const hiddenList = window.databaseMasterSPP.filter(s => !s.isSPL && s.isHiddenRekapKhusus);
+        if (hiddenList.length === 0) {
+            alert("ℹ️ Tidak ada data SPP yang sedang disembunyikan saat ini.");
+            return;
+        }
+
+        let listText = hiddenList.map((s, idx) => `${idx + 1}. ${s.no} - ${s.product}`).join("\n");
+        let input = prompt(
+            `👁️ DAFTAR SPP YANG DISEMBUNYIKAN (${hiddenList.length} Data):\n\n` +
+            listText +
+            `\n\nKetik NOMOR SPP yang ingin ditampilkan kembali, atau ketik SEMUA untuk memulihkan seluruhnya:`
+        );
+
+        if (!input || input.trim() === "") return;
+        let cleanInput = input.trim();
+
+        if (cleanInput.toUpperCase() === "SEMUA") {
+            hiddenList.forEach(s => {
+                window.dbUpdateSPP(s.firebaseKey, { isHiddenRekapKhusus: null });
+            });
+            alert(`✅ Berhasil memulihkan ${hiddenList.length} data SPP kembali ke Tabel Rekap Khusus!`);
+        } else {
+            let target = hiddenList.find(s => s.no.toLowerCase() === cleanInput.toLowerCase());
+            if (target) {
+                window.dbUpdateSPP(target.firebaseKey, { isHiddenRekapKhusus: null });
+                alert(`✅ SPP [${target.no}] berhasil ditampilkan kembali di Tabel Rekap Khusus!`);
+            } else {
+                alert(`❌ Nomor SPP "${cleanInput}" tidak ditemukan dalam daftar tersembunyi.`);
+            }
+        }
+    };
+
+    // 3. FITUR EXPORT EXCEL & CETAK PDF KHUSUS GRAFIK DAN RINGKASAN ANALISA
+    window.exportChartAnalysisToExcel = function() {
+        const filteredSPP = window.getFilteredNonSPLSPP();
+        const completedSPPList = filteredSPP.filter(i => ['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status));
+
+        let dailyMap = {};
+        let productMap = {};
+
+        completedSPPList.forEach(spp => {
+            let qty = parseInt(spp.qty) || 1;
+            let prodName = spp.product || "Lainnya";
+            let isProduk = window.isKategoriProduk(prodName);
+            let timeMs = spp.lastInputTimeMs || spp.rawTimestampMs || Date.now();
+            let d = new Date(timeMs);
+            let dateKey = `${d.getFullYear()}-${("0"+(d.getMonth()+1)).slice(-2)}-${("0"+d.getDate()).slice(-2)}`;
+
+            if (!dailyMap[dateKey]) dailyMap[dateKey] = { produk: 0, pendukung: 0, total: 0 };
+            if (isProduk) dailyMap[dateKey].produk += qty;
+            else dailyMap[dateKey].pendukung += qty;
+            dailyMap[dateKey].total += qty;
+
+            if (!productMap[prodName]) productMap[prodName] = { kategori: isProduk ? "Barang Produk" : "Barang Pendukung", qty: 0 };
+            productMap[prodName].qty += qty;
+        });
+
+        const sortedDates = Object.keys(dailyMap).sort();
+        const sortedProducts = Object.entries(productMap).sort((a, b) => b[1].qty - a[1].qty);
+
+        let htmlTable = `
+            <h3>RINGKASAN ANALISA VOLUME PRODUKSI - PT. TIRTA TEKNOSYS</h3>
+            <table border="1">
+                <thead>
+                    <tr style="background-color:#e2e8f0; font-weight:bold;">
+                        <th>Total Output Selesai</th>
+                        <th>Detail Kategori</th>
+                        <th>Barang Terbanyak (#1)</th>
+                        <th>Puncak Produksi Harian</th>
+                        <th>Rata-Rata Produksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>${document.getElementById('chart-kpi-total')?.innerText || '-'}</td>
+                        <td>${document.getElementById('chart-kpi-split')?.innerText || '-'}</td>
+                        <td>${document.getElementById('chart-kpi-top-item')?.innerText || '-'} (${document.getElementById('chart-kpi-top-qty')?.innerText || '-'})</td>
+                        <td>${document.getElementById('chart-kpi-peak-date')?.innerText || '-'} (${document.getElementById('chart-kpi-peak-qty')?.innerText || '-'})</td>
+                        <td>${document.getElementById('chart-kpi-avg')?.innerText || '-'} (${document.getElementById('chart-kpi-days')?.innerText || '-'})</td>
+                    </tr>
+                </tbody>
+            </table>
+            <br>
+            <h4>1. RINCIAN VOLUME PRODUKSI HARIAN</h4>
+            <table border="1">
+                <thead>
+                    <tr style="background-color:#e2e8f0; font-weight:bold;">
+                        <th>Tanggal</th>
+                        <th>Barang Produk (Unit)</th>
+                        <th>Barang Pendukung (Unit)</th>
+                        <th>Total Output (Unit)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${sortedDates.map(dt => `
+                        <tr>
+                            <td>${dt}</td>
+                            <td>${dailyMap[dt].produk}</td>
+                            <td>${dailyMap[dt].pendukung}</td>
+                            <td><b>${dailyMap[dt].total}</b></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            <br>
+            <h4>2. REKAPITULASI PER ITEM BARANG SELESAI</h4>
+            <table border="1">
+                <thead>
+                    <tr style="background-color:#e2e8f0; font-weight:bold;">
+                        <th>No</th>
+                        <th>Nama Barang</th>
+                        <th>Kategori Inventaris</th>
+                        <th>Total Unit Selesai</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${sortedProducts.map(([name, info], idx) => `
+                        <tr>
+                            <td>${idx + 1}</td>
+                            <td>${name}</td>
+                            <td>${info.kategori}</td>
+                            <td><b>${info.qty}</b></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"></head><body>${htmlTable}</body></html>`;
+        const blob = new Blob([template], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'Analisa_Tren_Produksi_Tirta.xls';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+    };
+
+    window.printChartAnalysisPDF = function() {
+        const canvas = document.getElementById('sppTrendLineChart');
+        if (!canvas) return;
+        const chartImg = canvas.toDataURL('image/png', 1.0);
+
+        const totalTxt = document.getElementById('chart-kpi-total')?.innerText || '-';
+        const splitTxt = document.getElementById('chart-kpi-split')?.innerText || '-';
+        const topItemTxt = document.getElementById('chart-kpi-top-item')?.innerText || '-';
+        const topQtyTxt = document.getElementById('chart-kpi-top-qty')?.innerText || '-';
+        const peakDateTxt = document.getElementById('chart-kpi-peak-date')?.innerText || '-';
+        const peakQtyTxt = document.getElementById('chart-kpi-peak-qty')?.innerText || '-';
+        const avgTxt = document.getElementById('chart-kpi-avg')?.innerText || '-';
+        const daysTxt = document.getElementById('chart-kpi-days')?.innerText || '-';
+
+        let printWin = window.open('', '_blank', 'width=1000,height=750');
+        printWin.document.open();
+        printWin.document.write(`
+            <!DOCTYPE html>
+            <html lang="id">
+            <head>
+                <meta charset="UTF-8">
+                <title>Laporan Analisa Grafik Produksi - PT. Tirta Teknosys</title>
+                <style>
+                    @page { size: landscape; margin: 12mm; }
+                    body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; text-align: center; }
+                    h2 { margin: 0 0 5px 0; text-transform: uppercase; }
+                    p.sub { margin: 0 0 18px 0; font-size: 12px; color: #475569; font-weight: bold; }
+                    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; text-align: left; }
+                    .kpi-box { border: 1px solid #cbd5e1; border-left: 4px solid #0284c7; border-radius: 6px; padding: 10px 14px; background: #f8fafc; }
+                    .kpi-box span { font-size: 10px; text-transform: uppercase; color: #475569; font-weight: bold; display: block; }
+                    .kpi-box strong { font-size: 15px; color: #0f172a; display: block; margin-top: 4px; }
+                    .kpi-box small { font-size: 11px; color: #059669; font-weight: bold; }
+                    .chart-box { border: 1px solid #cbd5e1; border-radius: 8px; padding: 15px; background: #0c0514; }
+                    .chart-box img { max-width: 100%; height: 340px; object-fit: contain; }
+                </style>
+            </head>
+            <body>
+                <h2>Laporan Analisa Grafik Tren Volume Produksi</h2>
+                <p class="sub">PT. TIRTA TEKNOSYS | Dicetak pada: ${new Date().toLocaleString('id-ID')}</p>
+                <div class="kpi-grid">
+                    <div class="kpi-box"><span>Total Output Selesai</span><strong>${totalTxt}</strong><small>${splitTxt}</small></div>
+                    <div class="kpi-box"><span>Barang Terbanyak (#1)</span><strong>${topItemTxt}</strong><small>${topQtyTxt}</small></div>
+                    <div class="kpi-box"><span>Puncak Produksi Harian</span><strong>${peakDateTxt}</strong><small>${peakQtyTxt}</small></div>
+                    <div class="kpi-box"><span>Rata-Rata Produksi</span><strong>${avgTxt}</strong><small>${daysTxt}</small></div>
+                </div>
+                <div class="chart-box">
+                    <img src="${chartImg}" alt="Grafik Tren Produksi">
+                </div>
+            </body>
+            </html>
+        `);
+        printWin.document.close();
+        setTimeout(() => { printWin.print(); }, 500);
+    };
 
 </script>
 </body>
