@@ -6346,7 +6346,7 @@ window.renderShipmentTable = function() {
         window.renderOperatorTable();
     };
 
-    window.renderOperatorTable = function() {
+window.renderOperatorTable = function() {
         let toggleBtn = document.getElementById('btn-toggle-log-mode');
         if (!toggleBtn) {
             const headerDiv = document.querySelector('#panel-history-prod .header-flex div');
@@ -6377,7 +6377,7 @@ window.renderShipmentTable = function() {
         const isDev = (window.currentUserRole.toUpperCase() === "RANDI");
         
         let filteredLogs = rawLogs.filter(log => {
-            let masterSPP = window.databaseMasterSPP.find(s => s.no === log.noSPP);
+            let masterSPP = window.databaseMasterSPP.find(s => s.no && log.noSPP && s.no.trim().toLowerCase() === log.noSPP.trim().toLowerCase());
             let isSelesai = masterSPP ? (['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(masterSPP.status) || masterSPP.isShipped) : ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(log.status);
             return window.modeHistoryLog === 'proses' ? !isSelesai : isSelesai;
         });
@@ -6398,9 +6398,9 @@ window.renderShipmentTable = function() {
         let htmlRows = '';
 
         groupedLogs.forEach((logs, sppNo) => {
-            let masterSPP = window.databaseMasterSPP.find(s => s.no === sppNo);
+            let masterSPP = window.databaseMasterSPP.find(s => s.no && sppNo && s.no.trim().toLowerCase() === sppNo.trim().toLowerCase());
             let productName = masterSPP ? masterSPP.product : "Produk Tidak Diketahui";
-            let urgency = masterSPP ? masterSPP.priority : "Reguler";
+            let urgency = masterSPP && masterSPP.priority ? masterSPP.priority : "Reguler";
             let urgencyClass = urgency === 'Urgent' ? 'bg-urgent' : (urgency === 'Buffer Stok' ? 'bg-buffer' : 'bg-reguler');
 
             let uniqueProds = [...new Set(logs.map(l => l.noProd))].filter(n => n && n !== "-").join(", ");
@@ -6412,8 +6412,8 @@ window.renderShipmentTable = function() {
                         <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
                             <span style="font-size: 14px; font-weight: 800; color: #f8fafc;">📁 NO. SPP: <span style="color: var(--blue-glow);">${sppNo}</span></span>
                             <span style="font-size: 14px; font-weight: 700; color: #f8fafc;">🛒 Produk: <span style="color: var(--emerald-glow);">${productName}</span></span>
+                            <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">🏷️ Status Pekerjaan: <span class="badge ${urgencyClass}">${urgency}</span></span>
                             <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">🏷️ No. Produksi: <span style="color: var(--warning-glow);">${uniqueProds}</span></span>
-                            <span class="badge ${urgencyClass}">${urgency}</span>
                         </div>
                     </td>
                 </tr>
@@ -6468,7 +6468,7 @@ window.renderShipmentTable = function() {
 
         tbody.innerHTML = htmlRows;
     };
-
+    
     window.modeHistorySPL = 'proses';
     window.toggleHistorySPL = function() {
         window.modeHistorySPL = window.modeHistorySPL === 'proses' ? 'riwayat' : 'proses';
