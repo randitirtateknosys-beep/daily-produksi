@@ -1064,12 +1064,17 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
             </div>
         </div>
 
-        <!-- 5. REKAP TOTAL SPP KHUSUS -->
+       <!-- 5. REKAP TOTAL SPP KHUSUS -->
         <div class="panel" id="panel-rekap-khusus" style="display: none; border-color: var(--emerald-glow); overflow: hidden; max-width: 100%;">
             <div class="header-flex">
                 <h3 style="color: var(--emerald-glow) !important; margin: 0;">📊 Rekap Total SPP Khusus</h3>
                 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                     <input type="text" id="search-rekap-khusus" class="local-search" placeholder="Cari No SPP atau Nama..." onkeyup="window.renderRekapKhususTable()">
+                    <select id="filter-status-rekap" class="local-search" style="min-width: 170px; border-color: var(--emerald-glow); font-weight: bold;" onchange="window.renderRekapKhususTable()">
+                        <option value="all" selected>📋 Semua Status Pekerjaan</option>
+                        <option value="selesai">✅ Pekerjaan Selesai</option>
+                        <option value="belum_selesai">⏳ Pekerjaan Belum Selesai</option>
+                    </select>
                     <select id="filter-waktu-rekap" class="local-search" style="min-width: 120px;" onchange="window.toggleCustomDateRekap()">
                         <option value="all" selected>Semua Waktu</option>
                         <option value="today">Hari Ini</option>
@@ -4103,19 +4108,50 @@ window.renderRekapKhususTable = function() {
     const tbody = document.getElementById('rekap-khusus-body');
     if(!tbody) return;
 
+    // Otomatis membuat dropdown filter status jika belum ditambahkan di HTML
+    let statusSelect = document.getElementById('filter-status-rekap');
+    if (!statusSelect) {
+        const waktuSelect = document.getElementById('filter-waktu-rekap');
+        if (waktuSelect && waktuSelect.parentNode) {
+            statusSelect = document.createElement('select');
+            statusSelect.id = 'filter-status-rekap';
+            statusSelect.className = 'local-search';
+            statusSelect.style.minWidth = '170px';
+            statusSelect.style.borderColor = 'var(--emerald-glow)';
+            statusSelect.style.fontWeight = 'bold';
+            statusSelect.onchange = function() { window.renderRekapKhususTable(); };
+            statusSelect.innerHTML = `
+                <option value="all" selected>📋 Semua Status Pekerjaan</option>
+                <option value="selesai">✅ Pekerjaan Selesai</option>
+                <option value="belum_selesai">⏳ Pekerjaan Belum Selesai</option>
+            `;
+            waktuSelect.parentNode.insertBefore(statusSelect, waktuSelect);
+        }
+    }
+
     // Ambil Filter yang sedang aktif di Rekap Khusus
     let filterType = document.getElementById('filter-waktu-rekap').value;
+    let statusFilter = statusSelect ? statusSelect.value : 'all';
     let searchQuery = document.getElementById('search-rekap-khusus').value.toLowerCase().trim();
 
-let filteredSPP = window.databaseMasterSPP.filter(spp => !spp.isSPL && !spp.isHiddenRekapKhusus);
+    let filteredSPP = window.databaseMasterSPP.filter(spp => !spp.isSPL && !spp.isHiddenRekapKhusus);
 
     // 1. TERAPKAN FILTER TANGGAL
     if (filterType !== 'all') {
-        // Gunakan fungsi isWithinTimeframeRekap khusus untuk mengatasi bug rentang waktu
         filteredSPP = filteredSPP.filter(spp => window.isWithinTimeframeRekap(spp.rawTimestampMs, filterType));
     }
 
-    // 2. TERAPKAN FILTER PENCARIAN (SEARCH)
+    // 2. TERAPKAN FILTER STATUS PEKERJAAN (SELESAI / BELUM SELESAI)
+    if (statusFilter !== 'all') {
+        filteredSPP = filteredSPP.filter(spp => {
+            let isDone = ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(spp.status) || spp.isShipped === true;
+            if (statusFilter === 'selesai') return isDone;
+            if (statusFilter === 'belum_selesai') return !isDone;
+            return true;
+        });
+    }
+
+    // 3. TERAPKAN FILTER PENCARIAN (SEARCH)
     if (searchQuery !== "") {
         filteredSPP = filteredSPP.filter(spp => 
             (spp.product && spp.product.toLowerCase().includes(searchQuery)) || 
@@ -4132,9 +4168,8 @@ let filteredSPP = window.databaseMasterSPP.filter(spp => !spp.isSPL && !spp.isHi
 
     // Tangani jika data kosong setelah difilter
     if(filteredSPP.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="${isDevOrAdmin ? '12' : '11'}" style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada data pada periode atau pencarian ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${isDevOrAdmin ? '12' : '11'}" style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada data pada periode, status, atau pencarian ini.</td></tr>`;
         
-        // Sembunyikan tombol toggle jika data kosong
         const toggleBtn = document.getElementById('btn-toggle-rekap-khusus');
         if(toggleBtn) toggleBtn.parentElement.style.display = 'none';
         return;
@@ -4144,21 +4179,20 @@ let filteredSPP = window.databaseMasterSPP.filter(spp => !spp.isSPL && !spp.isHi
     const toggleBtn = document.getElementById('btn-toggle-rekap-khusus');
     if(toggleBtn) toggleBtn.parentElement.style.display = 'flex';
 
-    // 3. URUTKAN DATA DARI YANG TERBARU
+    // 4. URUTKAN DATA DARI YANG TERBARU
     filteredSPP.sort((a, b) => b.rawTimestampMs - a.rawTimestampMs);
 
-    // 4. POTONG DATA MENJADI 10 SAJA JIKA MODE "MINIMIZE" AKTIF
+    // 5. POTONG DATA MENJADI 10 SAJA JIKA MODE "MINIMIZE" AKTIF
     let displaySPP = window.isRekapKhususMinimized ? filteredSPP.slice(0, 10) : filteredSPP;
 
     let htmlRows = '';
     
-    // 5. RENDER TABEL
+    // 6. RENDER TABEL
     displaySPP.forEach(spp => {
         let rekapData = window.databaseRekapAdmin.find(r => r.spp && r.spp.trim().toLowerCase() === spp.no.trim().toLowerCase() && !r.isHidden);
         let noBpmp = rekapData && rekapData.noBPMP ? rekapData.noBPMP : "-";
-// Ambil Nomor Produksi (Bisa dari rekap atau dari log operator)
-let logTerkait = window.databaseLogOperator.find(log => log.noSPP === spp.no && log.noProd && log.noProd !== "-");
-let noProduksi = rekapData && rekapData.noProd && rekapData.noProd !== "-" ? rekapData.noProd : (logTerkait ? logTerkait.noProd : "-");
+        let logTerkait = window.databaseLogOperator.find(log => log.noSPP === spp.no && log.noProd && log.noProd !== "-");
+        let noProduksi = rekapData && rekapData.noProd && rekapData.noProd !== "-" ? rekapData.noProd : (logTerkait ? logTerkait.noProd : "-");
         let noLpbhp = rekapData && rekapData.noLPBHP ? rekapData.noLPBHP : "-";
         let qty = rekapData && rekapData.qty ? rekapData.qty : "1";
 
@@ -4174,7 +4208,7 @@ let noProduksi = rekapData && rekapData.noProd && rekapData.noProd !== "-" ? rek
         }
 
         let ket = "-";
-        if (isSelesai) {
+        if (isSelesai || spp.isShipped) {
             ket = spp.isShipped ? "Sudah Terkirim" : "Tersedia di Gudang";
         } else if (['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(spp.status)) {
             ket = "Ada Kendala / Terjeda";
@@ -4186,7 +4220,7 @@ let noProduksi = rekapData && rekapData.noProd && rekapData.noProd !== "-" ? rek
 
         let actionBtn = isDevOrAdmin ? `<td style="padding: 12px; text-align:center; vertical-align:middle;"><button class="btn-action-trigger" style="background:var(--warning-glow); color:#000; padding: 6px 12px; width:100%; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="editRekapKhusus('${spp.no}')">✏️ Edit</button></td>` : '';
 
-htmlRows += `
+        htmlRows += `
             <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
                 <td style="padding: 12px; white-space: nowrap;"><strong style="color:var(--blue-glow);">${spp.no}</strong></td>
                 <td style="padding: 12px; white-space: nowrap;"><code style="color:var(--emerald-glow); font-weight:bold; font-size:13px;">${noBpmp}</code></td>
