@@ -3671,21 +3671,47 @@ window.beeShowDynamicStats = function() {
     }
 }
 
-    const PENJEDAAN_STATUS_LIST = ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'];
+const PENJEDAAN_STATUS_LIST = ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'];
+
+    window.toggleCustomDate = function() {
+        const filterEl = document.getElementById('global-time-filter');
+        const customContainer = document.getElementById('custom-date-container');
+        if (!filterEl) return;
+        const filterVal = filterEl.value;
+
+        if (customContainer) {
+            customContainer.style.display = (filterVal === 'custom') ? 'flex' : 'none';
+        }
+
+        window.applyGlobalFilter();
+    };
 
     window.isWithinTimeframe = function(timestampMs, filter) {
         if (!timestampMs) return false;
-        const d = new Date(timestampMs); const now = new Date();
-        if (filter === 'today') return d.toDateString() === now.toDateString();
-        else if (filter === 'week') { const start = new Date(now.setDate(now.getDate() - now.getDay())); start.setHours(0,0,0,0); return d >= start; } 
-        else if (filter === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-        else if (filter === 'year') return d.getFullYear() === now.getFullYear();
-        else if (filter === 'custom') {
-            const startD = document.getElementById('custom-start-date').value; const endD = document.getElementById('custom-end-date').value;
-            if(!startD || !endD) return true; const st = new Date(startD).setHours(0,0,0,0); const en = new Date(endD).setHours(23,59,59,999);
+        const d = new Date(timestampMs);
+        const now = new Date();
+        if (filter === 'today') {
+            return d.toDateString() === now.toDateString();
+        } else if (filter === 'week') {
+            const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay(), 0, 0, 0, 0);
+            const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (6 - now.getDay()), 23, 59, 59, 999);
+            return timestampMs >= start.getTime() && timestampMs <= end.getTime();
+        } else if (filter === 'month') {
+            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        } else if (filter === 'year') {
+            return d.getFullYear() === now.getFullYear();
+        } else if (filter === 'custom') {
+            const startEl = document.getElementById('custom-start-date');
+            const endEl = document.getElementById('custom-end-date');
+            const startD = startEl ? startEl.value : '';
+            const endD = endEl ? endEl.value : '';
+            if (!startD && !endD) return true;
+            const st = startD ? new Date(startD + 'T00:00:00').getTime() : 0;
+            const en = endD ? new Date(endD + 'T23:59:59.999').getTime() : Number.MAX_SAFE_INTEGER;
             return timestampMs >= st && timestampMs <= en;
-        } return true; 
-    }
+        }
+        return true; 
+    };    
 
     window.getFilteredLogs = function() { const f = document.getElementById('global-time-filter').value; if (f === 'all') return window.databaseLogOperator; return window.databaseLogOperator.filter(log => window.isWithinTimeframe(log.timestampMs, f)); }
     window.getFilteredSPP = function() { const f = document.getElementById('global-time-filter').value; if (f === 'all') return window.databaseMasterSPP; return window.databaseMasterSPP.filter(spp => window.isWithinTimeframe(spp.rawTimestampMs, f)); }
