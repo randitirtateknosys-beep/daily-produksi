@@ -5698,18 +5698,121 @@ window.renderShipmentTable = function() {
     // 2. Hapus baris yang disembunyikan oleh fitur pencarian (search)
     Array.from(rows).forEach((row, index) => {
         const originalRow = table.rows[index];
-        // Jika di tabel asli barisnya disembunyikan (display: none), hapus di versi Excel
         if (originalRow && originalRow.style.display === 'none') {
             row.parentNode.removeChild(row);
         }
     });
 
+    // 3. Hapus kolom "Aksi" / "Aksi Edit" jika ada, lalu sesuaikan colspan baris grup SPP
+    const headerRow = clonedTable.querySelector('thead tr');
+    let hasActionCol = false;
+    let visibleColCount = 0;
+    if (headerRow) {
+        const ths = Array.from(headerRow.children);
+        ths.forEach((th) => {
+            if (th.style.display === 'none') {
+                th.remove();
+            } else if (th.innerText.trim().toLowerCase().includes('aksi')) {
+                hasActionCol = true;
+                th.remove();
+            } else {
+                visibleColCount++;
+                th.setAttribute('bgcolor', '#0f172a');
+                th.style.backgroundColor = '#0f172a';
+                th.style.color = '#ffffff';
+                th.style.fontWeight = 'bold';
+                th.style.padding = '10px 12px';
+            }
+        });
+    }
+
+    // 4. Rapikan setiap baris di tbody agar tampilan di Excel persis seperti di Dashboard
+    const bodyRows = clonedTable.querySelectorAll('tbody tr');
+    bodyRows.forEach(row => {
+        const isGroupHeader = row.classList.contains('spp-group-header') || (row.cells.length === 1 && row.cells[0].hasAttribute('colspan'));
+        
+        if (isGroupHeader) {
+            const td = row.cells[0];
+            if (visibleColCount > 0) {
+                td.setAttribute('colspan', visibleColCount);
+            }
+            // Beri warna latar gelap safir seperti dashboard agar teks NO. SPP, Produk, Status Pekerjaan, & No. Produksi tampil jelas di Excel
+            td.setAttribute('bgcolor', '#1e293b');
+            td.style.backgroundColor = '#1e293b';
+            td.style.color = '#ffffff';
+            td.style.fontWeight = 'bold';
+            td.style.padding = '12px 16px';
+            td.style.border = '1px solid #0f172a';
+
+            // Jika masih ada pembungkus div flex, ubah ke inline agar colspan tidak pecah di Excel
+            const innerDiv = td.querySelector('div');
+            if (innerDiv) {
+                innerDiv.style.display = 'inline';
+            }
+
+            // Pastikan setiap bagian di dalam grup header memiliki warna HEX yang didukung penuh oleh Excel
+            const spans = td.querySelectorAll('span');
+            spans.forEach(sp => {
+                const st = sp.getAttribute('style') || '';
+                if (st.includes('--blue-glow')) sp.style.color = '#38bdf8';
+                else if (st.includes('--emerald-glow')) sp.style.color = '#34d399';
+                else if (st.includes('--warning-glow')) sp.style.color = '#fbbf24';
+                else if (st.includes('#f8fafc') || st.includes('#fff')) sp.style.color = '#ffffff';
+
+                if (sp.classList.contains('bg-urgent')) {
+                    sp.style.backgroundColor = '#f43f5e';
+                    sp.style.color = '#ffffff';
+                    sp.style.padding = '2px 8px';
+                } else if (sp.classList.contains('bg-buffer')) {
+                    sp.style.backgroundColor = '#fbbf24';
+                    sp.style.color = '#000000';
+                    sp.style.padding = '2px 8px';
+                } else if (sp.classList.contains('bg-reguler')) {
+                    sp.style.backgroundColor = '#0284c7';
+                    sp.style.color = '#ffffff';
+                    sp.style.padding = '2px 8px';
+                }
+            });
+        } else {
+            if (hasActionCol && row.cells.length > visibleColCount) {
+                row.lastElementChild.remove();
+            }
+            Array.from(row.cells).forEach(td => {
+                td.style.backgroundColor = '#ffffff';
+                td.style.color = '#0f172a';
+                td.style.padding = '8px 10px';
+                td.style.verticalAlign = 'middle';
+
+                // Buka tag <details> jika ada (misal di tabel Aktual Produk)
+                const details = td.querySelector('details');
+                if (details) {
+                    const summary = details.querySelector('summary');
+                    if (summary) summary.remove();
+                    td.innerHTML = details.innerHTML;
+                }
+
+                // Konversi warna CSS variable pada sel data ke HEX yang tajam di atas latar putih Excel
+                td.querySelectorAll('*').forEach(el => {
+                    const st = el.getAttribute('style') || '';
+                    if (st.includes('--cyan-glow')) el.style.color = '#0d9488';
+                    else if (st.includes('--emerald-glow')) el.style.color = '#059669';
+                    else if (st.includes('--danger-glow')) el.style.color = '#e11d48';
+                    else if (st.includes('--warning-glow')) el.style.color = '#d97706';
+                    else if (st.includes('--blue-glow')) el.style.color = '#0284c7';
+                    else if (st.includes('--purple-glow')) el.style.color = '#7c3aed';
+                    else if (st.includes('--text-muted')) el.style.color = '#475569';
+                    else if (st.includes('#fff') || st.includes('#f8fafc') || st.includes('--text-main')) el.style.color = '#0f172a';
+                });
+            });
+        }
+    });
+
     const html = clonedTable.outerHTML;
 
-    // 3. Otomatis ubah ekstensi nama file dari .csv menjadi .xls
+    // 5. Otomatis ubah ekstensi nama file dari .csv menjadi .xls
     const finalFilename = filename.replace('.csv', '.xls');
 
-    // 4. Template Excel agar format terbaca rapi oleh Microsoft Excel
+    // 6. Template Excel agar format & warna badge terbaca rapi oleh Microsoft Excel
     const template = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" 
           xmlns:x="urn:schemas-microsoft-com:office:excel" 
@@ -5731,9 +5834,21 @@ window.renderShipmentTable = function() {
         </xml>
         <![endif]-->
         <style>
-            /* Memberikan border dasar agar tabel Excel lebih rapi */
-            table, th, td { border: 1px solid #000000; border-collapse: collapse; }
-            th { background-color: #e2e8f0; font-weight: bold; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #0f172a; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #94a3b8; padding: 8px 12px; vertical-align: middle; }
+            th { background-color: #0f172a; color: #ffffff; font-weight: bold; text-transform: uppercase; font-size: 11px; }
+            tr.spp-group-header td { background-color: #1e293b; color: #ffffff; font-weight: bold; font-size: 13px; padding: 12px 16px; border: 1px solid #0f172a; }
+            .badge { font-weight: bold; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; font-size: 11px; }
+            .bg-reguler { background-color: #e0f2fe; color: #0369a1; }
+            .bg-buffer { background-color: #fef3c7; color: #b45309; }
+            .bg-urgent { background-color: #ffe4e6; color: #be123c; }
+            .status-pending { background-color: #f1f5f9; color: #475569; }
+            .status-proses { background-color: #e0f2fe; color: #0284c7; }
+            .status-selesai, .status-selesaiawal { background-color: #d1fae5; color: #047857; }
+            .status-telat, .status-stoppage { background-color: #ffe4e6; color: #be123c; }
+            .status-idle, .status-takeover { background-color: #fef3c7; color: #b45309; }
+            .status-lanjutbesok { background-color: #e0e7ff; color: #4338ca; }
         </style>
     </head>
     <body>
@@ -5741,7 +5856,7 @@ window.renderShipmentTable = function() {
     </body>
     </html>`;
 
-    // 5. Proses konversi ke File Excel menggunakan Blob
+    // 7. Proses konversi ke File Excel menggunakan Blob
     const blob = new Blob([template], { type: 'application/vnd.ms-excel;charset=utf-8' });
     const url = window.URL.createObjectURL(blob);
     
@@ -5754,7 +5869,7 @@ window.renderShipmentTable = function() {
     
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
-} 
+}
 
     window.printPDF = function(tableId, title) {
         let tableEl = document.getElementById(tableId);
@@ -6467,14 +6582,15 @@ window.renderOperatorTable = function() {
             if (!uniqueProds) uniqueProds = "-";
 
             htmlRows += `
-                <tr style="background: rgba(56, 189, 248, 0.1); border-left: 4px solid var(--blue-glow); border-top: 2px solid var(--panel-border);">
-                    <td colspan="${isDev ? '10' : '9'}" style="padding: 15px 20px;">
-                        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-                            <span style="font-size: 14px; font-weight: 800; color: #f8fafc;">📁 NO. SPP: <span style="color: var(--blue-glow);">${sppNo}</span></span>
-                            <span style="font-size: 14px; font-weight: 700; color: #f8fafc;">🛒 Produk: <span style="color: var(--emerald-glow);">${productName}</span></span>
-                            <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">🏷️ Status Pekerjaan: <span class="badge ${urgencyClass}">${urgency}</span></span>
-                            <span style="font-size: 13px; font-weight: 700; color: #f8fafc;">🏷️ No. Produksi: <span style="color: var(--warning-glow);">${uniqueProds}</span></span>
-                        </div>
+                <tr class="spp-group-header" style="background: rgba(56, 189, 248, 0.12); border-left: 4px solid var(--blue-glow); border-top: 2px solid var(--panel-border);">
+                    <td colspan="${isDev ? '10' : '9'}" style="padding: 14px 20px; text-align: left;">
+                        <span style="font-size: 14px; font-weight: 800; color: #f8fafc; margin-right: 16px; display: inline-block;">📁 NO. SPP: <span style="color: #38bdf8;">${sppNo}</span></span>
+                        <span style="color: #64748b; margin-right: 16px;">&nbsp;|&nbsp;</span>
+                        <span style="font-size: 14px; font-weight: 700; color: #f8fafc; margin-right: 16px; display: inline-block;">🛒 Produk: <span style="color: #34d399;">${productName}</span></span>
+                        <span style="color: #64748b; margin-right: 16px;">&nbsp;|&nbsp;</span>
+                        <span style="font-size: 13px; font-weight: 700; color: #f8fafc; margin-right: 16px; display: inline-block;">🏷️ Status Pekerjaan: <span class="badge ${urgencyClass}">${urgency}</span></span>
+                        <span style="color: #64748b; margin-right: 16px;">&nbsp;|&nbsp;</span>
+                        <span style="font-size: 13px; font-weight: 700; color: #f8fafc; display: inline-block;">🏷️ No. Produksi: <span style="color: #fbbf24;">${uniqueProds}</span></span>
                     </td>
                 </tr>
             `;
