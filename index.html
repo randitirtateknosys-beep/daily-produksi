@@ -1996,28 +1996,28 @@ body.light-theme .welcome-box {
 
     function startRealtimeListeners() {
        
-        db.ref('masterSPP').orderByChild('rawTimestampMs').limitToLast(500).on('value', snap => {            
+        db.ref('masterSPP').orderByChild('rawTimestampMs').on('value', snap => {            
             window.databaseMasterSPP = [];
             snap.forEach(child => { let val = child.val(); val.firebaseKey = child.key; window.databaseMasterSPP.push(val); });
             window.databaseMasterSPP.sort((a,b) => b.rawTimestampMs - a.rawTimestampMs);
             if(window.currentUserRole !== "Guest") window.applyGlobalFilter();
         });
 
-        db.ref('logOperator').orderByChild('timestampMs').limitToLast(500).on('value', snap => {
+        db.ref('logOperator').orderByChild('timestampMs').on('value', snap => {
             window.databaseLogOperator = [];
             snap.forEach(child => { let val = child.val(); val.firebaseKey = child.key; window.databaseLogOperator.push(val); });
             window.databaseLogOperator.sort((a,b) => b.timestampMs - a.timestampMs);
             if(window.currentUserRole !== "Guest") window.applyGlobalFilter();
         });
 
-        db.ref('shipments').orderByChild('rawTimestampMs').limitToLast(500).on('value', snap => {
+        db.ref('shipments').orderByChild('rawTimestampMs').on('value', snap => {
             window.databaseShipment = [];
             snap.forEach(child => { let val = child.val(); val.firebaseKey = child.key; window.databaseShipment.push(val); });
             window.databaseShipment.sort((a,b) => b.rawTimestampMs - a.rawTimestampMs);
             if(window.currentUserRole !== "Guest") window.applyGlobalFilter();
         });
 
-        db.ref('internalOuts').orderByChild('rawTimestampMs').limitToLast(500).on('value', snap => {
+        db.ref('internalOuts').orderByChild('rawTimestampMs').on('value', snap => {
             window.databaseInternalOut = [];
             snap.forEach(child => { let val = child.val(); val.firebaseKey = child.key; window.databaseInternalOut.push(val); });
             window.databaseInternalOut.sort((a,b) => b.rawTimestampMs - a.rawTimestampMs);
