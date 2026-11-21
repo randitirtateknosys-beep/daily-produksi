@@ -684,7 +684,7 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
 
         <div class="global-search-container" id="global-search-box">
             <label style="font-weight: 700; color: var(--emerald-glow); font-size: 15px;">🔍 Pencarian Cepat (Tracking):</label>
-            <input type="text" id="global-search-input" onkeypress="if(event.key==='Enter') performCentralizedSearch()" placeholder="Ketik No. SPP / Produk / Operator, lalu tekan Enter...">
+            <input type="text" id="global-search-input" onkeypress="if(event.key==='Enter') performCentralizedSearch()" placeholder="Ketik Angka Awal No. Produksi (cth: 0534) / No. SPP / Produk / Operator, lalu tekan Enter...">
             <button onclick="performCentralizedSearch()" class="btn-search-trigger">Cari</button>
         </div>
 
@@ -695,7 +695,7 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
             </div>
             <div class="table-container">
                 <table id="search-result-table">
-                    <thead><tr><th>Sumber Data</th><th>No. ID/SPP</th><th>Detail Info</th><th>Status Terkini</th></tr></thead>
+                    <thead><tr><th>Sumber Data</th><th>No. ID/SPP</th><th>No. Produksi</th><th>Detail Info</th><th>Status Terkini</th></tr></thead>
                     <tbody id="search-result-body"></tbody>
                 </table>
             </div>
@@ -1462,8 +1462,8 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
                         <select id="spp-maker" onchange="toggleManualInput(this, 'maker-manual')" required>
                             <option value="">-- Pilih Pembuat --</option>
                             <option value="Rizal">Rizal</option>
-                            <option value="Laurence">Laurence</option>
-							<option value="Fhiki Alkar">Fhiki Alkar</option>
+                            <option value="Anto">Anto</option>
+                            <option value="Fihki Alkar">Fihki Alkar</option>
                             <option value="other">Other (Isi Manual...)</option>
                         </select>
                         <input type="text" id="maker-manual" class="manual-input" placeholder="Ketik nama...">
@@ -1564,6 +1564,39 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
 
         <div class="panel" id="panel-input-shipment">
             <h3>📦 Input Laporan Pengiriman Barang (Tim Logistik)</h3>
+
+<!-- [KHUSUS GUDANG & DEV] Pencarian Cepat No. Produksi -->
+            <div id="shipment-noprod-search-box" style="display: none; background: rgba(15, 23, 42, 0.75); border: 1px solid var(--blue-glow); border-radius: 10px; padding: 15px; margin-bottom: 22px;">
+                <label style="display: block; font-weight: 800; color: var(--emerald-glow); font-size: 13px; margin-bottom: 10px; text-transform: uppercase;">
+                    🔍 Cari Cepat No. Produksi (Khusus Gudang & Developer)
+                </label>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="text" id="shipment-noprod-input"
+                        placeholder="Ketik angka pertama No. Produksi (contoh: 0534 dari 0534/RE/TT/11/26)..."
+                        onkeypress="if(event.key==='Enter'){ event.preventDefault(); searchShipmentByNoProd(); }"
+                        style="flex: 1; min-width: 240px; height: 42px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--blue-glow); background: var(--input-bg); color: #fff; font-weight: 600;">
+                    <button type="button" onclick="searchShipmentByNoProd()" class="btn-search-trigger" style="height: 42px; padding: 0 20px;">🔍 Cari</button>
+                    <button type="button" onclick="resetShipmentNoProdSearch()" class="btn-search-clear" style="height: 42px; padding: 0 16px;">Reset</button>
+                </div>
+
+                <div id="shipment-noprod-info" style="display: none; margin-top: 10px; font-size: 12.5px; font-weight: 700; color: var(--emerald-glow);"></div>
+
+                <div id="shipment-noprod-results" class="table-container" style="display: none; margin-top: 12px; max-height: 240px;">
+                    <table style="margin: 0; background: rgba(15, 23, 42, 0.85);">
+                        <thead>
+                            <tr>
+                                <th>No. Produksi</th>
+                                <th>No. SPP</th>
+                                <th>Nama Produk</th>
+                                <th>Status Gudang</th>
+                                <th style="text-align: center;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shipment-noprod-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <form id="shipment-form">
                 <div class="unified-grid">
                     <div class="form-group"><label>Pilih Produk Selesai di Gudang</label><select id="shipment-product-select" required><option value="">-- Pilih Produk --</option></select></div>
@@ -1571,7 +1604,7 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
                         <label>Operator Logistik</label>
                         <select id="shipment-carrier" onchange="toggleManualInput(this, 'shipment-carrier-manual')" required>
                             <option value="">-- Pilih Pengirim --</option>
-                           <option value="Oki">Oki</option><option value="Laurence">Laurence</option><option value="Hasan">Hasan</option>
+                            <option value="Oki">Oki</option><option value="Anto">Anto</option><option value="Hasan">Hasan</option>
                             <option value="Rizal">Rizal</option><option value="Yatna">Yatna</option><option value="Ujang">Ujang</option>
                             <option value="Ekspedisi">Ekspedisi</option><option value="other">Other (Manual...)</option>
                         </select>
@@ -1690,30 +1723,51 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
 </div>
 
 <div id="bee-boot-container" class="bee-boot">
-    <div class="bee-boot-bubble" id="bee-boot-bubble">
-        <!-- Area Riwayat Chat -->
-        <div id="bee-chat-history" style="max-height: 250px; overflow-y: auto; margin-bottom: 10px; font-size: 13px; padding-right: 5px;">
+    <div class="bee-boot-bubble" id="bee-boot-bubble" style="max-width: 440px;">
+        <!-- Baris Tombol Skip Instan (Muncul otomatis saat BEE-BOOT sedang mengetik) -->
+        <div id="bee-skip-typing-wrap" style="display:none; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:8px; border-bottom:1px dashed rgba(56,189,248,0.4);">
+            <span style="font-size:11px; color:var(--warning-glow); font-weight:700;">⏳ BEE-BOOT sedang mengetik...</span>
+            <button type="button" onclick="skipBeeTyping()" class="bee-boot-btn" style="background:var(--warning-glow); color:#000; padding:4px 12px; font-size:11px; margin:0;">⏭️ Skip (Tampilkan Semua)</button>
+        </div>
+
+        <!-- Area Riwayat Chat & Penjelasan -->
+        <div id="bee-chat-history" style="max-height: 320px; overflow-y: auto; margin-bottom: 10px; font-size: 13px; padding-right: 5px;">
             <p id="bee-boot-text"></p>
-            <div id="bee-boot-actions" style="display:flex; justify-content:center; gap:10px;"></div>
+            <div id="bee-boot-actions" style="display:flex; justify-content:center; flex-wrap:wrap; gap:8px;"></div>
         </div>
         
-        <!-- Area Input AI Baru -->
-        <div id="bee-ai-input-area" style="display:none; border-top: 1px solid var(--blue-glow); padding-top: 12px; flex-direction: column; gap: 8px;">
-            <textarea id="bee-user-input" placeholder="Tanya BEE-BOOT di sini..." rows="2" style="width:100%; background:rgba(15,23,42,0.8); color:#fff; border:1px solid #334155; border-radius:6px; padding:10px; font-size:12px; resize:none; outline:none; font-family:inherit;"></textarea>
-            <div style="display:flex; gap:8px;">
-    <button onclick="sendToBeeAI()" class="bee-boot-btn bee-btn-yes" id="bee-send-btn" style="flex:1;">Kirim Pesan</button>
-    <button onclick="beeSkipToIntroEnd()" class="bee-boot-btn bee-btn-no">Tidak</button>
-</div>
+        <!-- Area Input Agen AI -->
+        <div id="bee-ai-input-area" style="display:none; border-top: 1px solid var(--blue-glow); padding-top: 10px; flex-direction: column; gap: 8px;">
+            <!-- Tombol Pintasan Tanya Cepat -->
+            <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                <button type="button" onclick="beeQuickAsk('Ringkasan total produksi dan inventaris')" style="background:rgba(56,189,248,0.15); color:var(--blue-glow); border:1px solid rgba(56,189,248,0.4); border-radius:4px; padding:3px 7px; font-size:10px; cursor:pointer; font-weight:700;">📊 Ringkasan</button>
+                <button type="button" onclick="beeQuickAsk('Daftar stok barang ready di gudang')" style="background:rgba(16,185,129,0.15); color:var(--emerald-glow); border:1px solid rgba(16,185,129,0.4); border-radius:4px; padding:3px 7px; font-size:10px; cursor:pointer; font-weight:700;">📦 Stok Ready</button>
+                <button type="button" onclick="beeQuickAsk('Ranking operator saat ini')" style="background:rgba(251,191,36,0.15); color:var(--warning-glow); border:1px solid rgba(251,191,36,0.4); border-radius:4px; padding:3px 7px; font-size:10px; cursor:pointer; font-weight:700;">🏆 Ranking</button>
+                <button type="button" onclick="beeQuickAsk('Cek pekerjaan yang kendala atau telat')" style="background:rgba(244,63,94,0.15); color:var(--danger-glow); border:1px solid rgba(244,63,94,0.4); border-radius:4px; padding:3px 7px; font-size:10px; cursor:pointer; font-weight:700;">🚨 Kendala</button>
+                <button type="button" onclick="beeQuickAsk('Riwayat pengiriman terbaru')" style="background:rgba(168,85,247,0.15); color:var(--purple-glow); border:1px solid rgba(168,85,247,0.4); border-radius:4px; padding:3px 7px; font-size:10px; cursor:pointer; font-weight:700;">🚚 Pengiriman</button>
+            </div>
+
+            <textarea id="bee-user-input"
+                placeholder="Tanya apa saja: cth 'cek 0534', 'stok aquatech', 'ranking operator', 'kendala', 'pengiriman'... (Tekan Enter)"
+                rows="2"
+                onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); sendToBeeAI(); }"
+                style="width:100%; background:rgba(15,23,42,0.8); color:#fff; border:1px solid #334155; border-radius:6px; padding:10px; font-size:12px; resize:none; outline:none; font-family:inherit;"></textarea>
+
+            <div style="display:flex; gap:6px;">
+                <button type="button" onclick="sendToBeeAI()" class="bee-boot-btn bee-btn-yes" id="bee-send-btn" style="flex:1; margin:0;">Kirim</button>
+                <button type="button" onclick="clearBeeAIChat()" class="bee-boot-btn" style="background:#334155; color:#fff; margin:0; padding:8px 10px;" title="Bersihkan Riwayat Chat">🧹</button>
+                <button type="button" onclick="beeSkipToIntroEnd()" class="bee-boot-btn bee-btn-no" style="margin:0;">Menu</button>
+            </div>
         </div>
     </div>
     
-    <!-- Ikon Avatar Robot yang sebelumnya hilang -->
-    <div class="bee-boot-avatar" title="Bee Boot: Robot Panduan AI" onclick="toggleBeeBoot()">
+    <!-- Ikon Avatar Robot -->
+    <div class="bee-boot-avatar" title="Bee Boot: Robot Panduan & Agen AI" onclick="toggleBeeBoot()">
         🤖
     </div>
 </div>
-<script>
-	
+
+<script>	
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyzvJ1f3FXMTLEXeU98IHy-FyBEPUG8Vhvf8PrfAYc4mAiZzmW28trfa_u4-Bo-J4Ujww/exec"; 
 
     const firebaseConfig = {
@@ -2203,8 +2257,8 @@ document.getElementById('bee-boot-container').style.display = 'flex';
         "manager@tirta.com": { role: "Manager Warehouse", panel: "mw" },
         "admin@tirta.com": { role: "Septi Utami", panel: "admin" },
         "manajemen@tirta.com": { role: "Managemen", panel: "viewonly" },
-        "gudang@tirta.com": { role: "Fhiki Alkar", panel: "gudang" },
-		"laurence@tirta.com": { role: "Laurence", panel: "gudang" },
+        "gudang@tirta.com": { role: "Fihki Alkar", panel: "gudang" },
+        "anto@tirta.com": { role: "Anto", panel: "gudang" },
         "rizal@tirta.com": { role: "Rizal", panel: "gudang" },
         "tv@tirta.com": { role: "TV Mode", panel: "viewonly" },
         
@@ -2418,13 +2472,13 @@ window.aktifkanNotifikasiManual = function() {
         return `<span class="badge ${badgeClass}">${status}</span>`;
     }
 
-    window.performCentralizedSearch = function() {
+   window.performCentralizedSearch = function() {
         const query = document.getElementById('global-search-input').value.toLowerCase().trim();
         const resultPanel = document.getElementById('panel-search-result');
         const resultBody = document.getElementById('search-result-body');
         const keywordDisplay = document.getElementById('search-keyword-display');
         
-        if(!query) {
+        if (!query) {
             resultPanel.style.display = "none";
             return;
         }
@@ -2433,46 +2487,176 @@ window.aktifkanNotifikasiManual = function() {
         keywordDisplay.innerText = query;
         resultPanel.style.display = "block";
 
+        // 1. Petakan semua No. Produksi per No. SPP dari Log Operator & Rekap Dokumen
+        const sppToNoProdMap = {};
+        const addNoProdToMap = (sppKey, noProdVal) => {
+            if (!sppKey || !noProdVal || noProdVal === "-" || noProdVal === "Belum Ada Data") return;
+            const normSpp = sppKey.trim().toLowerCase();
+            if (!sppToNoProdMap[normSpp]) sppToNoProdMap[normSpp] = new Set();
+            noProdVal.split(',').forEach(part => {
+                const clean = part.trim();
+                if (clean && clean !== "-") sppToNoProdMap[normSpp].add(clean);
+            });
+        };
+
+        window.databaseLogOperator.forEach(log => addNoProdToMap(log.noSPP, log.noProd));
+        window.databaseRekapAdmin.forEach(rekap => {
+            if (!rekap.isHidden) addNoProdToMap(rekap.spp, rekap.noProd);
+        });
+
+        // 2. Fungsi pencocokan khusus No. Produksi (mendukung angka pertama sebelum "/", misal "0534" dari "0534/RE/TT/11/26")
+        const matchesNoProdString = (noProdStr, q) => {
+            if (!noProdStr || noProdStr === "-") return false;
+            return noProdStr.split(',').some(rawCode => {
+                const cleanCode = rawCode.trim().toLowerCase();
+                if (!cleanCode || cleanCode === "-") return false;
+
+                // Ambil angka/bagian pertama sebelum garis miring "/"
+                const firstSegment = cleanCode.split('/')[0].trim();
+
+                // Jika user mengetik dengan "/", cocokkan terhadap keseluruhan No. Produksi
+                if (q.includes('/')) {
+                    return cleanCode.includes(q);
+                }
+
+                // Jika user mengetik angka saja (misal "0534" atau "534"), cocokkan pada angka pertama saja
+                // agar angka bulan/tahun seperti "/11/26" tidak ikut terjaring secara keliru
+                if (/^\d+$/.test(q)) {
+                    const qNoZero = q.replace(/^0+/, '');
+                    const segNoZero = firstSegment.replace(/^0+/, '');
+                    return firstSegment === q ||
+                           firstSegment.startsWith(q) ||
+                           firstSegment.includes(q) ||
+                           (qNoZero !== "" && segNoZero === qNoZero);
+                }
+
+                return firstSegment.includes(q) || cleanCode.includes(q);
+            });
+        };
+
+        const getNoProdTextBySpp = (sppNo) => {
+            if (!sppNo) return "-";
+            const set = sppToNoProdMap[sppNo.trim().toLowerCase()];
+            return (set && set.size > 0) ? Array.from(set).join(', ') : "-";
+        };
+
+        const matchesSppNoProd = (sppNo, q) => {
+            const noProdText = getNoProdTextBySpp(sppNo);
+            return matchesNoProdString(noProdText, q);
+        };
+
+        const matchFields = (fields, q) => {
+            return fields.some(f => f !== undefined && f !== null && String(f).toLowerCase().includes(q));
+        };
+
         let results = [];
 
+        // A. Master SPP & Surat Perintah Langsung (SPL)
         window.databaseMasterSPP.forEach(item => {
-            if(Object.values(item).join(' ').toLowerCase().includes(query)) {
+            const noProdText = getNoProdTextBySpp(item.no);
+            const isMatch = matchFields([item.no, item.product, item.maker, item.receiver, item.priority, item.status], query)
+                         || matchesNoProdString(noProdText, query);
+
+            if (isMatch) {
                 let infoDetail = `Produk: ${item.product}`;
                 if (item.isSPL) infoDetail = `[SPL] Produk: ${item.product} | Penerima: ${item.receiver}`;
-                results.push({ source: item.isSPL ? "Surat Perintah Langsung" : "Master SPP", id: item.no, info: infoDetail, status: item.status });
+                results.push({
+                    source: item.isSPL ? "Surat Perintah Langsung" : "Master SPP",
+                    id: item.no,
+                    noProd: noProdText,
+                    info: infoDetail,
+                    status: item.isShipped ? "Terkirim / Keluar" : item.status
+                });
             }
         });
 
+        // B. Log Aktual Operator
         window.databaseLogOperator.forEach(item => {
-            if(Object.values(item).join(' ').toLowerCase().includes(query)) {
-                results.push({ source: "Log Aktual", id: item.noSPP, info: `Opr: ${item.operator} | Akt: ${item.aktivitas || '-'} | Thp: ${item.stage}`, status: item.status });
+            const noProdDisplay = (item.noProd && item.noProd !== "-") ? item.noProd : getNoProdTextBySpp(item.noSPP);
+            const isMatch = matchFields([item.noSPP, item.operator, item.aktivitas, item.stage, item.condition, item.status, item.reason], query)
+                         || matchesNoProdString(item.noProd, query)
+                         || matchesSppNoProd(item.noSPP, query);
+
+            if (isMatch) {
+                results.push({
+                    source: "Log Aktual",
+                    id: item.noSPP,
+                    noProd: noProdDisplay,
+                    info: `Opr: ${item.operator} | Akt: ${item.aktivitas || '-'} | Thp: ${item.stage}`,
+                    status: item.status
+                });
             }
         });
 
+        // C. Rekap Dokumen (BPMP & LPBHP)
+        window.databaseRekapAdmin.forEach(item => {
+            if (item.isHidden) return;
+            const noProdDisplay = (item.noProd && item.noProd !== "-") ? item.noProd : getNoProdTextBySpp(item.spp);
+            const isMatch = matchFields([item.spp, item.noBPMP, item.noLPBHP, item.jenisProduksi, item.jenisPekerjaan, item.bulan], query)
+                         || matchesNoProdString(item.noProd, query)
+                         || matchesSppNoProd(item.spp, query);
+
+            if (isMatch) {
+                results.push({
+                    source: "Rekap Dokumen",
+                    id: item.spp,
+                    noProd: noProdDisplay,
+                    info: `Prd: ${item.jenisProduksi || '-'} | BPMP: ${item.noBPMP || '-'} | LPBHP: ${item.noLPBHP || '-'}`,
+                    status: "Terekap Dokumen"
+                });
+            }
+        });
+
+        // D. Pengiriman (Logistik)
         window.databaseShipment.forEach(item => {
-            if(Object.values(item).join(' ').toLowerCase().includes(query)) {
-                results.push({ source: "Pengiriman", id: item.spp, info: `Prd: ${item.product} | Tujuan: ${item.customer}`, status: "Terkirim 🚚" });
-            }
-        });
-        
-        window.databaseInternalOut.forEach(item => {
-            if(Object.values(item).join(' ').toLowerCase().includes(query)) {
-                results.push({ source: "Penarikan Internal", id: item.spp, info: `Prd: ${item.product} | Tujuan: ${item.targetProduct}`, status: "Masuk Produksi" });
+            const noProdText = getNoProdTextBySpp(item.spp);
+            const isMatch = matchFields([item.spp, item.product, item.customer, item.carrier, item.status], query)
+                         || matchesNoProdString(noProdText, query);
+
+            if (isMatch) {
+                results.push({
+                    source: "Pengiriman",
+                    id: item.spp,
+                    noProd: noProdText,
+                    info: `Prd: ${item.product} | Tujuan: ${item.customer} | Kurir: ${item.carrier || '-'}`,
+                    status: (item.status === "Terkirim") ? "Terkirim ✅" : "Dalam Perjalanan 🚚"
+                });
             }
         });
 
-        if(results.length === 0) {
-            resultBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--danger-glow); font-weight:bold;">Data yang anda cari tidak ada.</td></tr>`;
+        // E. Penarikan Internal Produksi
+        window.databaseInternalOut.forEach(item => {
+            const noProdText = getNoProdTextBySpp(item.spp);
+            const isMatch = matchFields([item.spp, item.product, item.targetProduct], query)
+                         || matchesNoProdString(noProdText, query);
+
+            if (isMatch) {
+                results.push({
+                    source: "Penarikan Internal",
+                    id: item.spp,
+                    noProd: noProdText,
+                    info: `Prd: ${item.product} | Tujuan: ${item.targetProduct}`,
+                    status: "Masuk Produksi"
+                });
+            }
+        });
+
+        if (results.length === 0) {
+            resultBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--danger-glow); font-weight:bold;">Data yang anda cari tidak ada.</td></tr>`;
         } else {
             results.forEach(res => {
                 let badgeClass = "bg-reguler";
-                if(res.status === 'Selesai' || res.status === 'Selesai Awal' || res.status.includes('Terkirim')) badgeClass = 'status-selesai';
-                else if(res.status === 'Telat Selesai') badgeClass = 'status-telat';
-                else if(res.status === 'Proses' || res.status === 'Masuk Produksi') badgeClass = 'status-proses';
-                
+                if (res.status === 'Selesai' || res.status === 'Selesai Awal' || res.status.includes('Terkirim') || res.status === 'Terekap Dokumen') badgeClass = 'status-selesai';
+                else if (res.status === 'Telat Selesai' || res.status === 'Stoppage') badgeClass = 'status-telat';
+                else if (res.status === 'Proses' || res.status === 'Masuk Produksi' || res.status.includes('Perjalanan')) badgeClass = 'status-proses';
+                else if (res.status === 'Pending') badgeClass = 'status-pending';
+                else if (res.status === 'Idle Time' || res.status === 'Takeover') badgeClass = 'status-idle';
+                else if (res.status === 'Lanjutkan Besok') badgeClass = 'status-lanjutbesok';
+
                 resultBody.innerHTML += `<tr>
                     <td><span class="badge bg-buffer">${res.source}</span></td>
                     <td><strong>${res.id}</strong></td>
+                    <td><code style="color:var(--warning-glow); font-weight:bold;">${res.noProd}</code></td>
                     <td>${res.info}</td>
                     <td><span class="badge ${badgeClass}">${res.status}</span></td>
                 </tr>`;
@@ -2869,7 +3053,10 @@ if (rekapKhususPanel) {
             let el = document.getElementById('panel-internal-produksi');
             if(el) el.style.display = 'none';
         }
-    
+    const shipSearchBox = document.getElementById('shipment-noprod-search-box');
+        if (shipSearchBox) {
+            shipSearchBox.style.display = (isGudang || isDev) ? 'block' : 'none';
+        }
         let prodDateEl = document.getElementById('prod-datetime');
     
         if(window.currentUserAccess === "produksi") { 
@@ -3050,32 +3237,96 @@ document.getElementById('spp-master-head').innerHTML = `<th>No. SPP & Tgl Rilis<
     }
 
     window.isBeeBootTyping = false;
+    window._typeWriterTimer = null;
+    window._activeTypeWriter = null;
     let tvAlertTimeout;
 
     window.typeWriterHTML = function(elementId, html, speed, callback) {
-        if(window.isBeeBootTyping) return; 
-        window.isBeeBootTyping = true; 
-        let i = 0; let isTag = false; let text = ""; 
-        let el = document.getElementById(elementId); el.innerHTML = "";
-        
+        if (window._typeWriterTimer) {
+            clearTimeout(window._typeWriterTimer);
+            window._typeWriterTimer = null;
+        }
+
+        const el = document.getElementById(elementId);
+        if (!el) {
+            window.isBeeBootTyping = false;
+            return;
+        }
+
+        window.isBeeBootTyping = true;
+        window._activeTypeWriter = { elementId, html, callback };
+
+        const skipWrap = document.getElementById('bee-skip-typing-wrap');
+        if (skipWrap && elementId === 'bee-boot-text') {
+            skipWrap.style.display = 'flex';
+        }
+
+        let i = 0;
+        let isTag = false;
+        let text = "";
+        el.innerHTML = "";
+
+        function finishTyping() {
+            if (window._typeWriterTimer) {
+                clearTimeout(window._typeWriterTimer);
+                window._typeWriterTimer = null;
+            }
+            el.innerHTML = html;
+            let scrollContainer = el.querySelector('div[style*="overflow-y"]');
+            if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+
+            window.isBeeBootTyping = false;
+            window._activeTypeWriter = null;
+            if (skipWrap && elementId === 'bee-boot-text') {
+                skipWrap.style.display = 'none';
+            }
+            if (typeof callback === 'function') callback();
+        }
+
         function type() {
-            if (i < html.length) { 
-                text += html.charAt(i); 
+            if (!window.isBeeBootTyping) return;
+            if (i < html.length) {
+                text += html.charAt(i);
                 el.innerHTML = text;
-                
+
                 let scrollContainer = el.querySelector('div[style*="overflow-y"]');
                 if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
-                
-                if (html.charAt(i) === '<') isTag = true; 
+
+                if (html.charAt(i) === '<') isTag = true;
                 if (html.charAt(i) === '>') isTag = false;
-                i++; setTimeout(type, isTag ? 0 : speed);
-            } else { 
-                window.isBeeBootTyping = false; 
-                if(callback) callback(); 
-            } 
-        } 
+                i++;
+                window._typeWriterTimer = setTimeout(type, isTag ? 0 : speed);
+            } else {
+                finishTyping();
+            }
+        }
         type();
-    }
+    };
+
+    window.skipBeeTyping = function() {
+        if (!window._activeTypeWriter) return;
+        const { elementId, html, callback } = window._activeTypeWriter;
+
+        if (window._typeWriterTimer) {
+            clearTimeout(window._typeWriterTimer);
+            window._typeWriterTimer = null;
+        }
+
+        const el = document.getElementById(elementId);
+        if (el) {
+            el.innerHTML = html;
+            let scrollContainer = el.querySelector('div[style*="overflow-y"]');
+            if (scrollContainer) scrollContainer.scrollTop = 0;
+        }
+
+        const skipWrap = document.getElementById('bee-skip-typing-wrap');
+        if (skipWrap) skipWrap.style.display = 'none';
+
+        window.isBeeBootTyping = false;
+        window._activeTypeWriter = null;
+
+        if (typeof callback === 'function') callback();
+    };
 
     window.showTVAlert = function(htmlContent, durationMs = 10000) {
         if (window.currentUserRole !== "TV Mode") return;
@@ -3087,99 +3338,109 @@ document.getElementById('spp-master-head').innerHTML = `<th>No. SPP & Tgl Rilis<
                 document.getElementById('bee-boot-bubble').style.display = 'none';
             }, durationMs);
         });
-    }
+    };
 
-window.hasSeenBeeIntro = false;
+    window.hasSeenBeeIntro = false;
 
     window.closeBeeBoot = function() {
-        if(window.isBeeBootTyping) return;
+        if (window.isBeeBootTyping) window.skipBeeTyping();
         window.clearAllHighlights();
         document.getElementById('bee-boot-bubble').style.display = 'none';
         document.getElementById('bee-ai-input-area').style.display = 'none';
         document.getElementById('bee-boot-actions').innerHTML = '';
-    }
+    };
 
     window.beeExplainNo = function() {
-        if(window.isBeeBootTyping) return; 
-        window.clearAllHighlights(); 
+        if (window.isBeeBootTyping) window.skipBeeTyping();
+        window.clearAllHighlights();
         document.getElementById('bee-boot-actions').innerHTML = '';
-        document.getElementById('bee-boot-container').style.bottom = '30px'; 
-        window.closeBeeBoot(); 
-    }
+        document.getElementById('bee-boot-container').style.bottom = '30px';
+        window.closeBeeBoot();
+    };
 
     window.endBeeTour = function() {
-        if(window.isBeeBootTyping) return; 
-        window.clearAllHighlights(); 
+        if (window.isBeeBootTyping) window.skipBeeTyping();
+        window.clearAllHighlights();
         document.getElementById('bee-boot-actions').innerHTML = '';
-        document.getElementById('bee-boot-container').style.bottom = '30px'; 
-        window.beeSkipToIntroEnd(); 
-    }
+        document.getElementById('bee-boot-container').style.bottom = '30px';
+        window.beeSkipToIntroEnd();
+    };
 
     window.toggleBeeBoot = function() {
-        if(window.isBeeBootTyping) return; window.stopAutoScroll(); 
-        const bubble = document.getElementById('bee-boot-bubble'); 
+        if (window.isBeeBootTyping) {
+            window.skipBeeTyping();
+            return;
+        }
+        window.stopAutoScroll();
+        const bubble = document.getElementById('bee-boot-bubble');
         const actions = document.getElementById('bee-boot-actions');
-        
+
         if (bubble.style.display === 'block') {
             bubble.style.display = 'none';
             return;
         }
 
-        bubble.style.display = 'block'; actions.innerHTML = ''; 
+        bubble.style.display = 'block';
+        actions.innerHTML = '';
         let grt = window.getGreetingTime();
 
         if (!window.hasSeenBeeIntro) {
             window.hasSeenBeeIntro = true;
-            const text = `Hai selamat ${grt}! Perkenalkan kembali saya BEE-BOOT.<br><br>hi sobat Bee-boot,apakah kalian tahu? Apa itu Bee-boot? Kenapa harus Bee-boot?`;
+            const text = `Hai selamat ${grt}! Perkenalkan kembali saya BEE-BOOT.<br><br>Hi sobat Bee-boot, apakah kalian tahu? Apa itu Bee-boot? Kenapa harus Bee-boot?`;
             window.typeWriterHTML('bee-boot-text', text, 15, () => {
-                actions.innerHTML = `<button class="bee-boot-btn bee-btn-yes" onclick="beeIntroStep2()">Lanjutkan</button><button class="bee-boot-btn bee-btn-no" onclick="beeOfferJoke()">Tidak</button>`;
+                actions.innerHTML = `<button class="bee-boot-btn bee-btn-yes" onclick="beeIntroStep2()">Lanjutkan</button><button class="bee-boot-btn bee-btn-yes" style="background:linear-gradient(135deg,#7c3aed,#a855f7);" onclick="beeOfferJoke()">🤖 Langsung Tanya AI</button><button class="bee-boot-btn bee-btn-no" onclick="closeBeeBoot()">Tutup</button>`;
             });
         } else {
-            // Jika user klik robot untuk kedua kalinya, langsung masuk AI
             window.beeOfferJoke();
         }
-    }
+    };
 
     window.beeIntroStep2 = function() {
-        if(window.isBeeBootTyping) return; document.getElementById('bee-boot-actions').innerHTML = '';
+        if (window.isBeeBootTyping) window.skipBeeTyping();
+        document.getElementById('bee-boot-actions').innerHTML = '';
         const text = `FYI Bee-boot berasal dari kata (<b>Buffer & Efficiency Enhancement Bot</b>) artinya Robot Peningkat Efisiensi dan Penyangga.`;
         window.typeWriterHTML('bee-boot-text', text, 15, () => {
             document.getElementById('bee-boot-actions').innerHTML = `<button class="bee-boot-btn bee-btn-yes" onclick="beeIntroStep3()">Lanjut »</button>`;
         });
-    }
+    };
 
     window.beeIntroStep3 = function() {
-        if(window.isBeeBootTyping) return; document.getElementById('bee-boot-actions').innerHTML = '';
-        const text = `Dapat disimpulkan dan diartikan kalo BEE-BOOT adalah Robot Asisten yang bertugas untuk mengatur ritme kerja di pabrik (menjadi penyeimbang alur barang) sekaligus memastikan proses produksi berjalan lebih cepat, hemat dan bebas hambatan.<br><br>Apakah Anda butuh panduan manual atau ingin melihat data?`;
+        if (window.isBeeBootTyping) window.skipBeeTyping();
+        document.getElementById('bee-boot-actions').innerHTML = '';
+        const text = `Dapat disimpulkan bahwa BEE-BOOT adalah Robot Asisten AI yang memantau alur pabrik secara real-time.<br><br>Pilih menu yang Anda butuhkan:`;
         window.typeWriterHTML('bee-boot-text', text, 15, () => {
-            document.getElementById('bee-boot-actions').innerHTML = `<button class="bee-boot-btn bee-btn-yes" style="background:#38bdf8;" onclick="beeOfferTour()">Panduan Manual</button><button class="bee-boot-btn bee-btn-yes" style="background:var(--emerald-glow);" onclick="beeShowDynamicStats()">Lihat Data</button><button class="bee-boot-btn bee-btn-no" onclick="closeBeeBoot()">Tidak</button>`;
+            document.getElementById('bee-boot-actions').innerHTML = `
+                <button class="bee-boot-btn bee-btn-yes" style="background:linear-gradient(135deg,#7c3aed,#a855f7);" onclick="beeOfferJoke()">🤖 Tanya Agen AI</button>
+                <button class="bee-boot-btn bee-btn-yes" style="background:var(--emerald-glow);" onclick="beeShowDynamicStats()">📊 Lihat Data</button>
+                <button class="bee-boot-btn bee-btn-yes" style="background:#38bdf8; color:#000;" onclick="beeOfferTour()">🧭 Panduan</button>
+                <button class="bee-boot-btn bee-btn-no" onclick="closeBeeBoot()">Tutup</button>`;
         });
-    }
+    };
 
     window.beeOfferJoke = function() {
-    if(window.isBeeBootTyping) return; 
-    document.getElementById('bee-boot-actions').innerHTML = '';
-    
-    // Membuka antarmuka Mode AI
-    document.getElementById('bee-ai-input-area').style.display = 'flex';
-    
-    window.typeWriterHTML('bee-boot-text', "Halo! Saya BEE-BOOT yang sekarang sudah ditenagai AI. Ada yang bisa saya bantu terkait data pabrik, pertanyaan umum, atau keluhan Anda?", 15, () => {
-        // Kosongkan agar tidak ada tombol tambahan yang muncul di atas
+        if (window.isBeeBootTyping) window.skipBeeTyping();
         document.getElementById('bee-boot-actions').innerHTML = '';
-    });
-}
+        document.getElementById('bee-ai-input-area').style.display = 'flex';
+
+        const introAI = `<b style="color:var(--emerald-glow);">🤖 BEE-BOOT Agen AI Aktif!</b><br>Tanyakan informasi apa saja tentang pabrik secara real-time, contoh:<br>• <i>"cek 0534"</i> / <i>"status SPP-702"</i><br>• <i>"berapa stok aquatech?"</i> / <i>"stok barang ready"</i><br>• <i>"ranking operator"</i> / <i>"aktivitas Suhendra"</i><br>• <i>"pekerjaan yang telat atau stoppage"</i><br>• <i>"pengiriman ke customer..."</i> / <i>"rekap BPMP"</i>`;
+        document.getElementById('bee-boot-text').innerHTML = introAI;
+        const inputEl = document.getElementById('bee-user-input');
+        if (inputEl) inputEl.focus();
+    };
 
     window.beeSkipToIntroEnd = function() {
-        if(window.isBeeBootTyping) return; document.getElementById('bee-boot-actions').innerHTML = '';
-        
-        // Sembunyikan Textbox AI saat berada di menu akhir
+        if (window.isBeeBootTyping) window.skipBeeTyping();
+        document.getElementById('bee-boot-actions').innerHTML = '';
         document.getElementById('bee-ai-input-area').style.display = 'none';
-        
-        const text = `Baiklah.<br><br>Apakah Anda butuh panduan manual atau ingin melihat data?`;
-        window.typeWriterHTML('bee-boot-text', text, 15, () => {
-            document.getElementById('bee-boot-actions').innerHTML = `<button class="bee-boot-btn bee-btn-yes" style="background:#38bdf8;" onclick="beeOfferTour()">Panduan Manual</button><button class="bee-boot-btn bee-btn-yes" style="background:var(--emerald-glow);" onclick="beeShowDynamicStats()">Lihat Data</button><button class="bee-boot-btn bee-btn-no" onclick="closeBeeBoot()">Tidak</button>`;
-        });
-    }
+
+        const text = `Pilih menu BEE-BOOT di bawah ini:`;
+        document.getElementById('bee-boot-text').innerHTML = text;
+        document.getElementById('bee-boot-actions').innerHTML = `
+            <button class="bee-boot-btn bee-btn-yes" style="background:linear-gradient(135deg,#7c3aed,#a855f7);" onclick="beeOfferJoke()">🤖 Tanya Agen AI</button>
+            <button class="bee-boot-btn bee-btn-yes" style="background:var(--emerald-glow);" onclick="beeShowDynamicStats()">📊 Lihat Data</button>
+            <button class="bee-boot-btn bee-btn-yes" style="background:#38bdf8; color:#000;" onclick="beeOfferTour()">🧭 Panduan</button>
+            <button class="bee-boot-btn bee-btn-no" onclick="closeBeeBoot()">Tutup</button>`;
+    };
 
 window.beeShowDynamicStats = function() {
         if(window.isBeeBootTyping) return; document.getElementById('bee-boot-actions').innerHTML = '';
@@ -3613,59 +3874,543 @@ window.beeShowDynamicStats = function() {
         }
     }
 
-    // GANTI DENGAN URL WEB APP DARI TAHAP 1
-    const AI_GAS_URL = "https://script.google.com/macros/s/AKfycbyzvJ1f3FXMTLEXeU98IHy-FyBEPUG8Vhvf8PrfAYc4mAiZzmW28trfa_u4-Bo-J4Ujww/exec";
+   const AI_GAS_URL = "https://script.google.com/macros/s/AKfycbxfywMlEUgXdTTSgPvVRU2i9z2rYEu5bxVC-JJRTR6BQe72Bp-y4BBfjzdnpt4J-y2e/exec";
+
+    window.beeQuickAsk = function(promptText) {
+        const inputEl = document.getElementById('bee-user-input');
+        if (!inputEl) return;
+        inputEl.value = promptText;
+        window.sendToBeeAI();
+    };
+
+    window.clearBeeAIChat = function() {
+        document.getElementById('bee-boot-text').innerHTML = `<b style="color:var(--emerald-glow);">🤖 Riwayat chat dibersihkan.</b> Silakan ketik pertanyaan Anda tentang data produksi, stok, tracking No. Produksi/SPP, pengiriman, atau operator.`;
+    };
+
+    // Helper: Kumpulkan seluruh data real-time dashboard secara terstruktur
+    window.collectBeeDashboardData = function() {
+        const allSPP = (window.databaseMasterSPP || []);
+        const nonSplSPP = window.getFilteredNonSPLSPP ? window.getFilteredNonSPLSPP() : allSPP.filter(s => !s.isSPL);
+        const splList = allSPP.filter(s => s.isSPL);
+        const logs = (window.databaseLogOperator || []);
+        const filteredLogs = window.getFilteredLogs ? window.getFilteredLogs() : logs;
+        const shipments = (window.databaseShipment || []);
+        const internals = (window.databaseInternalOut || []);
+        const rekaps = (window.databaseRekapAdmin || []).filter(r => !r.isHidden);
+        const manualStock = (window.databaseManualStock || {});
+
+        // Peta SPP -> No. Produksi
+        const sppToNoProd = {};
+        const pushProd = (sppNo, noProd) => {
+            if (!sppNo || !noProd || noProd === "-" || noProd === "Belum Ada Data") return;
+            const k = sppNo.trim().toLowerCase();
+            if (!sppToNoProd[k]) sppToNoProd[k] = new Set();
+            noProd.split(',').forEach(p => {
+                const c = p.trim();
+                if (c && c !== "-") sppToNoProd[k].add(c);
+            });
+        };
+        logs.forEach(l => pushProd(l.noSPP, l.noProd));
+        rekaps.forEach(r => pushProd(r.spp, r.noProd));
+
+        // Hitung stok ready per produk (termasuk penyesuaian manual)
+        const readyStockMap = {};
+        const progStockMap = {};
+        const shipStockMap = {};
+        let progProduk = 0, progPendukung = 0, rdyProduk = 0, rdyPendukung = 0, krmProduk = 0, krmPendukung = 0;
+
+        nonSplSPP.forEach(s => {
+            const qty = parseInt(s.qty) || 1;
+            const isProd = window.isKategoriProduk(s.product);
+            const isDone = ['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(s.status);
+
+            if (s.isShipped) {
+                shipStockMap[s.product] = (shipStockMap[s.product] || 0) + qty;
+                if (isProd) krmProduk += qty; else krmPendukung += qty;
+            } else if (isDone) {
+                readyStockMap[s.product] = (readyStockMap[s.product] || 0) + qty;
+                if (isProd) rdyProduk += qty; else rdyPendukung += qty;
+            } else {
+                progStockMap[s.product] = (progStockMap[s.product] || 0) + qty;
+                if (isProd) progProduk += qty; else progPendukung += qty;
+            }
+        });
+
+        for (let safeKey in manualStock) {
+            const prod = safeKey.replace(/_SLASH_/g, '/').replace(/_DOT_/g, '.');
+            const adj = manualStock[safeKey] || 0;
+            readyStockMap[prod] = (readyStockMap[prod] || 0) + adj;
+            if (adj > 0) {
+                if (window.isKategoriProduk(prod)) rdyProduk += adj; else rdyPendukung += adj;
+            }
+        }
+
+        // Hitung Ranking Operator (sama persis dengan tabel Rangking Operator)
+        const skorPeta = {};
+        filteredLogs.forEach(log => {
+            if (!log.operator || log.operator.toLowerCase().includes('dev')) return;
+            if (skorPeta[log.operator] === undefined) skorPeta[log.operator] = 0;
+            if (log.processPoints) skorPeta[log.operator] += log.processPoints;
+        });
+
+        const filteredAllSPP = window.getFilteredSPP ? window.getFilteredSPP() : allSPP;
+        filteredAllSPP.forEach(spp => {
+            if (!['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(spp.status)) return;
+            const opCounts = {};
+            let msTerlambat = 0;
+            let totalValid = 0;
+            filteredLogs.forEach(log => {
+                if (!log.operator || log.operator.toLowerCase().includes('dev')) return;
+                if (log.noSPP === spp.no) {
+                    if (['Proses', 'Selesai', 'Selesai Awal', 'Telat Selesai', 'Lembur Selesai (Reguler)', 'Lembur Selesai (Sabtu/Minggu)', 'Lanjutkan Besok', 'Takeover', 'Stoppage', 'Idle Time'].includes(log.status) || (log.condition && log.condition.includes('Lembur'))) {
+                        opCounts[log.operator] = (opCounts[log.operator] || 0) + 1;
+                        totalValid++;
+                    }
+                    if (log.msTerlambat !== undefined && Math.abs(log.msTerlambat) > Math.abs(msTerlambat)) {
+                        msTerlambat = log.msTerlambat;
+                    }
+                }
+            });
+            if (totalValid === 0) return;
+
+            let targetOps = PRODUCT_DICTIONARY[spp.product] ? PRODUCT_DICTIONARY[spp.product].ops : 1;
+            let targetHours = PRODUCT_DICTIONARY[spp.product] ? PRODUCT_DICTIONARY[spp.product].hours : 8;
+            let multiplier = targetHours > 24 ? Math.ceil(targetHours / 24) : 1;
+            let totalPool = 50 * targetOps * multiplier;
+            let ops = Object.keys(opCounts);
+            if (ops.length > 0) {
+                let denom = ops.length <= targetOps ? targetOps : ops.length;
+                let opShare = totalPool / denom;
+                let ratio = 1 / denom;
+                ops.forEach(op => {
+                    if (skorPeta[op] === undefined) skorPeta[op] = 0;
+                    let reward = opShare;
+                    if (spp.status === 'Selesai Awal' && msTerlambat < 0) {
+                        reward += Math.min(Math.floor(Math.abs(msTerlambat) / 3600000) * 10, 50) * ratio;
+                    } else if (spp.status === 'Telat Selesai' && msTerlambat > 0) {
+                        reward -= (10 + Math.floor(msTerlambat / 3600000) * 5) * ratio;
+                    }
+                    skorPeta[op] += Math.round(reward);
+                });
+            }
+        });
+        const rankings = Object.keys(skorPeta).map(nama => ({ nama, poin: skorPeta[nama] })).sort((a, b) => b.poin - a.poin);
+
+        return {
+            allSPP, nonSplSPP, splList, logs, filteredLogs, shipments, internals, rekaps,
+            sppToNoProd, readyStockMap, progStockMap, shipStockMap,
+            stats: { progProduk, progPendukung, rdyProduk, rdyPendukung, krmProduk, krmPendukung },
+            rankings
+        };
+    };
+
+    // Agen AI Lokal Real-Time: Menjawab langsung dari seluruh data dashboard
+    window.beeLocalAIAgent = function(userText) {
+        const q = userText.toLowerCase().trim();
+        const data = window.collectBeeDashboardData();
+        const filterEl = document.getElementById('global-time-filter');
+        const filterLabel = filterEl ? filterEl.options[filterEl.selectedIndex].text : 'Semua Data';
+
+        // Jika user eksplisit meminta saran / analisa bebas AI, teruskan ke AI GAS dengan konteks lengkap
+        if (/(saran|rekomendasi|menurutmu|buatkan pesan|draft wa|jelaskan secara luas|tips)/i.test(q)) {
+            return null;
+        }
+
+        const getNoProdStr = (sppNo) => {
+            if (!sppNo) return "-";
+            const s = data.sppToNoProd[sppNo.trim().toLowerCase()];
+            return (s && s.size > 0) ? Array.from(s).join(', ') : "-";
+        };
+
+        // 1. MENU BANTUAN
+        if (/^(help|bantuan|bisa apa|menu|fitur)/.test(q) || q.includes('bisa tanya apa')) {
+            return `<b>🤖 Daftar Informasi yang Bisa Anda Tanyakan ke BEE-BOOT:</b><br>
+            1. <b>Tracking No. Produksi / SPP / BPMP / LPBHP:</b> cth <i>"cek 0534"</i> atau <i>"status SPP-702"</i><br>
+            2. <b>Stok Gudang Ready & Cek Produk:</b> cth <i>"stok ready"</i> atau <i>"berapa stok AQUATECH TRO 250?"</i><br>
+            3. <b>Ringkasan & Inventaris:</b> cth <i>"ringkasan produksi"</i> atau <i>"total barang"</i><br>
+            4. <b>Pekerjaan Aktif / Urgent / Kendala / Telat:</b> cth <i>"ada kendala apa?"</i> atau <i>"daftar pending"</i><br>
+            5. <b>Rangking & Aktivitas Operator:</b> cth <i>"ranking operator"</i> atau <i>"aktivitas Suhendra"</i><br>
+            6. <b>Pengiriman & Logistik:</b> cth <i>"riwayat pengiriman"</i> atau <i>"barang dalam perjalanan"</i><br>
+            7. <b>SPL, BPMP/LPBHP, Stok Internal, & Standar Jam Kerja:</b> cth <i>"target waktu RENALPRO"</i>`;
+        }
+
+        // 2. TRACKING NO. PRODUKSI (ANGKA AWAL SEBELUM "/"), NO. SPP, SPL, BPMP, LPBHP
+        const isRankingOrTopQuery = /(ranking|rangking|peringkat|top\s*\d|terbanyak|terdikit|poin)/i.test(q);
+        const tokens = q.replace(/[?,!]/g, ' ').split(/\s+/).filter(Boolean);
+        let trackedMatches = [];
+
+        if (!isRankingOrTopQuery) {
+            const candidateTokens = tokens.filter(t => /\d/.test(t) && (t.length >= 3 || t.includes('/') || t.includes('-')));
+            if (candidateTokens.length > 0) {
+                data.allSPP.forEach(spp => {
+                    const sppLower = (spp.no || '').toLowerCase();
+                    const noProdSet = data.sppToNoProd[sppLower];
+                    const rekap = data.rekaps.find(r => r.spp && r.spp.trim().toLowerCase() === sppLower);
+
+                    const matched = candidateTokens.some(tok => {
+                        if (sppLower.includes(tok)) return true;
+                        if (rekap && ((rekap.noBPMP || '').toLowerCase().includes(tok) || (rekap.noLPBHP || '').toLowerCase().includes(tok))) return true;
+                        if (noProdSet) {
+                            return Array.from(noProdSet).some(raw => {
+                                const c = raw.toLowerCase();
+                                const seg = c.split('/')[0].trim();
+                                if (tok.includes('/')) return c.includes(tok);
+                                if (/^\d+$/.test(tok)) {
+                                    const tNZ = tok.replace(/^0+/, '');
+                                    const sNZ = seg.replace(/^0+/, '');
+                                    return seg === tok || seg.startsWith(tok) || (tNZ !== '' && sNZ === tNZ);
+                                }
+                                return seg.includes(tok) || c.includes(tok);
+                            });
+                        }
+                        return false;
+                    });
+                    if (matched) trackedMatches.push({ spp, rekap });
+                });
+            }
+        }
+
+        if (trackedMatches.length > 0) {
+            let out = `<b style="color:var(--blue-glow);">🔍 Hasil Pelacakan (${trackedMatches.length} Ditemukan):</b><br>`;
+            trackedMatches.slice(0, 5).forEach(({ spp, rekap }) => {
+                const sppLogs = data.logs.filter(l => l.noSPP && l.noSPP.toLowerCase() === spp.no.toLowerCase());
+                const latestLog = sppLogs[0];
+                const ops = [...new Set(sppLogs.map(l => l.operator).filter(o => o && !o.toLowerCase().includes('dev')))];
+                const ship = data.shipments.find(sh => sh.spp && sh.spp.toLowerCase() === spp.no.toLowerCase());
+                const intr = data.internals.find(io => io.spp && io.spp.toLowerCase() === spp.no.toLowerCase());
+
+                let sisaInfo = spp.formattedDeadline || "Belum dimulai";
+                if (spp.isLocked && spp.deadlineRawObjectMs && !['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(spp.status)) {
+                    const isPaused = ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(spp.status);
+                    const diff = window.getWorkingTimeDiff(isPaused ? spp.lastInputTimeMs : Date.now(), spp.deadlineRawObjectMs);
+                    const absH = Math.floor(Math.abs(diff) / 3600000);
+                    const absM = Math.floor((Math.abs(diff) % 3600000) / 60000);
+                    sisaInfo = diff > 0 ? `${isPaused ? '⏸️ Terjeda' : '⏳ Sisa'} ${absH}j ${absM}m` : `🚨 Telat ${absH}j ${absM}m`;
+                }
+
+                out += `<div style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.3); padding:8px; border-radius:6px; margin-top:6px;">
+                    <b>${spp.isSPL ? '⚡ SPL' : '📁 SPP'}:</b> <span style="color:var(--blue-glow);">${window.sanitizeHTML(spp.no)}</span><br>
+                    <b>🏷️ No. Produksi:</b> <span style="color:var(--warning-glow);">${window.sanitizeHTML(getNoProdStr(spp.no))}</span><br>
+                    <b>📦 Produk:</b> ${window.sanitizeHTML(spp.product)} (${parseInt(spp.qty) || 1} Unit | ${spp.priority})<br>
+                    <b>📌 Status:</b> <b style="color:var(--emerald-glow);">${spp.isShipped ? 'Sudah Keluar / Terkirim' : spp.status}</b> (${sisaInfo})<br>
+                    <b>👷 Tim Operator:</b> ${ops.length ? ops.join(', ') : '-'}<br>
+                    ${latestLog ? `<b>📝 Update Terakhir:</b> ${window.sanitizeHTML(latestLog.stage)} — <i>${window.sanitizeHTML(latestLog.aktivitas)}</i> (${latestLog.time})<br>` : ''}
+                    ${rekap ? `<b>📑 Dokumen:</b> BPMP: <code>${rekap.noBPMP || '-'}</code> | LPBHP: <code>${rekap.noLPBHP || '-'}</code><br>` : ''}
+                    ${ship ? `<b>🚚 Pengiriman:</b> Tujuan <b>${window.sanitizeHTML(ship.customer)}</b> via ${window.sanitizeHTML(ship.carrier)} (${ship.status || 'Dalam Perjalanan'}, ${ship.time})` : ''}
+                    ${intr ? `<b>🛠️ Tarik Internal:</b> Untuk <b>${window.sanitizeHTML(intr.targetProduct)}</b> (${intr.time})` : ''}
+                </div>`;
+            });
+            return out;
+        }
+
+        // 3. CEK OPERATOR TERTENTU (Nama Operator disebut)
+        const knownOperators = ["suhendra", "hario", "dhema", "iqbal", "khairuddin", "ngatiyo", "budi", "ramadan", "arliston"];
+        const matchedOpKey = knownOperators.find(name => q.includes(name));
+        if (matchedOpKey) {
+            const opRankIdx = data.rankings.findIndex(r => r.nama.toLowerCase().includes(matchedOpKey));
+            const opRankObj = opRankIdx >= 0 ? data.rankings[opRankIdx] : null;
+            const opLogs = data.filteredLogs.filter(l => l.operator && l.operator.toLowerCase().includes(matchedOpKey));
+            const opFullName = opRankObj ? opRankObj.nama : (opLogs[0] ? opLogs[0].operator : matchedOpKey.toUpperCase());
+
+            let out = `<b style="color:var(--blue-glow);">👷 Profil & Aktivitas ${window.sanitizeHTML(opFullName)} (${filterLabel}):</b><br>
+            • <b>Peringkat:</b> ${opRankIdx >= 0 ? `#${opRankIdx + 1} (${opRankObj.poin >= 0 ? '+' : ''}${opRankObj.poin} XP)` : 'Belum ada poin'}<br>
+            • <b>Total Laporan Aktivitas:</b> ${opLogs.length} log<br>`;
+
+            if (opLogs.length > 0) {
+                out += `<br><b>5 Aktivitas Terakhir:</b><br>`;
+                opLogs.slice(0, 5).forEach(l => {
+                    out += `• <b>${l.noSPP}</b> (${l.noProd || '-'}): ${window.sanitizeHTML(l.stage)} — <i>${window.sanitizeHTML(l.aktivitas)}</i> [${l.status}, ${l.time}]<br>`;
+                });
+            }
+            return out;
+        }
+
+        // 4. RANGKING / PERFORMA OPERATOR
+        if (/(ranking|rangking|peringkat|leaderboard|poin|xp|terbaik|efisien|operator)/.test(q) && !/(kirim|logistik)/.test(q)) {
+            if (data.rankings.length === 0) return `Belum ada data peringkat operator pada periode <b>${filterLabel}</b>.`;
+            let out = `<b style="color:var(--warning-glow);">🏆 Rangking Produktivitas Operator (${filterLabel}):</b><br>`;
+            data.rankings.forEach((op, idx) => {
+                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+                out += `${medal} <b>${op.nama}</b> : <span style="color:${op.poin >= 0 ? 'var(--emerald-glow)' : 'var(--danger-glow)'}; font-weight:bold;">${op.poin >= 0 ? '+' : ''}${op.poin} XP</span><br>`;
+            });
+            return out;
+        }
+
+        // 5. KENDALA / STOPPAGE / IDLE / TAKEOVER / TELAT / DEADLINE
+        if (/(kendala|stoppage|idle|takeover|terjeda|telat|terlambat|deadline|hampir habis|masalah)/.test(q)) {
+            const active = data.allSPP.filter(s => !['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(s.status));
+            const bermasalah = [];
+            active.forEach(s => {
+                const isPaused = ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'].includes(s.status);
+                let isLate = false, sisaText = '-';
+                if (s.isLocked && s.deadlineRawObjectMs) {
+                    const diff = window.getWorkingTimeDiff(isPaused ? s.lastInputTimeMs : Date.now(), s.deadlineRawObjectMs);
+                    if (diff <= 0) isLate = true;
+                    const h = Math.floor(Math.abs(diff) / 3600000);
+                    const m = Math.floor((Math.abs(diff) % 3600000) / 60000);
+                    sisaText = diff <= 0 ? `Telat ${h}j ${m}m` : `Sisa ${h}j ${m}m`;
+                }
+                if (isPaused || isLate) {
+                    const lastLog = data.logs.find(l => l.noSPP === s.no && l.reason && l.reason !== '-');
+                    bermasalah.push({ spp: s, sisaText, reason: lastLog ? lastLog.reason : '-' });
+                }
+            });
+
+            if (bermasalah.length === 0) return `✅ <b style="color:var(--emerald-glow);">Aman!</b> Tidak ada SPP yang sedang Stoppage, Terjeda, atau Telat saat ini.`;
+            let out = `<b style="color:var(--danger-glow);">🚨 Daftar Pekerjaan Kendala / Terjeda / Telat (${bermasalah.length}):</b><br>`;
+            bermasalah.slice(0, 10).forEach(b => {
+                out += `• <b>${b.spp.no}</b> (${b.spp.product}) — <b style="color:var(--warning-glow);">${b.spp.status}</b> | ${b.sisaText}${b.reason !== '-' ? `<br>&nbsp;&nbsp;<i>Ket: ${window.sanitizeHTML(b.reason)}</i>` : ''}<br>`;
+            });
+            return out;
+        }
+
+        // 6. STANDAR TARGET WAKTU & OPERATOR PRODUK (PRODUCT_DICTIONARY)
+        if (/(target waktu|standar waktu|berapa jam|durasi|target operator)/.test(q)) {
+            const dictMatches = Object.keys(PRODUCT_DICTIONARY).filter(p => {
+                const words = q.replace(/(target|waktu|standar|berapa|jam|durasi|operator|untuk|produk|pengerjaan)/g, '').trim().split(/\s+/).filter(w => w.length >= 2);
+                return words.length > 0 && words.every(w => p.toLowerCase().includes(w));
+            });
+            if (dictMatches.length > 0) {
+                let out = `<b style="color:var(--cyan-glow);">⏱️ Standar Target Pengerjaan Produk:</b><br>`;
+                dictMatches.slice(0, 10).forEach(p => {
+                    out += `• <b>${p}</b>: ${PRODUCT_DICTIONARY[p].hours} Jam (${PRODUCT_DICTIONARY[p].ops} Operator)<br>`;
+                });
+                return out;
+            }
+        }
+
+        // 7. CEK PRODUK SPESIFIK (Misal: "berapa stok aquatech 250", "cek floor standing", "upws")
+        const allProductNames = [...new Set([
+            ...Object.keys(data.readyStockMap),
+            ...Object.keys(data.progStockMap),
+            ...Object.keys(data.shipStockMap),
+            ...Object.keys(PRODUCT_DICTIONARY)
+        ])];
+        const cleanProdQuery = q.replace(/(berapa|stok|stock|barang|produk|ready|gudang|cek|ada|jumlah|unit|total|yang|selesai|di|kirim|terkirim|progres|status)/g, ' ').trim();
+        const prodKeywords = cleanProdQuery.split(/\s+/).filter(w => w.length >= 2);
+
+        if (prodKeywords.length > 0 && /(stok|stock|ready|gudang|berapa|cek|produk|unit|ada)/.test(q) && !/(semua|daftar|list|apa saja|keseluruhan|ringkasan)/.test(q)) {
+            const matchedProds = allProductNames.filter(p => prodKeywords.every(kw => p.toLowerCase().includes(kw)));
+            if (matchedProds.length > 0) {
+                let out = `<b style="color:var(--emerald-glow);">📦 Informasi Stok & Progres Produk (${filterLabel}):</b><br>`;
+                let totalRdy = 0;
+                matchedProds.slice(0, 10).forEach(p => {
+                    const rdy = Math.max(0, data.readyStockMap[p] || 0);
+                    const prg = data.progStockMap[p] || 0;
+                    const shp = data.shipStockMap[p] || 0;
+                    totalRdy += rdy;
+                    const std = PRODUCT_DICTIONARY[p] ? ` | Std: ${PRODUCT_DICTIONARY[p].hours}j/${PRODUCT_DICTIONARY[p].ops} ops` : '';
+                    out += `• <b>${p}</b><br>&nbsp;&nbsp;Ready: <b style="color:var(--emerald-glow);">${rdy}</b> | Progres: <b style="color:var(--warning-glow);">${prg}</b> | Terkirim: <b style="color:var(--cyan-glow);">${shp}</b>${std}<br>`;
+                });
+                out += `<br><b>Total Ready (item di atas): ${totalRdy} Unit</b>`;
+                return out;
+            }
+        }
+
+        // 8. DAFTAR STOK READY DI GUDANG (PRODUK & PENDUKUNG)
+        if (/(stok|stock|ready|gudang|inventori|inventory|tersedia)/.test(q) && !/(kirim|pengiriman|internal)/.test(q)) {
+            const readyProd = [];
+            const readyPend = [];
+            Object.entries(data.readyStockMap).forEach(([nama, qty]) => {
+                if (qty > 0) {
+                    if (window.isKategoriProduk(nama)) readyProd.push({ nama, qty });
+                    else readyPend.push({ nama, qty });
+                }
+            });
+            readyProd.sort((a, b) => b.qty - a.qty);
+            readyPend.sort((a, b) => b.qty - a.qty);
+
+            let totalP = readyProd.reduce((s, i) => s + i.qty, 0);
+            let totalD = readyPend.reduce((s, i) => s + i.qty, 0);
+
+            let out = `<b style="color:var(--emerald-glow);">📦 Stok Barang Ready di Gudang (${filterLabel}):</b><br>
+            Total Keseluruhan: <b>${totalP + totalD} Unit</b> (Produk: ${totalP} | Pendukung: ${totalD})<br><br>`;
+
+            out += `<b style="color:var(--emerald-glow);">🏭 Barang Produk (${totalP} Unit):</b><br>`;
+            out += readyProd.length ? readyProd.map(i => `• ${i.nama}: <b>${i.qty} Unit</b>`).join('<br>') : '<i>Kosong</i>';
+
+            out += `<br><br><b style="color:var(--cyan-glow);">🛠️ Barang Pendukung (${totalD} Unit):</b><br>`;
+            out += readyPend.length ? readyPend.map(i => `• ${i.nama}: <b>${i.qty} Unit</b>`).join('<br>') : '<i>Kosong</i>';
+            return out;
+        }
+
+        // 9. PENGIRIMAN / LOGISTIK / CUSTOMER
+        if (/(kirim|pengiriman|logistik|customer|ekspedisi|perjalanan|armada)/.test(q)) {
+            let list = data.shipments;
+            if (q.includes('perjalanan')) list = list.filter(s => (s.status || 'Dalam Perjalanan') !== 'Terkirim');
+            else if (q.includes('terkirim')) list = list.filter(s => s.status === 'Terkirim');
+
+            const terkirimCount = data.shipments.filter(s => s.status === 'Terkirim').length;
+            const jalanCount = data.shipments.length - terkirimCount;
+
+            let out = `<b style="color:var(--cyan-glow);">🚚 Info Pengiriman & Logistik:</b><br>
+            • Total Riwayat: <b>${data.shipments.length}</b> (Terkirim: ${terkirimCount} | Dalam Perjalanan: ${jalanCount})<br><br>
+            <b>Pengiriman Terbaru:</b><br>`;
+            if (list.length === 0) return out + `<i>Belum ada data pengiriman.</i>`;
+            list.slice(0, 8).forEach(s => {
+                out += `• <b>${s.product}</b> (${s.spp}) → <b>${window.sanitizeHTML(s.customer)}</b> | ${window.sanitizeHTML(s.carrier)} [${s.status || 'Dalam Perjalanan'}, ${s.time}]<br>`;
+            });
+            return out;
+        }
+
+        // 10. SPL (SURAT PERINTAH LANGSUNG)
+        if (/\bspl\b|surat perintah/.test(q)) {
+            if (data.splList.length === 0) return `Belum ada data Surat Perintah Langsung (SPL).`;
+            const aktif = data.splList.filter(s => !['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(s.status));
+            let out = `<b style="color:#fb923c;">⚡ Ringkasan Surat Perintah Langsung (SPL):</b><br>
+            Total SPL: <b>${data.splList.length}</b> | Aktif: <b>${aktif.length}</b><br><br>`;
+            data.splList.slice(0, 8).forEach(s => {
+                out += `• <b>${s.no}</b>: ${s.product} (Penerima: ${s.receiver}) — <b>${s.status}</b><br>`;
+            });
+            return out;
+        }
+
+        // 11. REKAP DOKUMEN BPMP & LPBHP
+        if (/(bpmp|lpbhp|rekap dokumen|dokumen admin)/.test(q)) {
+            const totalQtyDoc = data.rekaps.reduce((s, r) => s + (parseInt(r.qty) || 1), 0);
+            let out = `<b style="color:var(--blue-glow);">📑 Rekap Dokumen BPMP & LPBHP:</b><br>
+            Total Dokumen Terekap: <b>${data.rekaps.length}</b> (Total QTY: ${totalQtyDoc} Unit)<br><br>
+            <b>5 Dokumen Terbaru:</b><br>`;
+            data.rekaps.slice(-5).reverse().forEach(r => {
+                out += `• <b>${r.spp}</b> (${r.jenisProduksi}) | BPMP: <code>${r.noBPMP}</code> | LPBHP: <code>${r.noLPBHP}</code> (${r.qty} Unit)<br>`;
+            });
+            return out;
+        }
+
+        // 12. PENARIKAN INTERNAL / KOMPONEN FRAME
+        if (/(internal|penarikan|komponen)/.test(q)) {
+            let out = `<b style="color:var(--purple-glow);">🛠️ Riwayat Penarikan Internal Produksi (${data.internals.length} total):</b><br>`;
+            if (data.internals.length === 0) return out + `<i>Belum ada data penarikan internal.</i>`;
+            data.internals.slice(0, 8).forEach(io => {
+                out += `• <b>${io.product}</b> (${io.spp}) → Untuk: <b>${window.sanitizeHTML(io.targetProduct)}</b> (${io.time})<br>`;
+            });
+            return out;
+        }
+
+        // 13. TOP / PRODUK TERBANYAK / TERDIKIT SELESAI
+        if (/(terbanyak|terdikit|top\s*\d|paling banyak|paling sedikit)/.test(q)) {
+            const doneMap = {};
+            data.nonSplSPP.filter(s => ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(s.status)).forEach(s => {
+                doneMap[s.product] = (doneMap[s.product] || 0) + (parseInt(s.qty) || 1);
+            });
+            let sorted = Object.entries(doneMap).sort((a, b) => q.includes('dikit') ? a[1] - b[1] : b[1] - a[1]);
+            if (sorted.length === 0) return `Belum ada produk selesai pada periode <b>${filterLabel}</b>.`;
+            let out = `<b style="color:var(--blue-glow);">🏆 Top Produk ${q.includes('dikit') ? 'Terdikit' : 'Terbanyak'} Selesai (${filterLabel}):</b><br>`;
+            sorted.slice(0, 10).forEach(([prod, qty], i) => {
+                out += `${i + 1}. <b>${prod}</b> : <span style="color:var(--emerald-glow);">${qty} Unit</span><br>`;
+            });
+            return out;
+        }
+
+        // 14. PEKERJAAN AKTIF / PENDING / PROSES / URGENT / BELUM SELESAI
+        if (/(belum selesai|menggantung|pending|antrean|sedang proses|sedang dikerjakan|urgent|aktif)/.test(q)) {
+            let list = data.nonSplSPP.filter(s => !['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(s.status));
+            if (q.includes('urgent')) list = list.filter(s => s.priority === 'Urgent');
+            else if (q.includes('pending') || q.includes('antrean')) list = list.filter(s => s.status === 'Pending');
+            else if (q.includes('proses')) list = list.filter(s => s.status === 'Proses');
+
+            if (list.length === 0) return `✅ Tidak ada pekerjaan pada kategori tersebut untuk periode <b>${filterLabel}</b>.`;
+            let out = `<b style="color:var(--warning-glow);">📋 Daftar Pekerjaan (${list.length} SPP):</b><br>`;
+            list.slice(0, 12).forEach(s => {
+                out += `• <b>${s.no}</b>: ${s.product} (${parseInt(s.qty) || 1} Unit) — <b>${s.status}</b> [${s.priority}]<br>`;
+            });
+            if (list.length > 12) out += `<i>...dan ${list.length - 12} SPP lainnya.</i>`;
+            return out;
+        }
+
+        // 15. RINGKASAN TOTAL / STATISTIK / INVENTARIS AKHIR
+        if (/(ringkasan|rekap|total|jumlah|statistik|persentase|efisiensi|progress|inventaris|laporan|summary|semua data)/.test(q)) {
+            const totalQty = data.nonSplSPP.reduce((s, i) => s + (parseInt(i.qty) || 1), 0);
+            const selesaiQty = data.nonSplSPP.filter(i => ['Selesai', 'Telat Selesai', 'Selesai Awal'].includes(i.status)).reduce((s, i) => s + (parseInt(i.qty) || 1), 0);
+            const prosesQty = data.nonSplSPP.filter(i => i.status === 'Proses').reduce((s, i) => s + (parseInt(i.qty) || 1), 0);
+            const pendingQty = data.nonSplSPP.filter(i => i.status === 'Pending').reduce((s, i) => s + (parseInt(i.qty) || 1), 0);
+            const jedaQty = data.nonSplSPP.filter(i => ['Idle Time', 'Lanjutkan Besok'].includes(i.status)).reduce((s, i) => s + (parseInt(i.qty) || 1), 0);
+            const stopQty = data.nonSplSPP.filter(i => i.status === 'Stoppage').reduce((s, i) => s + (parseInt(i.qty) || 1), 0);
+            const takeQty = data.nonSplSPP.filter(i => i.status === 'Takeover').reduce((s, i) => s + (parseInt(i.qty) || 1), 0);
+            const pct = totalQty === 0 ? 0 : Math.round((selesaiQty / totalQty) * 100);
+            const st = data.stats;
+
+            return `<b style="color:var(--blue-glow);">📊 Ringkasan Real-Time Dashboard (${filterLabel}):</b><br>
+            • <b>Total SPP Masuk:</b> ${totalQty} Unit (${data.nonSplSPP.length} Dokumen)<br>
+            • <b>Selesai Produksi:</b> <b style="color:var(--emerald-glow);">${selesaiQty} Unit (${pct}%)</b><br>
+            • <b>Proses:</b> ${prosesQty} | <b>Pending:</b> ${pendingQty} | <b>Terjeda:</b> ${jedaQty} | <b>Stoppage:</b> ${stopQty} | <b>Takeover:</b> ${takeQty}<br><br>
+            <b>📦 Status Inventaris Akhir:</b><br>
+            • 🔄 <b>Dalam Progres:</b> Produk ${st.progProduk} | Pendukung ${st.progPendukung}<br>
+            • 🏭 <b>Ready di Gudang:</b> Produk <b style="color:var(--emerald-glow);">${st.rdyProduk}</b> | Pendukung <b style="color:var(--cyan-glow);">${st.rdyPendukung}</b><br>
+            • 🚚 <b>Terkirim:</b> Produk ${st.krmProduk} | Pendukung ${st.krmPendukung}`;
+        }
+
+        // Tidak cocok dengan pola lokal → teruskan ke AI GAS dengan konteks lengkap
+        return null;
+    };
 
     window.sendToBeeAI = async function() {
-    const inputEl = document.getElementById('bee-user-input');
-    const sendBtn = document.getElementById('bee-send-btn');
-    const historyEl = document.getElementById('bee-boot-text');
-    
-    const userText = inputEl.value.trim();
-    if(!userText) return;
-    
-    inputEl.value = "";
-    sendBtn.disabled = true;
-    sendBtn.innerHTML = "Memproses...";
-    
-    historyEl.innerHTML += `<br><br><span style="color:var(--cyan-glow);"><b>Anda:</b></span> ${userText}<br><span id="bee-typing-indicator" style="color:var(--text-muted); font-size:11px;"><i>BEE-BOOT sedang berpikir... ⏳</i></span>`;
-    historyEl.parentElement.scrollTop = historyEl.parentElement.scrollHeight;
-    
-    const activeSPPCount = window.databaseMasterSPP.filter(s => s.status !== "Selesai").length;
-    const totalLogs = window.databaseLogOperator.length;
-    
-    try {
-        const res = await fetch(AI_GAS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ 
-                message: userText, 
-                context: { totalSPPBerkalan: activeSPPCount, totalUpdateAktualHarian: totalLogs, currentUser: window.currentUserRole } 
-            })
-        });
-        
-        if (!res.ok) throw new Error("Server gagal merespons");
-        
-        const textResponse = await res.text();
-        const data = JSON.parse(textResponse);
-        
-        document.getElementById('bee-typing-indicator').remove();
-        
-        if(data.reply) {
-            historyEl.innerHTML += `<br><br><span style="color:var(--emerald-glow);"><b>BEE-BOOT:</b></span> ${window.sanitizeHTML(data.reply)}`;
-        } else {
-            historyEl.innerHTML += `<br><br><span style="color:var(--emerald-glow);"><b>BEE-BOOT:</b></span> Terjadi kesalahan sistem.`;
+        const inputEl = document.getElementById('bee-user-input');
+        const sendBtn = document.getElementById('bee-send-btn');
+        const historyEl = document.getElementById('bee-boot-text');
+        const scrollBox = document.getElementById('bee-chat-history');
+
+        const userText = inputEl.value.trim();
+        if (!userText) return;
+
+        inputEl.value = "";
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = "Memproses...";
+
+        const typingId = "bee-typing-" + Date.now();
+        historyEl.innerHTML += `<div style="margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.08);"><span style="color:var(--cyan-glow);"><b>Anda:</b></span> ${window.sanitizeHTML(userText)}</div><div id="${typingId}" style="color:var(--text-muted); font-size:11px; margin-top:4px;"><i>BEE-BOOT sedang memeriksa data real-time... ⏳</i></div>`;
+        if (scrollBox) scrollBox.scrollTop = scrollBox.scrollHeight;
+
+        try {
+            // 1. Cek Agen Data Lokal Real-Time terlebih dahulu (Instan & Akurat 100%)
+            const localReply = window.beeLocalAIAgent(userText);
+            if (localReply) {
+                const ind = document.getElementById(typingId);
+                if (ind) ind.remove();
+                historyEl.innerHTML += `<div style="margin-top:6px; background:rgba(16,185,129,0.08); border-left:3px solid var(--emerald-glow); padding:8px; border-radius:4px;"><span style="color:var(--emerald-glow);"><b>🤖 BEE-BOOT:</b></span><br>${localReply}</div>`;
+                return;
+            }
+
+            // 2. Fallback ke AI GAS dengan snapshot data lengkap dashboard
+            const d = window.collectBeeDashboardData();
+            const fullContext = {
+                currentUser: window.currentUserRole,
+                ringkasanInventaris: d.stats,
+                totalSPPAktif: d.nonSplSPP.filter(s => !['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(s.status)).length,
+                totalLogOperator: d.logs.length,
+                stokReadyGudang: Object.entries(d.readyStockMap).filter(([, qty]) => qty > 0).slice(0, 25),
+                topRankingOperator: d.rankings.slice(0, 10),
+                sppAktifTerbaru: d.nonSplSPP.filter(s => !['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(s.status)).slice(0, 15).map(s => ({
+                    no: s.no, produk: s.product, status: s.status, prioritas: s.priority, deadline: s.formattedDeadline
+                })),
+                pengirimanTerbaru: d.shipments.slice(0, 10).map(sh => ({
+                    spp: sh.spp, produk: sh.product, customer: sh.customer, kurir: sh.carrier, status: sh.status, waktu: sh.time
+                }))
+            };
+
+            const res = await fetch(AI_GAS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ message: userText, context: fullContext })
+            });
+
+            if (!res.ok) throw new Error("Server AI sedang sibuk");
+            const dataRes = JSON.parse(await res.text());
+            const ind = document.getElementById(typingId);
+            if (ind) ind.remove();
+
+            const aiReply = dataRes.reply ? window.sanitizeHTML(dataRes.reply).replace(/\n/g, '<br>') : "Maaf, saya belum menemukan jawaban untuk itu. Coba ketik <b>help</b> untuk melihat contoh pertanyaan data pabrik.";
+            historyEl.innerHTML += `<div style="margin-top:6px; background:rgba(56,189,248,0.08); border-left:3px solid var(--blue-glow); padding:8px; border-radius:4px;"><span style="color:var(--emerald-glow);"><b>🤖 BEE-BOOT:</b></span><br>${aiReply}</div>`;
+        } catch (e) {
+            const ind = document.getElementById(typingId);
+            if (ind) ind.remove();
+            historyEl.innerHTML += `<div style="margin-top:6px; color:var(--danger-glow);"><b>🤖 BEE-BOOT:</b> Koneksi ke server AI sedang terkendala (${e.message}). Anda tetap bisa tanya langsung data pabrik seperti <i>"cek 0534"</i>, <i>"stok ready"</i>, <i>"ranking"</i>, atau <i>"ringkasan"</i>.</div>`;
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = "Kirim";
+            if (scrollBox) scrollBox.scrollTop = scrollBox.scrollHeight;
         }
-    
-} catch(e) {
-        document.getElementById('bee-typing-indicator').remove();
-        historyEl.innerHTML += `<br><br><span style="color:var(--danger-glow);"><b>BEE-BOOT:</b></span> Terjadi kendala teknis: ${e.message}`;
-    } finally {
-        sendBtn.disabled = false;
-        sendBtn.innerHTML = "Kirim Pesan";
-        historyEl.parentElement.scrollTop = historyEl.parentElement.scrollHeight;
-    }
-}
+    };
 
 const PENJEDAAN_STATUS_LIST = ['Idle Time', 'Stoppage', 'Takeover', 'Lanjutkan Besok'];
 
@@ -5159,7 +5904,181 @@ window.renderInternalStockTable = function() {
             tbody.innerHTML += `<tr style="border-left: 4px solid var(--purple-glow);"><td>${item.time}</td><td><strong style="color: var(--text-main);">${item.product}</strong></td><td><code style="color: var(--warning-glow); font-weight:800;">${item.spp}</code></td><td><b>📦 ${amanTarget}</b></td><td><span class="badge bg-reguler" style="background:rgba(168,85,247,0.1); color:var(--purple-glow); border-color:#d8b4fe;">Digunakan Produksi</span></td>${delBtn}</tr>`;
         });
     };
- 
+ // ====== PENCARIAN NO. PRODUKSI PENGIRIMAN (KHUSUS GUDANG & DEV) ======
+    window._shipmentSearchMatches = [];
+
+    window.searchShipmentByNoProd = function() {
+        const inputEl = document.getElementById('shipment-noprod-input');
+        const resultsWrap = document.getElementById('shipment-noprod-results');
+        const tbody = document.getElementById('shipment-noprod-body');
+        const infoEl = document.getElementById('shipment-noprod-info');
+        if (!inputEl || !resultsWrap || !tbody) return;
+
+        const query = inputEl.value.toLowerCase().trim();
+        if (!query) {
+            resultsWrap.style.display = 'none';
+            if (infoEl) infoEl.style.display = 'none';
+            return;
+        }
+
+        // Petakan seluruh No. Produksi per No. SPP dari Log Operator & Rekap Dokumen
+        const sppToNoProdMap = {};
+        const addNoProd = (sppKey, noProdVal) => {
+            if (!sppKey || !noProdVal || noProdVal === "-" || noProdVal === "Belum Ada Data") return;
+            const normSpp = sppKey.trim().toLowerCase();
+            if (!sppToNoProdMap[normSpp]) sppToNoProdMap[normSpp] = new Set();
+            noProdVal.split(',').forEach(part => {
+                const clean = part.trim();
+                if (clean && clean !== "-") sppToNoProdMap[normSpp].add(clean);
+            });
+        };
+
+        window.databaseLogOperator.forEach(log => addNoProd(log.noSPP, log.noProd));
+        window.databaseRekapAdmin.forEach(rekap => {
+            if (!rekap.isHidden) addNoProd(rekap.spp, rekap.noProd);
+        });
+
+        // Pencocokan angka pertama sebelum tanda "/" (misal: "0534" dari "0534/RE/TT/11/26")
+        const matchesNoProdFirstNumber = (noProdSet, q) => {
+            if (!noProdSet || noProdSet.size === 0) return false;
+            return Array.from(noProdSet).some(rawCode => {
+                const cleanCode = rawCode.trim().toLowerCase();
+                const firstSegment = cleanCode.split('/')[0].trim();
+
+                if (q.includes('/')) {
+                    return cleanCode.includes(q);
+                }
+                if (/^\d+$/.test(q)) {
+                    const qNoZero = q.replace(/^0+/, '');
+                    const segNoZero = firstSegment.replace(/^0+/, '');
+                    return firstSegment === q ||
+                           firstSegment.startsWith(q) ||
+                           firstSegment.includes(q) ||
+                           (qNoZero !== "" && segNoZero === qNoZero);
+                }
+                return firstSegment.includes(q) || cleanCode.includes(q);
+            });
+        };
+
+        window._shipmentSearchMatches = [];
+        window.databaseMasterSPP.forEach(spp => {
+            if (spp.isSPL) return;
+            const normSpp = spp.no ? spp.no.trim().toLowerCase() : "";
+            const noProdSet = sppToNoProdMap[normSpp];
+
+            if (matchesNoProdFirstNumber(noProdSet, query)) {
+                const noProdList = Array.from(noProdSet);
+                window._shipmentSearchMatches.push({
+                    sppNo: spp.no,
+                    product: spp.product,
+                    status: spp.status,
+                    isShipped: !!spp.isShipped,
+                    isInternal: window.isInternalProduct(spp.product),
+                    noProdFull: noProdList.join(', '),
+                    noProdShort: noProdList[0].split('/')[0].trim()
+                });
+            }
+        });
+
+        tbody.innerHTML = '';
+        resultsWrap.style.display = 'block';
+        if (infoEl) infoEl.style.display = 'none';
+
+        if (window._shipmentSearchMatches.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--danger-glow); font-weight:bold;">No. Produksi "${window.sanitizeHTML(query)}" tidak ditemukan.</td></tr>`;
+            return;
+        }
+
+        window._shipmentSearchMatches.forEach((item, idx) => {
+            const isSelesai = ['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(item.status);
+            const isReadyEksternal = isSelesai && !item.isShipped && !item.isInternal;
+
+            let statusBadge = '';
+            let actionHtml = '';
+
+            if (isReadyEksternal) {
+                statusBadge = `<span class="badge status-selesai">Ready Kirim</span>`;
+                actionHtml = `<button type="button" class="btn-action-trigger" style="background: linear-gradient(135deg, #059669, #10b981); color: #fff; border: none;" onclick="confirmSelectShipmentProduct(${idx})">➕ Masukkan</button>`;
+            } else if (item.isShipped) {
+                statusBadge = `<span class="badge bg-urgent">Sudah Terkirim</span>`;
+                actionHtml = `<span style="font-size:11px; color:var(--text-muted);">Sudah Keluar</span>`;
+            } else if (item.isInternal) {
+                statusBadge = `<span class="badge bg-buffer">Komponen Internal</span>`;
+                actionHtml = `<span style="font-size:11px; color:var(--text-muted);">Panel Internal</span>`;
+            } else {
+                statusBadge = window.getStatusBadge(item.status);
+                actionHtml = `<span style="font-size:11px; color:var(--text-muted);">Belum Selesai</span>`;
+            }
+
+            tbody.innerHTML += `<tr>
+                <td><code style="color:var(--warning-glow); font-weight:bold;">${window.sanitizeHTML(item.noProdFull)}</code></td>
+                <td><strong>${window.sanitizeHTML(item.sppNo)}</strong></td>
+                <td><strong>${window.sanitizeHTML(item.product)}</strong></td>
+                <td>${statusBadge}</td>
+                <td style="text-align:center;">${actionHtml}</td>
+            </tr>`;
+        });
+    };
+
+    window.confirmSelectShipmentProduct = function(matchIndex) {
+        const item = window._shipmentSearchMatches[matchIndex];
+        if (!item) return;
+
+        // Pernyataan konfirmasi sebelum memasukkan otomatis ke dropdown
+        const konfirmasi = confirm(
+            `Apakah Anda yakin mau mengirim barang ini?\n\n` +
+            `• No. Produksi : ${item.noProdFull}\n` +
+            `• No. SPP      : ${item.sppNo}\n` +
+            `• Nama Produk  : ${item.product}\n\n` +
+            `Klik OK (Ya) untuk memasukkan otomatis ke "Pilih Produk Selesai di Gudang".`
+        );
+
+        if (!konfirmasi) return;
+
+        const selectEl = document.getElementById('shipment-product-select');
+        if (!selectEl) return;
+
+        const targetValue = `${item.sppNo}::${item.product}`;
+
+        // Jika belum ada di dropdown (misal karena filter waktu sedang aktif), tambahkan opsinya secara otomatis
+        let existingOption = Array.from(selectEl.options).find(opt => opt.value === targetValue);
+        if (!existingOption) {
+            existingOption = document.createElement('option');
+            existingOption.value = targetValue;
+            existingOption.text = `${item.product} (${item.sppNo}) - [Prod: ${item.noProdShort}]`;
+            selectEl.add(existingOption);
+        }
+
+        // Pilih otomatis di dropdown "Pilih Produk Selesai di Gudang"
+        selectEl.value = targetValue;
+
+        // Efek sorotan singkat agar terlihat langsung masuk ke dropdown
+        selectEl.style.borderColor = 'var(--emerald-glow)';
+        selectEl.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.7)';
+        setTimeout(() => {
+            selectEl.style.borderColor = '';
+            selectEl.style.boxShadow = '';
+        }, 2200);
+
+        const resultsWrap = document.getElementById('shipment-noprod-results');
+        const infoEl = document.getElementById('shipment-noprod-info');
+        if (resultsWrap) resultsWrap.style.display = 'none';
+        if (infoEl) {
+            infoEl.innerHTML = `✅ Barang <b>${window.sanitizeHTML(item.product)}</b> (${window.sanitizeHTML(item.sppNo)} | No. Prod: ${window.sanitizeHTML(item.noProdFull)}) sudah masuk otomatis ke <b>Pilih Produk Selesai di Gudang</b>. Silakan lanjutkan isi form pengiriman di bawah.`;
+            infoEl.style.display = 'block';
+        }
+    };
+
+    window.resetShipmentNoProdSearch = function() {
+        const inputEl = document.getElementById('shipment-noprod-input');
+        const resultsWrap = document.getElementById('shipment-noprod-results');
+        const infoEl = document.getElementById('shipment-noprod-info');
+        if (inputEl) inputEl.value = '';
+        if (resultsWrap) resultsWrap.style.display = 'none';
+        if (infoEl) infoEl.style.display = 'none';
+        window._shipmentSearchMatches = [];
+    };
+
     // ====== GANTI FUNGSI DROPDOWN PENGIRIMAN ======
     window.updateWarehouseProductDropdown = function() {
         const select = document.getElementById('shipment-product-select'); 
