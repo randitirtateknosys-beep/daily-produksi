@@ -2489,16 +2489,17 @@ window.aktifkanNotifikasiManual = function() {
 
         // 1. Petakan semua No. Produksi per No. SPP dari Log Operator & Rekap Dokumen
         const sppToNoProdMap = {};
-        const addNoProdToMap = (sppKey, noProdVal) => {
-            if (!sppKey || !noProdVal || noProdVal === "-" || noProdVal === "Belum Ada Data") return;
+       const addNoProdToMap = (sppKey, noProdVal) => {
+            if (!sppKey || !window.isValidNoProd(noProdVal)) return;
             const normSpp = sppKey.trim().toLowerCase();
             if (!sppToNoProdMap[normSpp]) sppToNoProdMap[normSpp] = new Set();
-            noProdVal.split(',').forEach(part => {
+            String(noProdVal).split(',').forEach(part => {
                 const clean = part.trim();
-                if (clean && clean !== "-") sppToNoProdMap[normSpp].add(clean);
+                if (window.isValidNoProd(clean)) sppToNoProdMap[normSpp].add(clean);
             });
         };
 
+        window.databaseMasterSPP.forEach(spp => addNoProdToMap(spp.no, spp.lockedNoProd));
         window.databaseLogOperator.forEach(log => addNoProdToMap(log.noSPP, log.noProd));
         window.databaseRekapAdmin.forEach(rekap => {
             if (!rekap.isHidden) addNoProdToMap(rekap.spp, rekap.noProd);
@@ -2570,9 +2571,10 @@ window.aktifkanNotifikasiManual = function() {
             }
         });
 
-        // B. Log Aktual Operator
+  
+       // B. Log Aktual Operator
         window.databaseLogOperator.forEach(item => {
-            const noProdDisplay = (item.noProd && item.noProd !== "-") ? item.noProd : getNoProdTextBySpp(item.noSPP);
+            const noProdDisplay = window.isValidNoProd(item.noProd) ? item.noProd : getNoProdTextBySpp(item.noSPP);
             const isMatch = matchFields([item.noSPP, item.operator, item.aktivitas, item.stage, item.condition, item.status, item.reason], query)
                          || matchesNoProdString(item.noProd, query)
                          || matchesSppNoProd(item.noSPP, query);
@@ -2588,10 +2590,10 @@ window.aktifkanNotifikasiManual = function() {
             }
         });
 
-        // C. Rekap Dokumen (BPMP & LPBHP)
+       // C. Rekap Dokumen (BPMP & LPBHP)
         window.databaseRekapAdmin.forEach(item => {
             if (item.isHidden) return;
-            const noProdDisplay = (item.noProd && item.noProd !== "-") ? item.noProd : getNoProdTextBySpp(item.spp);
+            const noProdDisplay = window.isValidNoProd(item.noProd) ? item.noProd : getNoProdTextBySpp(item.spp);
             const isMatch = matchFields([item.spp, item.noBPMP, item.noLPBHP, item.jenisProduksi, item.jenisPekerjaan, item.bulan], query)
                          || matchesNoProdString(item.noProd, query)
                          || matchesSppNoProd(item.spp, query);
@@ -3902,14 +3904,15 @@ window.beeShowDynamicStats = function() {
         // Peta SPP -> No. Produksi
         const sppToNoProd = {};
         const pushProd = (sppNo, noProd) => {
-            if (!sppNo || !noProd || noProd === "-" || noProd === "Belum Ada Data") return;
+            if (!sppNo || !window.isValidNoProd(noProd)) return;
             const k = sppNo.trim().toLowerCase();
             if (!sppToNoProd[k]) sppToNoProd[k] = new Set();
-            noProd.split(',').forEach(p => {
+            String(noProd).split(',').forEach(p => {
                 const c = p.trim();
-                if (c && c !== "-") sppToNoProd[k].add(c);
+                if (window.isValidNoProd(c)) sppToNoProd[k].add(c);
             });
         };
+        allSPP.forEach(s => pushProd(s.no, s.lockedNoProd));
         logs.forEach(l => pushProd(l.noSPP, l.noProd));
         rekaps.forEach(r => pushProd(r.spp, r.noProd));
 
@@ -4871,6 +4874,37 @@ window.toggleRekapKhususView = function() {
     window.renderRekapKhususTable();
 };
 
+window.isValidNoProd = function(val) {
+    if (!val) return false;
+    const clean = String(val).trim().toLowerCase();
+    return clean !== "" && clean !== "-" && clean !== "inject manual" && clean !== "belum ada data";
+};
+
+window.getLockedNoProd = function(sppObj, rekapObj) {
+    if (!sppObj) return "-";
+    // 1. Prioritas utama: No. Produksi yang sudah dikunci (dari input awal atau hasil menu Edit)
+    if (window.isValidNoProd(sppObj.lockedNoProd)) {
+        return String(sppObj.lockedNoProd).trim();
+    }
+    // 2. Ambil No. Produksi asli paling awal dari Log Operator agar tidak tertimpa/hilang
+    const normSpp = sppObj.no ? sppObj.no.trim().toLowerCase() : "";
+    const matchingLogs = window.databaseLogOperator.filter(
+        log => log.noSPP && log.noSPP.trim().toLowerCase() === normSpp && window.isValidNoProd(log.noProd)
+    );
+    if (matchingLogs.length > 0) {
+        const oldestLog = matchingLogs.reduce(
+            (oldest, curr) => ((curr.timestampMs || 0) < (oldest.timestampMs || 0) ? curr : oldest),
+            matchingLogs[0]
+        );
+        return String(oldestLog.noProd).trim();
+    }
+    // 3. Cadangan dari Rekap Dokumen (otomatis mengabaikan "Inject Manual" & "Belum Ada Data")
+    if (rekapObj && window.isValidNoProd(rekapObj.noProd)) {
+        return String(rekapObj.noProd).trim();
+    }
+    return "-";
+};
+
 window.renderRekapKhususTable = function() {
     const tbody = document.getElementById('rekap-khusus-body');
     if(!tbody) return;
@@ -4958,8 +4992,7 @@ window.renderRekapKhususTable = function() {
     displaySPP.forEach(spp => {
         let rekapData = window.databaseRekapAdmin.find(r => r.spp && r.spp.trim().toLowerCase() === spp.no.trim().toLowerCase() && !r.isHidden);
         let noBpmp = rekapData && rekapData.noBPMP ? rekapData.noBPMP : "-";
-        let logTerkait = window.databaseLogOperator.find(log => log.noSPP === spp.no && log.noProd && log.noProd !== "-");
-        let noProduksi = rekapData && rekapData.noProd && rekapData.noProd !== "-" ? rekapData.noProd : (logTerkait ? logTerkait.noProd : "-");
+        let noProduksi = window.getLockedNoProd(spp, rekapData);
         let noLpbhp = rekapData && rekapData.noLPBHP ? rekapData.noLPBHP : "-";
         let qty = rekapData && rekapData.qty ? rekapData.qty : "1";
 
@@ -5015,7 +5048,7 @@ window.editRekapKhusus = function(sppNo) {
         return;
     }
 
-    let rekapData = window.databaseRekapAdmin.find(r => r.spp === sppNo && !r.isHidden);
+    let rekapData = window.databaseRekapAdmin.find(r => r.spp && r.spp.trim().toLowerCase() === sppNo.trim().toLowerCase() && !r.isHidden);
 
     let promptText = "Pilih angka data yang mau diedit untuk SPP: " + sppNo + "\n\n" +
                      "--- DATA DOKUMEN ---\n" +
@@ -5064,17 +5097,22 @@ window.editRekapKhusus = function(sppNo) {
         }
     }
 
-    if (['1', '2', '3'].includes(choice)) {
+if (['1', '2', '3'].includes(choice)) {
+        const noProdAsli = window.getLockedNoProd(matchedSPP, rekapData);
+
         if (!rekapData) {
             if(confirm("⚠️ Dokumen rekap BPMP/LPBHP belum dibuat untuk SPP ini.\n\nApakah Anda ingin membuat kerangka datanya sekarang?")) {
                 const d = new Date();
                 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
                 const newRekap = {
-                    bulan: monthNames[d.getMonth()], spp: sppNo, noProd: "Inject Manual", jenisPekerjaan: "Baru", jenisProduksi: matchedSPP.product,
-                    tglBPMP: "-", noBPMP: "-", tglLPBHP: "-", noLPBHP: "-", qty: 1, timestampMs: d.getTime()
+                    bulan: monthNames[d.getMonth()], spp: sppNo, noProd: noProdAsli, jenisPekerjaan: "Baru", jenisProduksi: matchedSPP.product,
+                    tglBPMP: "-", noBPMP: "-", tglLPBHP: "-", noLPBHP: "-", qty: parseInt(matchedSPP.qty) || 1, timestampMs: d.getTime()
                 };
+                if (window.isValidNoProd(noProdAsli) && !window.isValidNoProd(matchedSPP.lockedNoProd)) {
+                    window.dbUpdateSPP(matchedSPP.firebaseKey, { lockedNoProd: noProdAsli });
+                }
                 firebase.database().ref('rekapDokumen').push(newRekap).then(() => {
-                    alert("✅ Kerangka data berhasil dibuat!\nSilakan klik tombol 'Edit' sekali lagi untuk memasukkan nomor BPMP/LPBHP.");
+                    alert("✅ Kerangka data berhasil dibuat (No. Produksi tetap terkunci)!\nSilakan klik tombol 'Edit' sekali lagi untuk memasukkan nomor BPMP/LPBHP.");
                 });
             }
             return;
@@ -5092,10 +5130,16 @@ window.editRekapKhusus = function(sppNo) {
             if (val !== null && !isNaN(val)) updates.qty = parseInt(val.trim());
         }
 
+        // Otomatis bersihkan jika data lama terlanjur tertulis "Inject Manual"
+        if (!window.isValidNoProd(rekapData.noProd) && window.isValidNoProd(noProdAsli)) {
+            updates.noProd = noProdAsli;
+        }
+
         if (Object.keys(updates).length > 0) {
             firebase.database().ref('rekapDokumen/' + rekapData.firebaseKey).update(updates).then(() => alert("✅ Data dokumen berhasil diperbarui!"));
         }
-    } 
+    }    
+ 
     else if (['4', '5', '6'].includes(choice)) {
         let sppUpdates = {};
         
@@ -5138,22 +5182,30 @@ window.editRekapKhusus = function(sppNo) {
         }
     } else if (['8', '9'].includes(choice)) {
         // Fitur Edit No Produksi
+        
+// Fitur Edit No Produksi (Satu-satunya jalur resmi untuk mengubah No. Produksi terkunci)
         if (choice === '8') {
-            let logTerkait = window.databaseLogOperator.find(log => log.noSPP === sppNo && log.noProd && log.noProd !== "-");
-            let currentProd = rekapData && rekapData.noProd && rekapData.noProd !== "-" ? rekapData.noProd : (logTerkait ? logTerkait.noProd : "");
+            let currentProd = window.getLockedNoProd(matchedSPP, rekapData);
+            if (currentProd === "-") currentProd = "";
 
             let val = prompt("Masukkan No Produksi Baru:", currentProd);
             if (val !== null && val.trim() !== "") {
                 let newVal = val.trim();
 
+                // Kunci No. Produksi baru di Master SPP
+                window.dbUpdateSPP(matchedSPP.firebaseKey, { lockedNoProd: newVal });
+
                 if (rekapData) firebase.database().ref('rekapDokumen/' + rekapData.firebaseKey).update({ noProd: newVal });
 
-                window.databaseLogOperator.filter(l => l.noSPP === sppNo).forEach(log => {
-                    db.ref('logOperator/' + log.firebaseKey).update({ noProd: newVal });
-                });
-                alert("✅ No Produksi berhasil diperbarui!");
+                window.databaseLogOperator
+                    .filter(l => l.noSPP && l.noSPP.trim().toLowerCase() === sppNo.trim().toLowerCase())
+                    .forEach(log => {
+                        db.ref('logOperator/' + log.firebaseKey).update({ noProd: newVal });
+                    });
+                alert("✅ No Produksi berhasil diperbarui dan dikunci!");
             }
-        } 
+        }
+
         // Fitur Sembunyikan Sementara (Soft Delete Tabel Rekap Khusus)
         else if (choice === '9') {
             const isDev = (window.currentUserRole.toUpperCase() === "RANDI" || window.currentUserRole.toUpperCase() === "FEBRI");
@@ -5490,6 +5542,8 @@ window.calculateAndRenderRanking = function() {
 
             } catch (error) {
                 alert("Gagal mengunggah file ke Google Drive: " + error.message);
+
+		
                 btnSubmit.innerHTML = "Submit & Rilis Master SPP";
                 btnSubmit.disabled = false;
                 btnSubmit.style.background = "linear-gradient(135deg, #7c3aed, #a855f7)";
@@ -5518,15 +5572,15 @@ window.calculateAndRenderRanking = function() {
 	    qty: qtySPP
         });
         
-        this.reset(); 
-        document.getElementById('product-manual').style.display = 'none'; 
-        document.getElementById('maker-manual').style.display = 'none'; 
+	this.reset();
+        document.getElementById('product-manual').style.display = 'none';
+        document.getElementById('maker-manual').style.display = 'none';
         window.resetDateTimeInputs();
-        
+
         btnSubmit.innerHTML = "Submit & Rilis Master SPP";
         btnSubmit.disabled = false;
         btnSubmit.style.background = "linear-gradient(135deg, #7c3aed, #a855f7)";
-        
+	        
 // Pemicu Notifikasi SPP
         window.sendPushNotification("SPP Baru Masuk 🚨", `No SPP: ${noSPP} | Produk: ${product}`);       
 
@@ -5635,11 +5689,13 @@ window.calculateAndRenderRanking = function() {
             time: formattedTime, rawTimestampMs: rawTime.getTime(), product: productSelection, spp: sppAsal, operatorReceiver: "-", carrier: carrier, customer: customer, status: "Dalam Perjalanan"
         });
         
-        this.reset();
+       this.reset();
         document.getElementById('shipment-carrier-manual').style.display = "none"; 
         window.resetDateTimeInputs();
+        if (typeof window.resetShipmentNoProdSearch === 'function') window.resetShipmentNoProdSearch();
 
         let logTerkait = window.databaseLogOperator.find(log => log.noSPP === sppAsal && log.noProd && log.noProd !== "-");
+
         let noProdKirim = logTerkait ? logTerkait.noProd : (sppAsal === "MANUAL_STOK" ? "Stok Manual" : "Tidak ada no produksi");
 
         window.sendPushNotification("Barang Dikirim 🚚", `No Prod: ${noProdKirim} | Produk: ${productSelection} | Tujuan: ${customer}`);
@@ -5823,7 +5879,10 @@ window.calculateAndRenderRanking = function() {
         });
 
         let sppUpdates = { lastInputTimeMs: timeMs, lastEventTimeFormatted: formattedTimeStr, status: statusKirim };
-
+// Kunci No. Produksi awal agar tidak berubah/hilang kecuali lewat menu Edit
+        if (window.isValidNoProd(noProd) && !window.isValidNoProd(matchedSPP.lockedNoProd)) {
+            sppUpdates.lockedNoProd = noProd.trim();
+        }
         if (!matchedSPP.isLocked) {
             sppUpdates.isLocked = true; sppUpdates.startTimeObjectMs = timeMs;
             let calcTarget = targetUnit === "jam" ? new Date(window.addWorkingHours(timeMs, parseInt(targetVal))) : new Date(window.addWorkingHours(timeMs, parseInt(targetVal) * 24));
@@ -5924,15 +5983,16 @@ window.renderInternalStockTable = function() {
         // Petakan seluruh No. Produksi per No. SPP dari Log Operator & Rekap Dokumen
         const sppToNoProdMap = {};
         const addNoProd = (sppKey, noProdVal) => {
-            if (!sppKey || !noProdVal || noProdVal === "-" || noProdVal === "Belum Ada Data") return;
+            if (!sppKey || !window.isValidNoProd(noProdVal)) return;
             const normSpp = sppKey.trim().toLowerCase();
             if (!sppToNoProdMap[normSpp]) sppToNoProdMap[normSpp] = new Set();
-            noProdVal.split(',').forEach(part => {
+            String(noProdVal).split(',').forEach(part => {
                 const clean = part.trim();
-                if (clean && clean !== "-") sppToNoProdMap[normSpp].add(clean);
+                if (window.isValidNoProd(clean)) sppToNoProdMap[normSpp].add(clean);
             });
         };
 
+        window.databaseMasterSPP.forEach(spp => addNoProd(spp.no, spp.lockedNoProd));
         window.databaseLogOperator.forEach(log => addNoProd(log.noSPP, log.noProd));
         window.databaseRekapAdmin.forEach(rekap => {
             if (!rekap.isHidden) addNoProd(rekap.spp, rekap.noProd);
@@ -7320,7 +7380,8 @@ window.renderShipmentTable = function() {
                 });
             }
         }
-        // EKSEKUSI UPDATE GLOBAL NO PRODUKSI
+        
+// EKSEKUSI UPDATE GLOBAL NO PRODUKSI
         else if (choice === '7') {
             if (!isDev) { alert("Akses Ditolak! Hanya Developer yang bisa mengubah No Produksi secara global."); return; }
             let val = prompt("Ubah No Produksi:\n(Peringatan: Perubahan ini akan mengubah semua laporan di Log Operator untuk SPP ini)", record.noProd || "");
@@ -7329,12 +7390,19 @@ window.renderShipmentTable = function() {
                 let newVal = val.trim();
                 updates.noProd = newVal; // Update untuk tabel Rekap Dokumen
                 
-                // Update ke tabel Log Operator (Karena No Produksi aslinya berasal dari form Aktual Operator)
+                // Ikut perbarui kunci No. Produksi di Master SPP
+                let matchedSPP = window.databaseMasterSPP.find(s => s.no && record.spp && s.no.trim().toLowerCase() === record.spp.trim().toLowerCase());
+                if (matchedSPP) {
+                    db.ref('masterSPP/' + matchedSPP.firebaseKey).update({ lockedNoProd: newVal });
+                }
+
+                // Update ke tabel Log Operator
                 window.databaseLogOperator.filter(l => l.noSPP === record.spp).forEach(log => {
                     db.ref('logOperator/' + log.firebaseKey).update({ noProd: newVal });
                 });
             }
         }
+
         else {
             alert("Pilihan tidak valid! Harap pilih angka yang tersedia.");
             return;
