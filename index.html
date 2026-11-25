@@ -1221,7 +1221,8 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
             <div class="header-flex">
                 <h3>⚡ History 2: Log Aktivitas Operator</h3>
                 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                    <input type="text" id="search-log" class="local-search" placeholder="Cari di tabel Log (misal: nama)..." onkeyup="window.performGlobalSearch()">
+                    <input type="text" id="search-log" class="local-search" placeholder="Cari No. SPP / Angka Depan No. Produksi (cth: 0534)..." onkeyup="window.performGlobalSearch()">
+
                     <button class="btn-minimize" onclick="togglePanel('table-log-container', this)">➖ Minimize</button>
                     <button class="btn-export" onclick="exportTableToCSV('operator-history-table', 'Log_Operator.csv')">📥 Export Excel</button>
                 </div>
@@ -1234,19 +1235,177 @@ onclick="aktifkanNotifikasiManual()">🔔 AKTIFKAN NOTIF</button>
             </div>
         </div>
 
-        <div class="panel" id="panel-ranking">
-            <div class="header-flex">
-                <h3>🏆 Dashboard Analisa Produktivitas - Rangking Operator</h3>
-                <span id="ranking-status-badge" class="badge bg-reguler">Mode: Top 5 Operator Aktif</span>
+<div class="panel" id="panel-ranking">
+            <div class="header-flex" style="margin-bottom: 15px;">
+                <h3 style="margin: 0;">🏆 Dashboard Analisa Produktivitas & KPI Operator (100%)
+                    <span id="ranking-status-badge" class="badge bg-reguler" style="margin-left: 10px; font-size: 10px;">Mode: Top 5</span>
+                </h3>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <select id="kpi-period-mode" onchange="onKPIPeriodModeChange()" class="local-search" style="min-width: 145px; border-color: var(--emerald-glow); font-weight: bold;">
+                        <option value="bulanan" selected>📅 Bulanan</option>
+                        <option value="harian">📆 Harian</option>
+                        <option value="tahunan">🗓️ Tahunan</option>
+                    </select>
+
+                    <input type="month" id="kpi-month-picker" onchange="calculateAndRenderRanking()" class="local-search" style="min-width: 150px;">
+                    <input type="date" id="kpi-date-picker" onchange="calculateAndRenderRanking()" class="local-search" style="min-width: 150px; display: none;">
+                    <select id="kpi-year-picker" onchange="calculateAndRenderRanking()" class="local-search" style="min-width: 110px; display: none; font-weight: bold;"></select>
+
+                    <select id="kpi-chart-operator-filter" onchange="calculateAndRenderRanking()" class="local-search" style="min-width: 185px; border-color: var(--blue-glow); font-weight: bold;">
+                        <option value="team_top3" selected>📈 Grafik: Rata-Rata Divisi & Top</option>
+                        <option value="all_ops">👥 Grafik: Semua Operator Divisi</option>
+                    </select>
+
+                    <button type="button" id="btn-kpi-config" class="btn-action-trigger" style="display:none; background:rgba(251,191,36,0.2); color:var(--warning-glow); border-color:var(--warning-glow);" onclick="setKPITargetConfig()">⚙️ Target Jam</button>
+                </div>
             </div>
-            <div class="table-container">
-                <table id="operator-ranking-table">
-                    <thead><tr><th style="width: 120px;">Posisi Rank</th><th>Nama Operator</th><th>Total Poin Performa</th><th>Status Efisiensi</th></tr></thead>
-                    <tbody id="operator-ranking-body"></tbody>
-                </table>
+
+            <!-- Pilihan Fokus 3 Divisi untuk 4 Kartu Ringkasan & Grafik Tren Naik/Turun -->
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom: 16px;">
+                <button type="button" id="btn-kpi-div-elektrikal" onclick="setActiveKPIDivision('elektrikal')" class="btn-action-trigger" style="flex:1; min-width:200px; padding:10px 14px; background:linear-gradient(135deg,#0284c7,#38bdf8); color:#fff; border:1px solid var(--blue-glow); font-size:12px;">
+                    ⚡ Grafik: Divisi Elektrikal (4 Ops)
+                </button>
+                <button type="button" id="btn-kpi-div-plumbing" onclick="setActiveKPIDivision('plumbing')" class="btn-action-trigger" style="flex:1; min-width:200px; padding:10px 14px; background:rgba(30,41,59,0.6); color:#e2e8f0; border:1px solid #334155; font-size:12px;">
+                    🔧 Grafik: Divisi Plumbing (Budi & Arliston)
+                </button>
+                <button type="button" id="btn-kpi-div-welding" onclick="setActiveKPIDivision('welding')" class="btn-action-trigger" style="flex:1; min-width:200px; padding:10px 14px; background:rgba(30,41,59,0.6); color:#e2e8f0; border:1px solid #334155; font-size:12px;">
+                    🔥 Grafik: Welding & Painting (Ngatiyo & Khairuddin)
+                </button>
             </div>
-            <div class="toggle-matrix-container">
-                <button type="button" id="btn-toggle-ranking" class="btn-toggle-matrix" onclick="toggleOperatorRankingView()">🔍 Tampilkan Semua Operator Aktif</button>
+
+            <!-- 4 Kartu Ringkasan KPI & Indikator Naik/Turun (Mengikuti Divisi Terpilih) -->
+            <div class="chart-kpi-strip" style="margin-bottom: 18px;">
+                <div class="chart-kpi-card" style="border-left-color: var(--emerald-glow);">
+                    <span id="kpi-avg-label">📊 Rata-Rata KPI Divisi</span>
+                    <strong id="kpi-avg-team">0%</strong>
+                    <small id="kpi-avg-grade">Belum ada data</small>
+                </div>
+                <div class="chart-kpi-card" style="border-left-color: var(--warning-glow);">
+                    <span>🥇 Operator Terbaik (#1 Divisi)</span>
+                    <strong id="kpi-top-op" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</strong>
+                    <small id="kpi-top-score">0 Poin (0%)</small>
+                </div>
+                <div class="chart-kpi-card" style="border-left-color: var(--cyan-glow);">
+                    <span>📈 Tren vs Periode Lalu</span>
+                    <strong id="kpi-trend-delta">-</strong>
+                    <small id="kpi-trend-sub">Perbandingan otomatis</small>
+                </div>
+                <div class="chart-kpi-card" style="border-left-color: var(--purple-glow);">
+                    <span>🎯 Target & Output Divisi</span>
+                    <strong id="kpi-target-info">120 Jam / Bln</strong>
+                    <small id="kpi-spp-count">0 SPP Selesai</small>
+                </div>
+            </div>
+
+            <!-- Grafik Progres KPI Naik / Turun -->
+            <div style="background: rgba(15, 23, 42, 0.55); border: 1px solid var(--panel-border); border-radius: 10px; padding: 14px; margin-bottom: 24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom: 10px;">
+                    <span id="kpi-chart-title" style="font-size: 13px; font-weight: 800; color: var(--blue-glow); text-transform: uppercase;">
+                        📈 Grafik Progres Naik / Turun KPI Bulanan
+                    </span>
+                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">
+                        Bobot 100%: OTD 40% | Output 30% | Disiplin 15% | QC 15%
+                    </span>
+                </div>
+                <div class="chart-panel-box" style="height: 270px;">
+                    <canvas id="kpiTrendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- KATEGORI 1: DIVISI ELEKTRIKAL -->
+            <div style="margin-bottom: 26px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed rgba(56,189,248,0.4);">
+                    <h4 style="margin:0; color:var(--blue-glow); font-size:14px; text-transform:uppercase;">
+                        ⚡ Kategori 1: Divisi Elektrikal (Ramadan, Dhema, Rizki, Suhendra)
+                    </h4>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="btn-export" onclick="exportTableToCSV('operator-ranking-table', 'KPI_Divisi_Elektrikal.csv')">📥 Export Excel</button>
+                        <button type="button" class="btn-export" style="background: linear-gradient(135deg, #0284c7, #38bdf8); color: #fff; border: none;" onclick="printPDF('operator-ranking-table', 'Laporan KPI Divisi Elektrikal (100%)')">🖨️ Cetak PDF</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="operator-ranking-table">
+                        <thead>
+                            <tr id="operator-ranking-head">
+                                <th style="width: 100px;">Rank</th>
+                                <th>Nama Operator</th>
+                                <th>OTD (40%)</th>
+                                <th>Output (30%)</th>
+                                <th>Disiplin (15%)</th>
+                                <th>QC (15%)</th>
+                                <th>Total Poin</th>
+                                <th style="min-width: 150px;">Nilai KPI (%)</th>
+                                <th>Grade & Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="operator-ranking-body"></tbody>
+                    </table>
+                </div>
+                <div class="toggle-matrix-container">
+                    <button type="button" id="btn-toggle-ranking" class="btn-toggle-matrix" onclick="toggleOperatorRankingView()">🔍 Tampilkan Semua Operator Elektrikal</button>
+                </div>
+            </div>
+
+            <!-- KATEGORI 2: DIVISI PLUMBING -->
+            <div style="margin-bottom: 26px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed rgba(45,212,191,0.45);">
+                    <h4 style="margin:0; color:var(--cyan-glow); font-size:14px; text-transform:uppercase;">
+                        🔧 Kategori 2: Divisi Plumbing (Perbandingan Khusus Budi vs Arliston)
+                    </h4>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="btn-export" style="background: rgba(45, 212, 191, 0.15); color: #2dd4bf; border-color: #5eead4;" onclick="exportTableToCSV('operator-ranking-plumbing-table', 'KPI_Divisi_Plumbing.csv')">📥 Export Excel</button>
+                        <button type="button" class="btn-export" style="background: linear-gradient(135deg, #0d9488, #2dd4bf); color: #fff; border: none;" onclick="printPDF('operator-ranking-plumbing-table', 'Laporan KPI Divisi Plumbing (100%)')">🖨️ Cetak PDF</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="operator-ranking-plumbing-table">
+                        <thead>
+                            <tr id="operator-ranking-plumbing-head">
+                                <th style="width: 100px;">Rank</th>
+                                <th>Nama Operator</th>
+                                <th>OTD (40%)</th>
+                                <th>Output (30%)</th>
+                                <th>Disiplin (15%)</th>
+                                <th>QC (15%)</th>
+                                <th>Total Poin</th>
+                                <th style="min-width: 150px;">Nilai KPI (%)</th>
+                                <th>Grade & Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="operator-ranking-plumbing-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- KATEGORI 3: DIVISI WELDING & PAINTING -->
+            <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed rgba(249,115,22,0.45);">
+                    <h4 style="margin:0; color:#fb923c; font-size:14px; text-transform:uppercase;">
+                        🔥 Kategori 3: Divisi Welding & Painting (Perbandingan Khusus Ngatiyo vs Khairuddin)
+                    </h4>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="btn-export" style="background: rgba(234, 88, 12, 0.15); color: #f97316; border-color: #fb923c;" onclick="exportTableToCSV('operator-ranking-welding-table', 'KPI_Divisi_Welding_Painting.csv')">📥 Export Excel</button>
+                        <button type="button" class="btn-export" style="background: linear-gradient(135deg, #ea580c, #f59e0b); color: #fff; border: none;" onclick="printPDF('operator-ranking-welding-table', 'Laporan KPI Divisi Welding & Painting (100%)')">🖨️ Cetak PDF</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="operator-ranking-welding-table">
+                        <thead>
+                            <tr id="operator-ranking-welding-head">
+                                <th style="width: 100px;">Rank</th>
+                                <th>Nama Operator</th>
+                                <th>OTD (40%)</th>
+                                <th>Output (30%)</th>
+                                <th>Disiplin (15%)</th>
+                                <th>QC (15%)</th>
+                                <th>Total Poin</th>
+                                <th style="min-width: 150px;">Nilai KPI (%)</th>
+                                <th>Grade & Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="operator-ranking-welding-body"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -2012,6 +2171,9 @@ body.light-theme .welcome-box {
                     if(window.globalLineChartInstance) {
                         window.refreshAnalyticsAndChart();
                     }
+                    if(window.kpiTrendChartInstance) {
+                        window.calculateAndRenderRanking();
+                    }
                 };
                 userIdentityDiv.appendChild(themeBtn);
             }
@@ -2115,6 +2277,25 @@ window.databaseManualStock = {};
             if(window.currentUserRole !== "Guest") {
                 if (typeof window.renderReadyStockTable === 'function') window.renderReadyStockTable();
                 if (typeof window.updateWarehouseProductDropdown === 'function') window.updateWarehouseProductDropdown();
+            }
+        });
+
+window.databaseKPIAdjustments = {};
+        db.ref('kpiAdjustments').on('value', snap => {
+            window.databaseKPIAdjustments = snap.val() || {};
+            if (window.currentUserRole !== "Guest" && typeof window.calculateAndRenderRanking === 'function') {
+                window.calculateAndRenderRanking();
+            }
+        });
+
+        window.kpiConfig = { monthlyTargetHours: 120 };
+        db.ref('appSettings/kpiConfig').on('value', snap => {
+            const val = snap.val();
+            if (val && val.monthlyTargetHours) {
+                window.kpiConfig.monthlyTargetHours = parseFloat(val.monthlyTargetHours) || 120;
+            }
+            if (window.currentUserRole !== "Guest" && typeof window.calculateAndRenderRanking === 'function') {
+                window.calculateAndRenderRanking();
             }
         });
 
@@ -2672,40 +2853,173 @@ window.aktifkanNotifikasiManual = function() {
     }
 
     window.performGlobalSearch = function() {
-    const configs = [
-        { tbody: 'spp-master-body', localInput: 'search-spp' },
-        { tbody: 'operator-history-body', localInput: 'search-log' },
-        { tbody: 'spl-history-body', localInput: 'search-spl' },
-        { tbody: 'shipment-history-body', localInput: 'search-ship' },
-        { tbody: 'product-actual-body', localInput: 'search-aktual' },
-        // TAMBAHKAN BARIS DI BAWAH INI
-        { tbody: 'admin-dokumen-body', localInput: 'search-admin-dokumen' } 
-    ];
+        // 1. Pencarian standar untuk tabel lokal selain History 2 (tetap normal)
+        const configs = [
+            { tbody: 'spp-master-body', localInput: 'search-spp' },
+            { tbody: 'spl-history-body', localInput: 'search-spl' },
+            { tbody: 'shipment-history-body', localInput: 'search-ship' },
+            { tbody: 'product-actual-body', localInput: 'search-aktual' },
+            { tbody: 'admin-dokumen-body', localInput: 'search-admin-dokumen' }
+        ];
 
         configs.forEach(conf => {
             const tbody = document.getElementById(conf.tbody);
             const inputEl = document.getElementById(conf.localInput);
-            if(tbody && inputEl) {
+            if (tbody && inputEl) {
                 const lq = inputEl.value.toLowerCase().trim();
                 const rows = tbody.getElementsByTagName('tr');
-                
-                for(let i=0; i < rows.length; i++) {
-                    if(rows[i].cells.length <= 1 || rows[i].id === 'empty-inbox-row' || rows[i].textContent.toLowerCase().includes("belum ada")) continue;
-                    
+
+                for (let i = 0; i < rows.length; i++) {
+                    if (rows[i].cells.length <= 1 || rows[i].id === 'empty-inbox-row' || rows[i].textContent.toLowerCase().includes("belum ada")) continue;
+
                     if (lq === "") {
-                        rows[i].style.display = ''; 
+                        rows[i].style.display = '';
                     } else {
                         const textContent = rows[i].textContent.toLowerCase();
-                        if(textContent.includes(lq)) {
-                            rows[i].style.display = '';
-                        } else {
-                            rows[i].style.display = 'none';
-                        }
+                        rows[i].style.display = textContent.includes(lq) ? '' : 'none';
                     }
                 }
             }
         });
-    }
+
+        // 2. Pencarian khusus History 2: berdasarkan No. SPP & Angka Depan No. Produksi
+        window.filterOperatorLogTable();
+    };
+
+    window.filterOperatorLogTable = function() {
+        const tbody = document.getElementById('operator-history-body');
+        const inputEl = document.getElementById('search-log');
+        if (!tbody || !inputEl) return;
+
+        // Hapus baris pesan kosong bekas pencarian sebelumnya jika ada
+        const oldEmpty = document.getElementById('log-search-empty-row');
+        if (oldEmpty) oldEmpty.remove();
+
+        const lq = inputEl.value.toLowerCase().trim();
+        const rows = Array.from(tbody.getElementsByTagName('tr'));
+        if (rows.length === 0) return;
+
+        // Jangan proses jika tabel sedang menampilkan pesan kosong bawaan
+        if (rows.length === 1 && !rows[0].classList.contains('spp-group-header')) return;
+
+        // Petakan semua No. Produksi valid per No. SPP (termasuk lockedNoProd & Rekap Dokumen)
+        const sppToNoProdMap = {};
+        const isValid = (val) => {
+            if (typeof window.isValidNoProd === 'function') return window.isValidNoProd(val);
+            if (!val) return false;
+            const c = String(val).trim().toLowerCase();
+            return c !== "" && c !== "-" && c !== "inject manual" && c !== "belum ada data";
+        };
+        const addProd = (sppKey, noProdVal) => {
+            if (!sppKey || !isValid(noProdVal)) return;
+            const normSpp = sppKey.trim().toLowerCase();
+            if (!sppToNoProdMap[normSpp]) sppToNoProdMap[normSpp] = new Set();
+            String(noProdVal).split(',').forEach(part => {
+                const clean = part.trim();
+                if (isValid(clean)) sppToNoProdMap[normSpp].add(clean);
+            });
+        };
+
+        (window.databaseMasterSPP || []).forEach(s => addProd(s.no, s.lockedNoProd));
+        (window.databaseLogOperator || []).forEach(l => addProd(l.noSPP, l.noProd));
+        (window.databaseRekapAdmin || []).forEach(r => { if (!r.isHidden) addProd(r.spp, r.noProd); });
+
+        // Pencocokan angka depan No. Produksi (sebelum tanda "/", misal "0534" / "534" dari "0534/RE/TT/11/26")
+        const matchNoProd = (noProdList, q) => {
+            return noProdList.some(rawCode => {
+                const cleanCode = rawCode.trim().toLowerCase();
+                if (!isValid(cleanCode)) return false;
+
+                const firstSegment = cleanCode.split('/')[0].trim();
+                if (q.includes('/')) {
+                    return cleanCode.includes(q);
+                }
+                if (/^\d+$/.test(q)) {
+                    const qNoZero = q.replace(/^0+/, '');
+                    const segNoZero = firstSegment.replace(/^0+/, '');
+                    return firstSegment === q ||
+                           firstSegment.startsWith(q) ||
+                           (qNoZero !== "" && (segNoZero === qNoZero || segNoZero.startsWith(qNoZero)));
+                }
+                return firstSegment.includes(q) || cleanCode.includes(q);
+            });
+        };
+
+        // Pencocokan No. SPP (angka depan/nomor urut SPP maupun No. SPP lengkap, misal "0033", "33", "702", "SPP-TT/2611/0033")
+        const matchNoSPP = (sppStr, q) => {
+            if (!sppStr) return false;
+            const cleanSpp = sppStr.trim().toLowerCase();
+            if (!/^\d+$/.test(q)) {
+                return cleanSpp.includes(q);
+            }
+            const qNoZero = q.replace(/^0+/, '');
+            const parts = cleanSpp.split(/[\/\-]/).map(p => p.trim()).filter(Boolean);
+            const firstPart = parts[0] || "";
+            const lastPart = parts[parts.length - 1] || "";
+
+            const checkSeg = (seg) => {
+                if (!seg) return false;
+                const segNoZero = seg.replace(/^0+/, '');
+                return seg === q ||
+                       seg.startsWith(q) ||
+                       (qNoZero !== "" && (segNoZero === qNoZero || segNoZero.startsWith(qNoZero)));
+            };
+
+            return checkSeg(firstPart) || checkSeg(lastPart);
+        };
+
+        // Kelompokkan setiap baris header (.spp-group-header) bersama baris log anaknya
+        let visibleGroups = 0;
+        let i = 0;
+        while (i < rows.length) {
+            const row = rows[i];
+            if (row.classList.contains('spp-group-header')) {
+                const groupRows = [row];
+                let j = i + 1;
+                while (j < rows.length && !rows[j].classList.contains('spp-group-header')) {
+                    groupRows.push(rows[j]);
+                    j++;
+                }
+
+                let isMatch = true;
+                if (lq !== "") {
+                    const headerText = row.textContent || "";
+                    const sppMatch = headerText.match(/NO\.\s*SPP:\s*([^|]+)/i);
+                    const prodMatch = headerText.match(/No\.\s*Produksi:\s*(.+)$/i);
+                    const sppText = sppMatch ? sppMatch[1].trim() : "";
+                    const headerNoProd = prodMatch ? prodMatch[1].trim() : "";
+
+                    const noProdSet = new Set();
+                    if (sppText && sppToNoProdMap[sppText.toLowerCase()]) {
+                        sppToNoProdMap[sppText.toLowerCase()].forEach(p => noProdSet.add(p));
+                    }
+                    if (isValid(headerNoProd)) {
+                        headerNoProd.split(',').forEach(p => {
+                            const c = p.trim();
+                            if (isValid(c)) noProdSet.add(c);
+                        });
+                    }
+
+                    isMatch = matchNoSPP(sppText, lq) || matchNoProd(Array.from(noProdSet), lq);
+                }
+
+                groupRows.forEach(r => { r.style.display = isMatch ? '' : 'none'; });
+                if (isMatch) visibleGroups++;
+                i = j;
+            } else {
+                row.style.display = lq === "" ? '' : 'none';
+                i++;
+            }
+        }
+
+        if (lq !== "" && visibleGroups === 0) {
+            const colCount = document.querySelectorAll('#operator-history-head th').length || 10;
+            const trEmpty = document.createElement('tr');
+            trEmpty.id = 'log-search-empty-row';
+            trEmpty.innerHTML = `<td colspan="${colCount}" style="text-align:center; padding:20px; color:var(--danger-glow); font-weight:bold;">Tidak ada log untuk No. SPP / No. Produksi "${window.sanitizeHTML(lq)}".</td>`;
+            tbody.appendChild(trEmpty);
+        }
+    };
 
     window.togglePanel = function(containerId, btnElement) {
         const container = document.getElementById(containerId);
@@ -3948,62 +4262,35 @@ window.beeShowDynamicStats = function() {
             }
         }
 
-        // Hitung Ranking Operator (sama persis dengan tabel Rangking Operator)
-        const skorPeta = {};
-        filteredLogs.forEach(log => {
-            if (!log.operator || log.operator.toLowerCase().includes('dev')) return;
-            if (skorPeta[log.operator] === undefined) skorPeta[log.operator] = 0;
-            if (log.processPoints) skorPeta[log.operator] += log.processPoints;
-        });
-
-        const filteredAllSPP = window.getFilteredSPP ? window.getFilteredSPP() : allSPP;
-        filteredAllSPP.forEach(spp => {
-            if (!['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(spp.status)) return;
-            const opCounts = {};
-            let msTerlambat = 0;
-            let totalValid = 0;
-            filteredLogs.forEach(log => {
-                if (!log.operator || log.operator.toLowerCase().includes('dev')) return;
-                if (log.noSPP === spp.no) {
-                    if (['Proses', 'Selesai', 'Selesai Awal', 'Telat Selesai', 'Lembur Selesai (Reguler)', 'Lembur Selesai (Sabtu/Minggu)', 'Lanjutkan Besok', 'Takeover', 'Stoppage', 'Idle Time'].includes(log.status) || (log.condition && log.condition.includes('Lembur'))) {
-                        opCounts[log.operator] = (opCounts[log.operator] || 0) + 1;
-                        totalValid++;
-                    }
-                    if (log.msTerlambat !== undefined && Math.abs(log.msTerlambat) > Math.abs(msTerlambat)) {
-                        msTerlambat = log.msTerlambat;
-                    }
-                }
+       // Ambil Ranking Operator terpisah 3 divisi dari mesin KPI 100%
+        let rankings = [];
+        let rankingsElektrikal = [];
+        let rankingsPlumbing = [];
+        let rankingsWelding = [];
+        let kpiPeriodLabel = "Periode Aktif";
+        if (typeof window.getSelectedKPIWindow === 'function' && typeof window.computeOperatorKPIForRange === 'function') {
+            const win = window.getSelectedKPIWindow();
+            kpiPeriodLabel = win.label;
+            const calc = window.computeOperatorKPIForRange(win.startMs, win.endMs, win.targetHours, win.periodKey, win.mode);
+            const mapItem = r => ({
+                nama: r.nama,
+                division: r.division,
+                poin: r.totalPoin,
+                persenKPI: r.persenKPI,
+                grade: r.grade,
+                sppSelesai: r.sppSelesai
             });
-            if (totalValid === 0) return;
-
-            let targetOps = PRODUCT_DICTIONARY[spp.product] ? PRODUCT_DICTIONARY[spp.product].ops : 1;
-            let targetHours = PRODUCT_DICTIONARY[spp.product] ? PRODUCT_DICTIONARY[spp.product].hours : 8;
-            let multiplier = targetHours > 24 ? Math.ceil(targetHours / 24) : 1;
-            let totalPool = 50 * targetOps * multiplier;
-            let ops = Object.keys(opCounts);
-            if (ops.length > 0) {
-                let denom = ops.length <= targetOps ? targetOps : ops.length;
-                let opShare = totalPool / denom;
-                let ratio = 1 / denom;
-                ops.forEach(op => {
-                    if (skorPeta[op] === undefined) skorPeta[op] = 0;
-                    let reward = opShare;
-                    if (spp.status === 'Selesai Awal' && msTerlambat < 0) {
-                        reward += Math.min(Math.floor(Math.abs(msTerlambat) / 3600000) * 10, 50) * ratio;
-                    } else if (spp.status === 'Telat Selesai' && msTerlambat > 0) {
-                        reward -= (10 + Math.floor(msTerlambat / 3600000) * 5) * ratio;
-                    }
-                    skorPeta[op] += Math.round(reward);
-                });
-            }
-        });
-        const rankings = Object.keys(skorPeta).map(nama => ({ nama, poin: skorPeta[nama] })).sort((a, b) => b.poin - a.poin);
+            rankings = calc.results.map(mapItem);
+            rankingsElektrikal = calc.byDivision.elektrikal.results.map(mapItem);
+            rankingsPlumbing = calc.byDivision.plumbing.results.map(mapItem);
+            rankingsWelding = calc.byDivision.welding.results.map(mapItem);
+        }
 
         return {
             allSPP, nonSplSPP, splList, logs, filteredLogs, shipments, internals, rekaps,
             sppToNoProd, readyStockMap, progStockMap, shipStockMap,
             stats: { progProduk, progPendukung, rdyProduk, rdyPendukung, krmProduk, krmPendukung },
-            rankings
+            rankings, rankingsElektrikal, rankingsPlumbing, rankingsWelding, kpiPeriodLabel
         };
     };
 
@@ -4106,17 +4393,23 @@ window.beeShowDynamicStats = function() {
             return out;
         }
 
-        // 3. CEK OPERATOR TERTENTU (Nama Operator disebut)
-        const knownOperators = ["suhendra", "hario", "dhema", "iqbal", "khairuddin", "ngatiyo", "budi", "ramadan", "arliston"];
+        // 3. CEK OPERATOR TERTENTU (Nama Operator disebut — ranking sesuai divisinya)
+        const knownOperators = ["suhendra", "hario", "rizki", "dhema", "iqbal", "khairuddin", "khaerudin", "ngatiyo", "budi", "ramadan", "arliston"];
         const matchedOpKey = knownOperators.find(name => q.includes(name));
         if (matchedOpKey) {
-            const opRankIdx = data.rankings.findIndex(r => r.nama.toLowerCase().includes(matchedOpKey));
-            const opRankObj = opRankIdx >= 0 ? data.rankings[opRankIdx] : null;
-            const opLogs = data.filteredLogs.filter(l => l.operator && l.operator.toLowerCase().includes(matchedOpKey));
-            const opFullName = opRankObj ? opRankObj.nama : (opLogs[0] ? opLogs[0].operator : matchedOpKey.toUpperCase());
+            const searchKey = matchedOpKey === 'khaerudin' ? 'khairuddin' : matchedOpKey;
+            const opDiv = window.getOperatorDivision(searchKey);
+            const divList = opDiv === 'welding'
+                ? (data.rankingsWelding || [])
+                : (opDiv === 'plumbing' ? (data.rankingsPlumbing || []) : (data.rankingsElektrikal || []));
+            const divLabel = window.getDivisionLabel(opDiv);
+            const opRankIdx = divList.findIndex(r => r.nama.toLowerCase().includes(searchKey));
+            const opRankObj = opRankIdx >= 0 ? divList[opRankIdx] : null;
+            const opLogs = data.filteredLogs.filter(l => l.operator && l.operator.toLowerCase().includes(searchKey));
+            const opFullName = opRankObj ? opRankObj.nama : (opLogs[0] ? opLogs[0].operator : searchKey.toUpperCase());
 
-            let out = `<b style="color:var(--blue-glow);">👷 Profil & Aktivitas ${window.sanitizeHTML(opFullName)} (${filterLabel}):</b><br>
-            • <b>Peringkat:</b> ${opRankIdx >= 0 ? `#${opRankIdx + 1} (${opRankObj.poin >= 0 ? '+' : ''}${opRankObj.poin} XP)` : 'Belum ada poin'}<br>
+            let out = `<b style="color:var(--blue-glow);">👷 Profil & Aktivitas ${window.sanitizeHTML(opFullName)} (${divLabel}):</b><br>
+            • <b>Peringkat ${divLabel} (${data.kpiPeriodLabel}):</b> ${opRankIdx >= 0 ? `#${opRankIdx + 1} — <b>${opRankObj.poin} Poin (${opRankObj.persenKPI}% • Grade ${opRankObj.grade})</b>` : 'Belum ada nilai KPI'}<br>
             • <b>Total Laporan Aktivitas:</b> ${opLogs.length} log<br>`;
 
             if (opLogs.length > 0) {
@@ -4128,15 +4421,26 @@ window.beeShowDynamicStats = function() {
             return out;
         }
 
-        // 4. RANGKING / PERFORMA OPERATOR
-        if (/(ranking|rangking|peringkat|leaderboard|poin|xp|terbaik|efisien|operator)/.test(q) && !/(kirim|logistik)/.test(q)) {
-            if (data.rankings.length === 0) return `Belum ada data peringkat operator pada periode <b>${filterLabel}</b>.`;
-            let out = `<b style="color:var(--warning-glow);">🏆 Rangking Produktivitas Operator (${filterLabel}):</b><br>`;
-            data.rankings.forEach((op, idx) => {
-                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
-                out += `${medal} <b>${op.nama}</b> : <span style="color:${op.poin >= 0 ? 'var(--emerald-glow)' : 'var(--danger-glow)'}; font-weight:bold;">${op.poin >= 0 ? '+' : ''}${op.poin} XP</span><br>`;
-            });
-            return out;
+        // 4. RANGKING / PERFORMA OPERATOR (TERPISAH 3 DIVISI)
+        if (/(ranking|rangking|peringkat|leaderboard|poin|xp|kpi|terbaik|efisien|operator)/.test(q) && !/(kirim|logistik)/.test(q)) {
+            const elk = data.rankingsElektrikal || [];
+            const plm = data.rankingsPlumbing || [];
+            const wld = data.rankingsWelding || [];
+            if (elk.length === 0 && plm.length === 0 && wld.length === 0) {
+                return `Belum ada data KPI operator pada periode <b>${data.kpiPeriodLabel}</b>.`;
+            }
+            const formatList = (arr) => arr.length === 0
+                ? '<i>Belum ada data</i><br>'
+                : arr.map((op, idx) => {
+                    const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+                    const clr = op.persenKPI >= 80 ? 'var(--emerald-glow)' : (op.persenKPI >= 70 ? 'var(--warning-glow)' : 'var(--danger-glow)');
+                    return `${medal} <b>${op.nama}</b> : <span style="color:${clr}; font-weight:bold;">${op.poin} Poin (${op.persenKPI}%) • Grade ${op.grade}</span><br>`;
+                }).join('');
+
+            return `<b style="color:var(--warning-glow);">🏆 Rangking KPI 100% (${data.kpiPeriodLabel}):</b><br><br>` +
+                   `<b style="color:var(--blue-glow);">⚡ Divisi Elektrikal:</b><br>${formatList(elk)}<br>` +
+                   `<b style="color:var(--cyan-glow);">🔧 Divisi Plumbing:</b><br>${formatList(plm)}<br>` +
+                   `<b style="color:#fb923c;">🔥 Divisi Welding & Painting:</b><br>${formatList(wld)}`;
         }
 
         // 5. KENDALA / STOPPAGE / IDLE / TAKEOVER / TELAT / DEADLINE
@@ -5339,128 +5643,876 @@ window.toggleTvInventoryView = function() {
         window.renderProductActualMatrix();
     }
 
-    window.toggleOperatorRankingView = function() {
+window.toggleOperatorRankingView = function() {
         window.isRankingMinimized = !window.isRankingMinimized;
-        const btn = document.getElementById('btn-toggle-ranking'); const badge = document.getElementById('ranking-status-badge');
-        if (window.isRankingMinimized) { btn.innerHTML = "🔍 Tampilkan Semua Operator Aktif"; badge.innerHTML = "Mode: Top 5 Operator Aktif"; badge.className = "badge bg-reguler"; } 
-        else { btn.innerHTML = "🗜️ Sembunyikan Operator"; badge.innerHTML = "Mode: Semua Operator Aktif Tampil"; badge.className = "badge bg-buffer"; }
+        const btn = document.getElementById('btn-toggle-ranking');
+        const badge = document.getElementById('ranking-status-badge');
+        if (window.isRankingMinimized) {
+            if (btn) btn.innerHTML = "🔍 Tampilkan Semua Operator Aktif";
+            if (badge) { badge.innerHTML = "Mode: Top 5"; badge.className = "badge bg-reguler"; }
+        } else {
+            if (btn) btn.innerHTML = "🗜️ Sembunyikan Operator";
+            if (badge) { badge.innerHTML = "Mode: Semua Operator"; badge.className = "badge bg-buffer"; }
+        }
         window.calculateAndRenderRanking();
-    }
+    };
 
     window.toggleShipmentView = function() {
         window.isShipmentMinimized = !window.isShipmentMinimized;
         const btn = document.getElementById('btn-toggle-shipment');
-        if (window.isShipmentMinimized) { btn.innerHTML = "🔍 Tampilkan Semua Pengiriman"; } 
+        if (window.isShipmentMinimized) { btn.innerHTML = "🔍 Tampilkan Semua Pengiriman"; }
         else { btn.innerHTML = "🗜️ Sembunyikan Detail"; }
         window.renderShipmentTable();
-    }
+    };
 
-window.calculateAndRenderRanking = function() {
-        let skorPeta = {}; 
-        const filteredLogs = window.getFilteredLogs(); 
-        const filteredSPP = window.getFilteredSPP(); 
+// =========================================================================
+    // SISTEM PENILAIAN KPI 100% TERPISAH 3 DIVISI (ELEKTRIKAL | PLUMBING | WELDING)
+    // =========================================================================
+    window.kpiTrendChartInstance = null;
+    window.kpiControlsInitialized = false;
+    window.activeKPIDivision = 'elektrikal'; // 'elektrikal' | 'plumbing' | 'welding'
 
-        filteredLogs.forEach(log => {
-            if (log.operator.toLowerCase().includes('dev')) return; 
-            if(skorPeta[log.operator] === undefined) skorPeta[log.operator] = 0;
-            if (log.processPoints) skorPeta[log.operator] += log.processPoints;
+    window.WELDING_OPERATOR_KEYWORDS = ['ngatiyo', 'khairuddin', 'khaerudin', 'khairudin'];
+    window.PLUMBING_OPERATOR_KEYWORDS = ['budi', 'arliston'];
+
+    window.getOperatorDivision = function(opName) {
+        const clean = String(opName || '').trim().toLowerCase();
+        if (window.WELDING_OPERATOR_KEYWORDS.some(k => clean.includes(k))) return 'welding';
+        if (window.PLUMBING_OPERATOR_KEYWORDS.some(k => clean.includes(k))) return 'plumbing';
+        return 'elektrikal';
+    };
+
+    window.getDivisionLabel = function(divKey) {
+        if (divKey === 'welding') return 'Divisi Welding & Painting';
+        if (divKey === 'plumbing') return 'Divisi Plumbing';
+        return 'Divisi Elektrikal';
+    };
+
+    window.setActiveKPIDivision = function(divKey) {
+        window.activeKPIDivision = ['elektrikal', 'plumbing', 'welding'].includes(divKey) ? divKey : 'elektrikal';
+
+        const styles = {
+            elektrikal: { bg: 'linear-gradient(135deg,#0284c7,#38bdf8)', border: 'var(--blue-glow)' },
+            plumbing:   { bg: 'linear-gradient(135deg,#0d9488,#2dd4bf)', border: 'var(--cyan-glow)' },
+            welding:    { bg: 'linear-gradient(135deg,#ea580c,#f59e0b)', border: '#f97316' }
+        };
+
+        ['elektrikal', 'plumbing', 'welding'].forEach(key => {
+            const btn = document.getElementById('btn-kpi-div-' + key);
+            if (!btn) return;
+            if (window.activeKPIDivision === key) {
+                btn.style.background = styles[key].bg;
+                btn.style.color = '#fff';
+                btn.style.borderColor = styles[key].border;
+            } else {
+                btn.style.background = 'rgba(30,41,59,0.6)';
+                btn.style.color = '#e2e8f0';
+                btn.style.borderColor = '#334155';
+            }
         });
 
-        filteredSPP.forEach(spp => {
-            if (['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(spp.status)) {
-                let operatorLogCounts = {}; 
-                let msTerlambat = 0;
-                let totalValidLogs = 0;
+        const opFilterEl = document.getElementById('kpi-chart-operator-filter');
+        if (opFilterEl && !['team_top3', 'all_ops'].includes(opFilterEl.value)) {
+            if (window.getOperatorDivision(opFilterEl.value) !== window.activeKPIDivision) {
+                opFilterEl.value = 'team_top3';
+            }
+        }
 
-                filteredLogs.forEach(log => {
-                    if (log.operator.toLowerCase().includes('dev')) return; 
-                    if (log.noSPP === spp.no) {
-                        if (['Proses', 'Selesai', 'Selesai Awal', 'Telat Selesai', 'Lembur Selesai (Reguler)', 'Lembur Selesai (Sabtu/Minggu)', 'Lanjutkan Besok', 'Takeover', 'Stoppage', 'Idle Time'].includes(log.status) || log.condition.includes('Lembur')) {
-                            operatorLogCounts[log.operator] = (operatorLogCounts[log.operator] || 0) + 1;
-                            totalValidLogs++;
-                        }
-                        if (log.msTerlambat !== undefined && Math.abs(log.msTerlambat) > Math.abs(msTerlambat)) {
-                            msTerlambat = log.msTerlambat;
-                        }
-                    }
+        window.calculateAndRenderRanking();
+    };
+
+    window.safeKPIKey = function(str) {
+        return String(str || '').trim().replace(/[.#$\[\]\/]/g, '_');
+    };
+
+    window.initKPIControls = function() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = ("0" + (now.getMonth() + 1)).slice(-2);
+        const dd = ("0" + now.getDate()).slice(-2);
+
+        const monthEl = document.getElementById('kpi-month-picker');
+        const dateEl = document.getElementById('kpi-date-picker');
+        const yearEl = document.getElementById('kpi-year-picker');
+        const opFilterEl = document.getElementById('kpi-chart-operator-filter');
+
+        if (monthEl && !monthEl.value) monthEl.value = `${yyyy}-${mm}`;
+        if (dateEl && !dateEl.value) dateEl.value = `${yyyy}-${mm}-${dd}`;
+
+        if (yearEl) {
+            const savedYear = yearEl.value;
+            const yearsSet = new Set([yyyy, yyyy - 1]);
+            (window.databaseMasterSPP || []).forEach(s => {
+                const ms = s.lastInputTimeMs || s.rawTimestampMs;
+                if (ms) yearsSet.add(new Date(ms).getFullYear());
+            });
+            const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
+            yearEl.innerHTML = sortedYears.map(y => `<option value="${y}">Tahun ${y}</option>`).join('');
+            yearEl.value = (savedYear && sortedYears.includes(parseInt(savedYear))) ? savedYear : String(yyyy);
+        }
+
+        if (opFilterEl) {
+            const savedOp = opFilterEl.value || 'team_top3';
+            const div = window.activeKPIDivision || 'elektrikal';
+            const defaultOpsByDiv = {
+                elektrikal: ["Mohammad Ramadan", "Dhema Ferlandy Putra", "Hario Rizki Ardhana", "Suhendra"],
+                plumbing:   ["Budi Septiyanto", "Arliston Sirait"],
+                welding:    ["Ngatiyo", "Khairuddin"]
+            };
+
+            const opSet = new Set(defaultOpsByDiv[div] || []);
+            (window.databaseLogOperator || []).forEach(l => {
+                if (l.operator && !l.operator.toLowerCase().includes('dev')) {
+                    if (window.getOperatorDivision(l.operator) === div) opSet.add(l.operator);
+                }
+            });
+
+            const lblTop = (div === 'elektrikal')
+                ? '📈 Grafik: Rata-Rata & Top 3 Elektrikal'
+                : '📈 Grafik: Rata-Rata & Head-to-Head (Berdua)';
+            let html = `<option value="team_top3">${lblTop}</option>`;
+            html += `<option value="all_ops">👥 Grafik: Semua Operator Divisi</option>`;
+            Array.from(opSet).sort().forEach(op => {
+                html += `<option value="${op}">👷 Fokus: ${op}</option>`;
+            });
+            opFilterEl.innerHTML = html;
+            opFilterEl.value = Array.from(opFilterEl.options).some(o => o.value === savedOp) ? savedOp : 'team_top3';
+        }
+
+        window.kpiControlsInitialized = true;
+    };
+
+    window.onKPIPeriodModeChange = function() {
+        const mode = document.getElementById('kpi-period-mode')?.value || 'bulanan';
+        const monthEl = document.getElementById('kpi-month-picker');
+        const dateEl = document.getElementById('kpi-date-picker');
+        const yearEl = document.getElementById('kpi-year-picker');
+
+        if (monthEl) monthEl.style.display = (mode === 'bulanan') ? 'inline-block' : 'none';
+        if (dateEl) dateEl.style.display = (mode === 'harian') ? 'inline-block' : 'none';
+        if (yearEl) yearEl.style.display = (mode === 'tahunan') ? 'inline-block' : 'none';
+
+        window.calculateAndRenderRanking();
+    };
+
+    window.getKPIPeriodAdjustment = function(periodKey, opName, mode) {
+        const adjDB = window.databaseKPIAdjustments || {};
+        const safeOp = window.safeKPIKey(opName);
+
+        if (adjDB[periodKey] && adjDB[periodKey][safeOp]) {
+            return adjDB[periodKey][safeOp];
+        }
+
+        if (mode === 'tahunan') {
+            let sumQC = 0, sumDis = 0, countMonths = 0;
+            Object.keys(adjDB).forEach(k => {
+                if (k.startsWith(periodKey + '-') && k.length === 7 && adjDB[k][safeOp]) {
+                    sumQC += parseFloat(adjDB[k][safeOp].potonganQC) || 0;
+                    sumDis += parseFloat(adjDB[k][safeOp].potonganDisiplin) || 0;
+                    countMonths++;
+                }
+            });
+            if (countMonths > 0) {
+                return {
+                    potonganQC: Math.round((sumQC / countMonths) * 10) / 10,
+                    potonganDisiplin: Math.round((sumDis / countMonths) * 10) / 10,
+                    catatan: `Rata-rata ${countMonths} bulan`
+                };
+            }
+        }
+        return {};
+    };
+
+    // Mesin hitung KPI 100% untuk rentang waktu [startMs, endMs] terpisah 3 divisi
+    window.computeOperatorKPIForRange = function(startMs, endMs, targetHoursDefault, periodKey, mode) {
+        const allSPP = window.databaseMasterSPP || [];
+        const allLogs = window.databaseLogOperator || [];
+
+        const logsInRange = allLogs.filter(l =>
+            l.timestampMs >= startMs && l.timestampMs <= endMs &&
+            l.operator && !l.operator.toLowerCase().includes('dev')
+        );
+
+        const completedSPPInRange = allSPP.filter(spp => {
+            if (!['Selesai', 'Selesai Awal', 'Telat Selesai'].includes(spp.status)) return false;
+            const finishMs = spp.lastInputTimeMs || spp.rawTimestampMs;
+            return finishMs >= startMs && finishMs <= endMs;
+        });
+
+        const logsBySPP = {};
+        allLogs.forEach(l => {
+            if (!l.noSPP || !l.operator || l.operator.toLowerCase().includes('dev')) return;
+            const k = l.noSPP.trim().toLowerCase();
+            if (!logsBySPP[k]) logsBySPP[k] = [];
+            logsBySPP[k].push(l);
+        });
+
+        const opStats = {};
+        const sppCountByDiv = { elektrikal: new Set(), plumbing: new Set(), welding: new Set() };
+
+        const ensureOp = (name) => {
+            if (!opStats[name]) {
+                opStats[name] = {
+                    nama: name,
+                    division: window.getOperatorDivision(name),
+                    otdScores: [],
+                    jamKontribusi: 0,
+                    sppSelesai: 0,
+                    sppMissingNoProd: new Set(),
+                    takeoverCount: 0,
+                    logCount: 0,
+                    legacyXP: 0
+                };
+            }
+            return opStats[name];
+        };
+
+        logsInRange.forEach(log => {
+            const st = ensureOp(log.operator);
+            st.logCount++;
+            st.legacyXP += (log.processPoints || 0);
+            if (log.status === 'Takeover') st.takeoverCount++;
+
+            const validNoProd = typeof window.isValidNoProd === 'function'
+                ? window.isValidNoProd(log.noProd)
+                : (log.noProd && log.noProd !== '-');
+            if (!validNoProd && log.noSPP) {
+                st.sppMissingNoProd.add(log.noSPP.trim().toLowerCase());
+            }
+        });
+
+        completedSPPInRange.forEach(spp => {
+            const sppKey = (spp.no || '').trim().toLowerCase();
+            const sppLogs = logsBySPP[sppKey] || [];
+            const validLogs = sppLogs.filter(l =>
+                ['Proses', 'Selesai', 'Selesai Awal', 'Telat Selesai', 'Lembur Selesai (Reguler)', 'Lembur Selesai (Sabtu/Minggu)', 'Lanjutkan Besok', 'Takeover', 'Stoppage', 'Idle Time'].includes(l.status) ||
+                (l.condition && l.condition.includes('Lembur'))
+            );
+            if (validLogs.length === 0) return;
+
+            const involvedOps = [...new Set(validLogs.map(l => l.operator))];
+            let msTerlambat = 0;
+            validLogs.forEach(l => {
+                if (l.msTerlambat !== undefined && Math.abs(l.msTerlambat) > Math.abs(msTerlambat)) {
+                    msTerlambat = l.msTerlambat;
+                }
+            });
+
+            let sppOtdScore = 100;
+            if (spp.status === 'Selesai Awal' && msTerlambat < 0) {
+                const jamAwal = Math.floor(Math.abs(msTerlambat) / 3600000);
+                sppOtdScore = 100 + Math.min(jamAwal * 5, 10);
+            } else if (spp.status === 'Telat Selesai' && msTerlambat > 0) {
+                const jamTelat = Math.floor(msTerlambat / 3600000);
+                sppOtdScore = Math.max(40, 100 - (10 + jamTelat * 5));
+            }
+
+            const dict = PRODUCT_DICTIONARY[spp.product];
+            const targetOps = dict ? dict.ops : 1;
+            const targetHours = dict ? dict.hours : (parseFloat(spp.splTargetHours) || 8);
+            const qty = parseInt(spp.qty) || 1;
+            const totalManHours = targetHours * targetOps * qty;
+            const shareJamPerOp = totalManHours / involvedOps.length;
+
+            const sppHasNoProd = (typeof window.isValidNoProd === 'function' && window.isValidNoProd(spp.lockedNoProd)) ||
+                sppLogs.some(l => typeof window.isValidNoProd === 'function' ? window.isValidNoProd(l.noProd) : (l.noProd && l.noProd !== '-'));
+
+            involvedOps.forEach(op => {
+                const st = ensureOp(op);
+                st.otdScores.push(sppOtdScore);
+                st.jamKontribusi += shareJamPerOp;
+                st.sppSelesai++;
+                sppCountByDiv[st.division].add(sppKey);
+                if (sppHasNoProd) st.sppMissingNoProd.delete(sppKey);
+            });
+        });
+
+        const results = Object.values(opStats).map(st => {
+            const adj = window.getKPIPeriodAdjustment(periodKey, st.nama, mode);
+
+            let avgOtdPct = 0;
+            if (st.otdScores.length > 0) {
+                const sumOtd = st.otdScores.reduce((a, b) => a + b, 0);
+                avgOtdPct = Math.min(100, sumOtd / st.otdScores.length);
+            }
+            const poinOTD = Math.round(((avgOtdPct / 100) * 40) * 10) / 10;
+
+            const targetJamOp = (adj.customTargetHours && parseFloat(adj.customTargetHours) > 0)
+                ? parseFloat(adj.customTargetHours)
+                : Math.max(1, targetHoursDefault);
+            const outputRatio = Math.min(1, st.jamKontribusi / targetJamOp);
+            const poinOutput = Math.round((outputRatio * 30) * 10) / 10;
+
+            const autoPotMissing = Math.min(4, st.sppMissingNoProd.size * 1);
+            const autoPotTakeover = Math.min(6, st.takeoverCount * 2);
+            const manualPotDis = parseFloat(adj.potonganDisiplin) || 0;
+            const poinDisiplin = Math.round(Math.max(0, 15 - autoPotMissing - autoPotTakeover - manualPotDis) * 10) / 10;
+
+            const manualPotQC = parseFloat(adj.potonganQC) || 0;
+            const poinQC = Math.round(Math.max(0, 15 - manualPotQC) * 10) / 10;
+
+            const totalPoin = Math.round(Math.min(100, poinOTD + poinOutput + poinDisiplin + poinQC) * 10) / 10;
+
+            let grade = 'D', statusText = 'Butuh Bimbingan / Evaluasi', color = '#f43f5e';
+            if (totalPoin >= 90) { grade = 'A'; statusText = 'Elite Master (Sangat Efisien)'; color = '#10b981'; }
+            else if (totalPoin >= 80) { grade = 'B'; statusText = 'Super Efisien (Capai Target)'; color = '#38bdf8'; }
+            else if (totalPoin >= 70) { grade = 'C'; statusText = 'Stabil (Perlu Peningkatan)'; color = '#fbbf24'; }
+
+            return {
+                nama: st.nama,
+                division: st.division,
+                poinOTD,
+                poinOutput,
+                poinDisiplin,
+                poinQC,
+                totalPoin,
+                persenKPI: totalPoin,
+                jamKontribusi: Math.round(st.jamKontribusi * 10) / 10,
+                targetJamOp: Math.round(targetJamOp * 10) / 10,
+                sppSelesai: st.sppSelesai,
+                legacyXP: st.legacyXP,
+                grade,
+                statusText,
+                color,
+                catatan: adj.catatan || ''
+            };
+        });
+
+        const sortFn = (a, b) =>
+            b.totalPoin - a.totalPoin ||
+            b.jamKontribusi - a.jamKontribusi ||
+            b.sppSelesai - a.sppSelesai ||
+            b.legacyXP - a.legacyXP;
+
+        results.sort(sortFn);
+        const elektrikalResults = results.filter(r => r.division === 'elektrikal');
+        const plumbingResults = results.filter(r => r.division === 'plumbing');
+        const weldingResults = results.filter(r => r.division === 'welding');
+
+        const calcAvg = (arr) => arr.length > 0
+            ? Math.round((arr.reduce((s, r) => s + r.totalPoin, 0) / arr.length) * 10) / 10
+            : 0;
+
+        return {
+            results,
+            avgTeam: calcAvg(results),
+            totalSPPSelesai: completedSPPInRange.length,
+            byDivision: {
+                elektrikal: {
+                    results: elektrikalResults,
+                    avg: calcAvg(elektrikalResults),
+                    sppCount: sppCountByDiv.elektrikal.size
+                },
+                plumbing: {
+                    results: plumbingResults,
+                    avg: calcAvg(plumbingResults),
+                    sppCount: sppCountByDiv.plumbing.size
+                },
+                welding: {
+                    results: weldingResults,
+                    avg: calcAvg(weldingResults),
+                    sppCount: sppCountByDiv.welding.size
+                }
+            }
+        };
+    };
+
+    window.getSelectedKPIWindow = function() {
+        const mode = document.getElementById('kpi-period-mode')?.value || 'bulanan';
+        const monthlyTarget = (window.kpiConfig && window.kpiConfig.monthlyTargetHours) ? window.kpiConfig.monthlyTargetHours : 120;
+        const now = new Date();
+
+        if (mode === 'harian') {
+            const val = document.getElementById('kpi-date-picker')?.value || now.toISOString().slice(0, 10);
+            const [y, m, d] = val.split('-').map(Number);
+            const startMs = new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+            const endMs = new Date(y, m - 1, d, 23, 59, 59, 999).getTime();
+
+            const prevDate = new Date(y, m - 1, d - 1);
+            const prevStartMs = new Date(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate(), 0, 0, 0, 0).getTime();
+            const prevEndMs = new Date(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate(), 23, 59, 59, 999).getTime();
+            const prevKey = `${prevDate.getFullYear()}-${("0" + (prevDate.getMonth() + 1)).slice(-2)}-${("0" + prevDate.getDate()).slice(-2)}`;
+
+            const dailyTarget = Math.round((monthlyTarget / 22) * 10) / 10;
+            return {
+                mode, periodKey: val, label: `${("0" + d).slice(-2)}/${("0" + m).slice(-2)}/${y}`,
+                startMs, endMs, targetHours: dailyTarget, targetLabel: `${dailyTarget} Jam / Hari`,
+                prevStartMs, prevEndMs, prevKey, prevTargetHours: dailyTarget, prevLabel: 'Kemarin',
+                year: y, month: m
+            };
+        }
+
+        if (mode === 'tahunan') {
+            const y = parseInt(document.getElementById('kpi-year-picker')?.value) || now.getFullYear();
+            const startMs = new Date(y, 0, 1, 0, 0, 0, 0).getTime();
+            const endMs = new Date(y, 11, 31, 23, 59, 59, 999).getTime();
+            const monthsElapsed = (y === now.getFullYear()) ? (now.getMonth() + 1) : 12;
+            const yearlyTarget = monthlyTarget * monthsElapsed;
+
+            const prevY = y - 1;
+            const prevStartMs = new Date(prevY, 0, 1, 0, 0, 0, 0).getTime();
+            const prevEndMs = new Date(prevY, 11, 31, 23, 59, 59, 999).getTime();
+
+            return {
+                mode, periodKey: String(y), label: `Tahun ${y}`,
+                startMs, endMs, targetHours: yearlyTarget, targetLabel: `${yearlyTarget} Jam (${monthsElapsed} Bln)`,
+                prevStartMs, prevEndMs, prevKey: String(prevY), prevTargetHours: monthlyTarget * 12, prevLabel: `Tahun ${prevY}`,
+                year: y, month: now.getMonth() + 1
+            };
+        }
+
+        const val = document.getElementById('kpi-month-picker')?.value || `${now.getFullYear()}-${("0" + (now.getMonth() + 1)).slice(-2)}`;
+        const [y, m] = val.split('-').map(Number);
+        const startMs = new Date(y, m - 1, 1, 0, 0, 0, 0).getTime();
+        const endMs = new Date(y, m, 0, 23, 59, 59, 999).getTime();
+
+        const prevD = new Date(y, m - 2, 1);
+        const prevStartMs = new Date(prevD.getFullYear(), prevD.getMonth(), 1, 0, 0, 0, 0).getTime();
+        const prevEndMs = new Date(prevD.getFullYear(), prevD.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+        const prevKey = `${prevD.getFullYear()}-${("0" + (prevD.getMonth() + 1)).slice(-2)}`;
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+
+        return {
+            mode: 'bulanan', periodKey: val, label: `${monthNames[m - 1]} ${y}`,
+            startMs, endMs, targetHours: monthlyTarget, targetLabel: `${monthlyTarget} Jam / Bln`,
+            prevStartMs, prevEndMs, prevKey, prevTargetHours: monthlyTarget,
+            prevLabel: `${monthNames[prevD.getMonth()]} ${prevD.getFullYear()}`,
+            year: y, month: m
+        };
+    };
+
+    window.renderKPITrendChart = function(win, divResults, activeDiv) {
+        const canvas = document.getElementById('kpiTrendChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        const opFilter = document.getElementById('kpi-chart-operator-filter')?.value || 'team_top3';
+        const titleEl = document.getElementById('kpi-chart-title');
+        const divLabel = window.getDivisionLabel(activeDiv);
+        const monthlyTarget = (window.kpiConfig && window.kpiConfig.monthlyTargetHours) ? window.kpiConfig.monthlyTargetHours : 120;
+        const dailyTarget = Math.round((monthlyTarget / 22) * 10) / 10;
+        const now = new Date();
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+
+        const buckets = [];
+        if (win.mode === 'harian') {
+            const daysInMonth = new Date(win.year, win.month, 0).getDate();
+            const maxDay = (win.year === now.getFullYear() && win.month === (now.getMonth() + 1)) ? now.getDate() : daysInMonth;
+            for (let d = 1; d <= maxDay; d++) {
+                const sMs = new Date(win.year, win.month - 1, d, 0, 0, 0, 0).getTime();
+                const eMs = new Date(win.year, win.month - 1, d, 23, 59, 59, 999).getTime();
+                const key = `${win.year}-${("0" + win.month).slice(-2)}-${("0" + d).slice(-2)}`;
+                buckets.push({ label: `${("0" + d).slice(-2)} ${monthNames[win.month - 1]}`, startMs: sMs, endMs: eMs, target: dailyTarget, key });
+            }
+            if (titleEl) titleEl.innerText = `📈 Grafik Progres Naik / Turun KPI Harian — ${divLabel} (${monthNames[win.month - 1]} ${win.year})`;
+        } else if (win.mode === 'tahunan') {
+            const yearsSet = new Set([win.year - 2, win.year - 1, win.year]);
+            (window.databaseMasterSPP || []).forEach(s => {
+                const ms = s.lastInputTimeMs || s.rawTimestampMs;
+                if (ms) yearsSet.add(new Date(ms).getFullYear());
+            });
+            Array.from(yearsSet).sort((a, b) => a - b).forEach(yr => {
+                const sMs = new Date(yr, 0, 1, 0, 0, 0, 0).getTime();
+                const eMs = new Date(yr, 11, 31, 23, 59, 59, 999).getTime();
+                const mCount = (yr === now.getFullYear()) ? (now.getMonth() + 1) : 12;
+                buckets.push({ label: `Tahun ${yr}`, startMs: sMs, endMs: eMs, target: monthlyTarget * mCount, key: String(yr) });
+            });
+            if (titleEl) titleEl.innerText = `📈 Grafik Progres Naik / Turun KPI Tahunan — ${divLabel}`;
+        } else {
+            for (let m = 1; m <= 12; m++) {
+                const sMs = new Date(win.year, m - 1, 1, 0, 0, 0, 0).getTime();
+                const eMs = new Date(win.year, m, 0, 23, 59, 59, 999).getTime();
+                const key = `${win.year}-${("0" + m).slice(-2)}`;
+                buckets.push({ label: `${monthNames[m - 1]} ${win.year}`, startMs: sMs, endMs: eMs, target: monthlyTarget, key });
+            }
+            if (titleEl) titleEl.innerText = `📈 Grafik Progres Naik / Turun KPI Bulanan — ${divLabel} (Jan – Des ${win.year})`;
+        }
+
+        const bucketDivCalcs = buckets.map(b =>
+            window.computeOperatorKPIForRange(b.startMs, b.endMs, b.target, b.key, win.mode).byDivision[activeDiv]
+        );
+
+        const labels = buckets.map(b => b.label);
+        const datasets = [];
+        const themeMap = {
+            elektrikal: { avgBorder: '#10b981', avgBg: 'rgba(16, 185, 129, 0.16)', palette: ['#38bdf8', '#fbbf24', '#a855f7', '#f43f5e', '#2dd4bf'] },
+            plumbing:   { avgBorder: '#2dd4bf', avgBg: 'rgba(45, 212, 191, 0.16)', palette: ['#38bdf8', '#a855f7', '#fbbf24'] },
+            welding:    { avgBorder: '#f97316', avgBg: 'rgba(249, 115, 22, 0.16)', palette: ['#fb923c', '#38bdf8', '#a855f7'] }
+        };
+        const t = themeMap[activeDiv] || themeMap.elektrikal;
+
+        if (opFilter === 'team_top3') {
+            datasets.push({
+                label: `📊 Rata-Rata ${divLabel} (%)`,
+                data: bucketDivCalcs.map(bc => bc.results.length > 0 ? bc.avg : null),
+                borderColor: t.avgBorder,
+                backgroundColor: t.avgBg,
+                borderWidth: 3,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                tension: 0.35,
+                fill: true,
+                spanGaps: true
+            });
+
+            // Plumbing & Welding tampilkan keduanya (head-to-head), Elektrikal tampilkan Top 3
+            const highlightOps = (activeDiv === 'elektrikal')
+                ? divResults.slice(0, 3).map(r => r.nama)
+                : [...new Set([...divResults.map(r => r.nama), ...bucketDivCalcs.flatMap(bc => bc.results.map(r => r.nama))])].slice(0, 2);
+
+            highlightOps.forEach((opName, idx) => {
+                datasets.push({
+                    label: `👷 ${opName} (%)`,
+                    data: bucketDivCalcs.map(bc => {
+                        const found = bc.results.find(r => r.nama === opName);
+                        return found ? found.persenKPI : null;
+                    }),
+                    borderColor: t.palette[idx % t.palette.length],
+                    backgroundColor: 'transparent',
+                    borderWidth: 2.2,
+                    borderDash: idx === 0 ? [] : [5, 4],
+                    pointRadius: 3.5,
+                    tension: 0.35,
+                    fill: false,
+                    spanGaps: true
                 });
+            });
+        } else if (opFilter === 'all_ops') {
+            const allOpsInBuckets = [...new Set(bucketDivCalcs.flatMap(bc => bc.results.map(r => r.nama)))];
+            allOpsInBuckets.forEach((opName, idx) => {
+                datasets.push({
+                    label: `${opName} (%)`,
+                    data: bucketDivCalcs.map(bc => {
+                        const found = bc.results.find(r => r.nama === opName);
+                        return found ? found.persenKPI : null;
+                    }),
+                    borderColor: t.palette[idx % t.palette.length],
+                    backgroundColor: 'transparent',
+                    borderWidth: 2.2,
+                    pointRadius: 3.5,
+                    tension: 0.35,
+                    fill: false,
+                    spanGaps: true
+                });
+            });
+        } else {
+            datasets.push({
+                label: `👷 ${opFilter} (%)`,
+                data: bucketDivCalcs.map(bc => {
+                    const found = bc.results.find(r => r.nama === opFilter);
+                    return found ? found.persenKPI : null;
+                }),
+                borderColor: '#38bdf8',
+                backgroundColor: 'rgba(56, 189, 248, 0.18)',
+                borderWidth: 3,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                tension: 0.35,
+                fill: true,
+                spanGaps: true
+            });
+            datasets.push({
+                label: `📊 Rata-Rata ${divLabel} (%)`,
+                data: bucketDivCalcs.map(bc => bc.results.length > 0 ? bc.avg : null),
+                borderColor: '#94a3b8',
+                backgroundColor: 'transparent',
+                borderWidth: 1.8,
+                borderDash: [6, 4],
+                pointRadius: 3,
+                tension: 0.35,
+                fill: false,
+                spanGaps: true
+            });
+        }
 
-                if (totalValidLogs === 0) return; 
-
-                let targetOps = 1; 
-                let targetHours = 8;
-                if (PRODUCT_DICTIONARY[spp.product]) {
-                    targetOps = PRODUCT_DICTIONARY[spp.product].ops;
-                    targetHours = PRODUCT_DICTIONARY[spp.product].hours;
-                }
-                
-                // Pengali poin jika durasi target di atas 24 jam
-                let multiplier = 1;
-                if (targetHours > 24) {
-                    multiplier = Math.ceil(targetHours / 24);
-                }
-
-                // Kolam poin dengan nilai 50 poin per operator sesuai target
-                let basePointPerOperator = 50; 
-                let totalPoolPoints = basePointPerOperator * targetOps * multiplier;
-                
-                let involvedOperators = Object.keys(operatorLogCounts);
-                let totalInvolved = involvedOperators.length;
-
-                if (totalInvolved > 0) {
-                    let opShare = 0;
-                    let porsiRasio = 0;
-
-                    // Logika usulan pembagian poin rata kepada semua yang terlibat
-                    if (totalInvolved <= targetOps) {
-                        opShare = totalPoolPoints / targetOps; 
-                        porsiRasio = 1 / targetOps;
-                    } else {
-                        opShare = totalPoolPoints / totalInvolved;
-                        porsiRasio = 1 / totalInvolved;
-                    }
-
-                    involvedOperators.forEach(op => {
-                        if(skorPeta[op] === undefined) skorPeta[op] = 0;
-                        
-                        let finalReward = opShare;
-
-                        if (spp.status === 'Selesai Awal' && msTerlambat < 0) {
-                            let jamLebihAwal = Math.floor(Math.abs(msTerlambat) / (1000 * 60 * 60));
-                            let totalBonus = Math.min(jamLebihAwal * 10, 50); 
-                            finalReward += (totalBonus * porsiRasio); 
-                        } else if (spp.status === 'Telat Selesai' && msTerlambat > 0) {
-                            let jamTelat = Math.floor(msTerlambat / (1000 * 60 * 60));
-                            let totalPenalty = 10 + (jamTelat * 5); 
-                            finalReward -= (totalPenalty * porsiRasio); 
-                        }
-
-                        skorPeta[op] += Math.round(finalReward); 
-                    });
-                } // Penutup 1 yang terhapus sebelumnya
-            } // Penutup 2 yang terhapus sebelumnya
-        }); // Penutup 3 yang terhapus sebelumnya
-
-        let susunanRangking = Object.keys(skorPeta).map(nama => { return { nama: nama, poin: skorPeta[nama] }; }).sort((a, b) => b.poin - a.poin);
-        if (window.isRankingMinimized) susunanRangking = susunanRangking.slice(0, 5);
-        const tbody = document.getElementById('operator-ranking-body'); tbody.innerHTML = "";
-        if(susunanRangking.length === 0) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 25px; color: var(--text-muted);">Belum ada operator yang aktif bekerja.</td></tr>`; return; }
-        
-        susunanRangking.forEach((op, indeks) => {
-            const posisi = indeks + 1; let rankClass = "rank-other"; let tropiBadge = `🏅`; let statusEfisiensi = `<span style="color:var(--text-muted); font-weight:600;">Stabil</span>`;
-            if (posisi === 1 && window.isRankingMinimized) { rankClass = "rank-1"; tropiBadge = "🥇"; statusEfisiensi = `<span style="color:var(--warning-glow); font-weight:800;">Elite Master (Sangat Efisien)</span>`; }
-            else if (posisi === 2 && window.isRankingMinimized) { rankClass = "rank-2"; tropiBadge = "🥈"; statusEfisiensi = `<span style="color:var(--blue-glow); font-weight:800;">Super Efisien</span>`; }
-            else if (posisi === 3 && window.isRankingMinimized) { rankClass = "rank-3"; tropiBadge = "🥉"; statusEfisiensi = `<span style="color:var(--emerald-glow); font-weight:800;">Efisien Berkelanjutan</span>`; }
-            
-            if (op.poin < 0) statusEfisiensi = `<span class="point-minus">Butuh Bimbingan / Evaluasi</span>`;
-            let poinTeks = ""; 
-            if (op.poin > 0) poinTeks = `<span class="point-plus">+${op.poin} XP</span>`; 
-            else if (op.poin === 0) poinTeks = `<span class="point-neutral">${op.poin} XP</span>`; 
-            else poinTeks = `<span class="point-minus">${op.poin} XP</span>`;
-            
-            tbody.innerHTML += `<tr><td><span class="rank-badge ${rankClass}">${posisi}</span> ${tropiBadge}</td><td><strong>${op.nama}</strong></td><td>${poinTeks}</td><td>${statusEfisiensi}</td></tr>`;
+        datasets.push({
+            label: '🎯 Standar Min. KPI (80%)',
+            data: labels.map(() => 80),
+            borderColor: 'rgba(251, 191, 36, 0.7)',
+            borderWidth: 1.5,
+            borderDash: [4, 4],
+            pointRadius: 0,
+            fill: false
         });
-    }
+
+        const isLight = document.body.classList.contains('light-theme');
+        const textColor = isLight ? '#0f172a' : '#f8fafc';
+        const tickColor = isLight ? '#475569' : '#94a3b8';
+        const gridColor = isLight ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.07)';
+
+        if (window.kpiTrendChartInstance) window.kpiTrendChartInstance.destroy();
+        window.kpiTrendChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: {
+                        grid: { color: gridColor },
+                        ticks: { color: tickColor, font: { size: 11, weight: 'bold' } }
+                    },
+                    y: {
+                        min: 0,
+                        max: 105,
+                        grid: { color: gridColor },
+                        ticks: {
+                            color: tickColor,
+                            stepSize: 20,
+                            callback: val => (val <= 100 ? val + '%' : '')
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: { color: textColor, font: { size: 11, weight: 'bold' }, usePointStyle: true }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctxItem => {
+                                const v = ctxItem.parsed.y;
+                                return v === null ? `${ctxItem.dataset.label}: -` : `${ctxItem.dataset.label}: ${v}% (${v} Poin)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    };
+
+    window.renderKPITableForDivision = function(tbodyId, theadId, list, prevList, isKPIEditor, emptyMsg, limitTop5) {
+        const theadRow = document.getElementById(theadId);
+        if (theadRow) {
+            theadRow.innerHTML = `
+                <th style="width: 95px;">Rank</th>
+                <th>Nama Operator</th>
+                <th>OTD (40%)</th>
+                <th>Output (30%)</th>
+                <th>Disiplin (15%)</th>
+                <th>QC (15%)</th>
+                <th>Total Poin</th>
+                <th style="min-width: 155px;">Nilai KPI (%)</th>
+                <th>Grade & Status</th>
+                ${isKPIEditor ? '<th style="text-align:center;">Aksi QC</th>' : ''}
+            `;
+        }
+
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
+        const colSpan = isKPIEditor ? 10 : 9;
+        if (!list || list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align:center; padding: 22px; color: var(--text-muted);">${emptyMsg}</td></tr>`;
+            return;
+        }
+
+        const displayList = limitTop5 ? list.slice(0, 5) : list;
+
+        displayList.forEach((op, idx) => {
+            const posisi = idx + 1;
+            const rankClass = posisi === 1 ? 'rank-1' : posisi === 2 ? 'rank-2' : posisi === 3 ? 'rank-3' : 'rank-other';
+            const trophy = posisi === 1 ? '🥇' : posisi === 2 ? '🥈' : posisi === 3 ? '🥉' : '🏅';
+            const safeEscapedOp = op.nama.replace(/'/g, "\\'");
+
+            const prevOp = prevList.find(p => p.nama === op.nama);
+            let trendMini = '';
+            if (prevOp) {
+                const d = Math.round((op.persenKPI - prevOp.persenKPI) * 10) / 10;
+                if (d > 0) trendMini = `<span style="color:var(--emerald-glow); font-size:11px; margin-left:6px;">▲+${d}%</span>`;
+                else if (d < 0) trendMini = `<span style="color:var(--danger-glow); font-size:11px; margin-left:6px;">▼${d}%</span>`;
+            }
+
+            const actionCell = isKPIEditor
+                ? `<td style="text-align:center;"><button type="button" class="btn-action-trigger" style="background:var(--warning-glow); color:#000; border:none; min-width:75px;" onclick="editOperatorKPI('${safeEscapedOp}')">✏️ QC / Adj</button></td>`
+                : '';
+
+            tbody.innerHTML += `<tr>
+                <td><span class="rank-badge ${rankClass}">${posisi}</span> ${trophy}</td>
+                <td>
+                    <strong>${window.sanitizeHTML(op.nama)}</strong>
+                    <div style="font-size:11px; color:var(--text-muted);">${op.sppSelesai} SPP • ${op.jamKontribusi}/${op.targetJamOp} Jam${op.catatan ? ` • <i>${window.sanitizeHTML(op.catatan)}</i>` : ''}</div>
+                </td>
+                <td><b>${op.poinOTD}</b> <span style="color:var(--text-muted); font-size:11px;">/40</span></td>
+                <td><b>${op.poinOutput}</b> <span style="color:var(--text-muted); font-size:11px;">/30</span></td>
+                <td><b>${op.poinDisiplin}</b> <span style="color:var(--text-muted); font-size:11px;">/15</span></td>
+                <td><b>${op.poinQC}</b> <span style="color:var(--text-muted); font-size:11px;">/15</span></td>
+                <td><strong style="color:${op.color}; font-size:15px;">${op.totalPoin}</strong> <span style="color:var(--text-muted); font-size:11px;">/100</span></td>
+                <td>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:800;">
+                        <span style="color:${op.color};">${op.persenKPI}%${trendMini}</span>
+                    </div>
+                    <div style="width:100%; height:7px; background:rgba(0,0,0,0.45); border-radius:4px; overflow:hidden; margin-top:4px; border:1px solid var(--panel-border);">
+                        <div style="height:100%; width:${Math.min(100, op.persenKPI)}%; background:${op.color}; transition:width 0.5s ease;"></div>
+                    </div>
+                </td>
+                <td><span class="badge" style="background:${op.color}22; color:${op.color}; border:1px solid ${op.color};">Grade ${op.grade}</span><br><span style="font-size:11px; color:${op.color}; font-weight:700;">${op.statusText}</span></td>
+                ${actionCell}
+            </tr>`;
+        });
+    };
+
+    window.calculateAndRenderRanking = function() {
+        window.initKPIControls();
+
+        const isKPIEditor = ["RANDI", "FEBRI", "ADMIN", "SEPTI UTAMI", "MANAGER WAREHOUSE"].includes((window.currentUserRole || "").toUpperCase());
+        const cfgBtn = document.getElementById('btn-kpi-config');
+        if (cfgBtn) cfgBtn.style.display = isKPIEditor ? 'inline-block' : 'none';
+
+        const win = window.getSelectedKPIWindow();
+        const currentCalc = window.computeOperatorKPIForRange(win.startMs, win.endMs, win.targetHours, win.periodKey, win.mode);
+        const prevCalc = window.computeOperatorKPIForRange(win.prevStartMs, win.prevEndMs, win.prevTargetHours, win.prevKey, win.mode);
+
+        // Data divisi aktif untuk 4 kartu ringkasan & grafik tren
+        const activeDiv = ['elektrikal', 'plumbing', 'welding'].includes(window.activeKPIDivision) ? window.activeKPIDivision : 'elektrikal';
+        const curDivData = currentCalc.byDivision[activeDiv];
+        const prevDivData = prevCalc.byDivision[activeDiv];
+        const divLabel = window.getDivisionLabel(activeDiv);
+
+        const avgLabelEl = document.getElementById('kpi-avg-label');
+        const avgEl = document.getElementById('kpi-avg-team');
+        const avgGradeEl = document.getElementById('kpi-avg-grade');
+        const topOpEl = document.getElementById('kpi-top-op');
+        const topScoreEl = document.getElementById('kpi-top-score');
+        const deltaEl = document.getElementById('kpi-trend-delta');
+        const deltaSubEl = document.getElementById('kpi-trend-sub');
+        const targetEl = document.getElementById('kpi-target-info');
+        const sppCountEl = document.getElementById('kpi-spp-count');
+
+        if (avgLabelEl) avgLabelEl.innerText = `📊 Rata-Rata ${divLabel}`;
+        if (avgEl) avgEl.innerText = `${curDivData.avg}%`;
+        if (avgGradeEl) {
+            const g = curDivData.results.length === 0 ? 'Belum ada data' :
+                (curDivData.avg >= 90 ? 'Grade A (Sangat Efisien)' :
+                 curDivData.avg >= 80 ? 'Grade B (Capai Target)' :
+                 curDivData.avg >= 70 ? 'Grade C (Stabil)' : 'Grade D (Perlu Evaluasi)');
+            avgGradeEl.innerText = `${win.label} • ${g}`;
+        }
+
+        if (curDivData.results.length > 0) {
+            const top = curDivData.results[0];
+            if (topOpEl) topOpEl.innerText = top.nama;
+            if (topScoreEl) topScoreEl.innerText = `${top.totalPoin} Poin (${top.persenKPI}%) • Grade ${top.grade}`;
+        } else {
+            if (topOpEl) topOpEl.innerText = '-';
+            if (topScoreEl) topScoreEl.innerText = '0 Poin (0%)';
+        }
+
+        if (deltaEl && deltaSubEl) {
+            if (prevDivData.results.length === 0 || curDivData.results.length === 0) {
+                deltaEl.innerHTML = `<span style="color:var(--text-muted);">— Stabil</span>`;
+                deltaSubEl.innerText = `Vs ${win.prevLabel} (${prevDivData.avg}%)`;
+            } else {
+                const diff = Math.round((curDivData.avg - prevDivData.avg) * 10) / 10;
+                if (diff > 0) deltaEl.innerHTML = `<span style="color:var(--emerald-glow);">▲ +${diff}% Naik</span>`;
+                else if (diff < 0) deltaEl.innerHTML = `<span style="color:var(--danger-glow);">▼ ${diff}% Turun</span>`;
+                else deltaEl.innerHTML = `<span style="color:var(--blue-glow);">▬ 0% Tetap</span>`;
+                deltaSubEl.innerText = `Vs ${win.prevLabel} (${prevDivData.avg}%)`;
+            }
+        }
+
+        if (targetEl) targetEl.innerText = win.targetLabel;
+        if (sppCountEl) sppCountEl.innerText = `${curDivData.sppCount} SPP Selesai (${curDivData.results.length} Operator)`;
+
+        // Render Grafik Tren sesuai Divisi Terpilih
+        window.renderKPITrendChart(win, curDivData.results, activeDiv);
+
+        // Render Tabel Kategori 1: Divisi Elektrikal
+        window.renderKPITableForDivision(
+            'operator-ranking-body',
+            'operator-ranking-head',
+            currentCalc.byDivision.elektrikal.results,
+            prevCalc.byDivision.elektrikal.results,
+            isKPIEditor,
+            `Belum ada aktivitas Divisi Elektrikal pada periode <b>${win.label}</b>.`,
+            window.isRankingMinimized
+        );
+
+        // Render Tabel Kategori 2: Divisi Plumbing (Budi vs Arliston)
+        window.renderKPITableForDivision(
+            'operator-ranking-plumbing-body',
+            'operator-ranking-plumbing-head',
+            currentCalc.byDivision.plumbing.results,
+            prevCalc.byDivision.plumbing.results,
+            isKPIEditor,
+            `Belum ada aktivitas Divisi Plumbing (Budi / Arliston) pada periode <b>${win.label}</b>.`,
+            false
+        );
+
+        // Render Tabel Kategori 3: Divisi Welding & Painting (Ngatiyo vs Khairuddin)
+        window.renderKPITableForDivision(
+            'operator-ranking-welding-body',
+            'operator-ranking-welding-head',
+            currentCalc.byDivision.welding.results,
+            prevCalc.byDivision.welding.results,
+            isKPIEditor,
+            `Belum ada aktivitas Divisi Welding & Painting (Ngatiyo / Khairuddin) pada periode <b>${win.label}</b>.`,
+            false
+        );
+    };
+
+    window.editOperatorKPI = function(opName) {
+        const win = window.getSelectedKPIWindow();
+        const safeOp = window.safeKPIKey(opName);
+        const curr = window.getKPIPeriodAdjustment(win.periodKey, opName, win.mode);
+
+        const choice = prompt(
+            `Penyesuaian KPI untuk: ${opName}\nPeriode: ${win.label} (${win.periodKey})\n\n` +
+            `1. Potongan Kualitas / QC - Rework (Saat ini: -${curr.potonganQC || 0} Poin, maks 15)\n` +
+            `2. Potongan Disiplin Manual - Lupa Close/Kelalaian (Saat ini: -${curr.potonganDisiplin || 0} Poin, maks 15)\n` +
+            `3. Prorata Target Jam Kerja - Cuti/Sakit (Saat ini: ${curr.customTargetHours || win.targetHours} Jam)\n` +
+            `4. Catatan Evaluasi / No. Form QC (Saat ini: ${curr.catatan || '-'})\n` +
+            `5. 🔄 Reset Penyesuaian Operator Ini`
+        );
+        if (!choice) return;
+
+        const ref = firebase.database().ref(`kpiAdjustments/${win.periodKey}/${safeOp}`);
+        const c = choice.trim();
+
+        if (c === '1') {
+            const val = prompt("Masukkan total potongan QC (contoh: 2 untuk rework ringan, 5 untuk rework berat, 0 untuk nol):", curr.potonganQC || 0);
+            if (val !== null && !isNaN(val)) {
+                ref.update({ potonganQC: Math.max(0, Math.min(15, parseFloat(val))) }).then(() => alert("✅ Potongan QC berhasil disimpan!"));
+            }
+        } else if (c === '2') {
+            const val = prompt("Masukkan potongan disiplin manual (contoh: 1.5 untuk 1x lupa close sore, 0 untuk nol):", curr.potonganDisiplin || 0);
+            if (val !== null && !isNaN(val)) {
+                ref.update({ potonganDisiplin: Math.max(0, Math.min(15, parseFloat(val))) }).then(() => alert("✅ Potongan Disiplin berhasil disimpan!"));
+            }
+        } else if (c === '3') {
+            const val = prompt(`Masukkan Target Jam Prorata khusus ${opName} di ${win.label}\n(Kosongkan lalu klik OK untuk kembali ke default ${win.targetHours} Jam):`, curr.customTargetHours || '');
+            if (val !== null) {
+                const clean = val.trim();
+                ref.update({ customTargetHours: clean === '' ? null : Math.max(1, parseFloat(clean)) }).then(() => alert("✅ Target jam operator diperbarui!"));
+            }
+        } else if (c === '4') {
+            const val = prompt("Masukkan catatan evaluasi / referensi dokumen QC:", curr.catatan || '');
+            if (val !== null) {
+                ref.update({ catatan: val.trim() }).then(() => alert("✅ Catatan evaluasi berhasil disimpan!"));
+            }
+        } else if (c === '5') {
+            if (confirm(`Reset seluruh penyesuaian QC/Disiplin untuk ${opName} pada periode ${win.label}?`)) {
+                ref.remove().then(() => alert("✅ Penyesuaian KPI berhasil di-reset!"));
+            }
+        }
+    };
+
+    window.setKPITargetConfig = function() {
+        const curr = (window.kpiConfig && window.kpiConfig.monthlyTargetHours) ? window.kpiConfig.monthlyTargetHours : 120;
+        const val = prompt(
+            `Pengaturan Target Standar Beban Kerja Bulanan\n` +
+            `(Default: 120 Jam/Bulan ≈ 22 hari kerja × 5.5 jam efektif)\n\n` +
+            `Masukkan Target Jam Standar Per Bulan:`,
+            curr
+        );
+        if (val !== null && !isNaN(val) && parseFloat(val) > 0) {
+            firebase.database().ref('appSettings/kpiConfig').set({
+                monthlyTargetHours: parseFloat(val),
+                updatedAt: Date.now()
+            }).then(() => alert(`✅ Target standar KPI diperbarui menjadi ${val} Jam/Bulan!`));
+        }
+    };    
 
     window.toggleManualInput = function(selectElement, manualInputId) {
         const manualInput = document.getElementById(manualInputId); manualInput.style.display = selectElement.value === 'other' ? 'block' : 'none';
@@ -7498,11 +8550,12 @@ window.renderShipmentTable = function() {
         tbody.innerHTML = htmlRows;
     };
 	
-    window.modeHistoryLog = 'proses';
-    window.toggleHistoryLog = function() {
-        window.modeHistoryLog = window.modeHistoryLog === 'proses' ? 'riwayat' : 'proses';
-        window.renderOperatorTable();
-    };
+window.modeHistoryLog = 'proses';
+  window.toggleHistoryLog = function() {
+      window.modeHistoryLog = window.modeHistoryLog === 'proses' ? 'riwayat' : 'proses';
+      window.renderOperatorTable();
+      window.performGlobalSearch();
+  };
 
 window.renderOperatorTable = function() {
         let toggleBtn = document.getElementById('btn-toggle-log-mode');
